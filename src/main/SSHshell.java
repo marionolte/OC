@@ -1,0 +1,339 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package main;
+
+import com.trilead.ssh2.Connection;
+import com.trilead.ssh2.HTTPProxyData;
+import com.trilead.ssh2.KnownHosts;
+import com.trilead.ssh2.Session;
+
+import io.thread.RunnableT;
+
+//import io.Console;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.util.regex.Pattern;
+
+/**
+ *
+ * @author SuMario
+ */
+public class SSHshell  extends RunnableT {
+    private final String  host;
+    private final int     port;
+    private final String  user;
+    private final String  pass;
+    //private final Console console;
+    private final boolean guiMode;
+    
+    private int   sid=-1;
+    
+    private Connection conn;
+    private Session    sess;
+    private OutputStreamWriter outw;
+    private OutputStream out;
+    private InputStream in;
+    private InputStream err;
+    
+    public KnownHosts database = new KnownHosts();
+    
+    final public String knownHostPath ;
+    final public String idDSAPath ;
+    final public String idRSAPath ;
+   static public String confDir="~"+File.separator+".ssh";
+   
+    
+    public SSHshell(String host, String user, String pass) {
+        this(host,22,user,pass,false);
+    }
+    public SSHshell(String host, String user, String pass, boolean gui) {
+        this(host,22,user,pass,gui);
+    }
+    public SSHshell(String host, int port, String user, String pass,boolean gui) {
+        final String func="SSHshell::";
+        this.host=host;
+        this.port=(port >0 && port < 64*1024-1)?port:22;
+        this.user=user;
+        this.pass=pass;
+        this.guiMode=gui;
+        
+        //this.console=new Console();
+    
+        knownHostPath=SSHshell.confDir+File.separator+"known_hosts";
+        idDSAPath    =SSHshell.confDir+File.separator+"id_dsa";
+        idRSAPath    =SSHshell.confDir+File.separator+"id_rsa";
+        
+        if(debug >0 ) {
+            log(func+" knownHostPath:\t"+knownHostPath+"\nidDSAPath:\t\t"+idDSAPath+"\nidRSAPath:\t\t"+idRSAPath);
+        }
+        
+        init();
+    }
+    
+    void setSID(int sid) { if(sid>=0){ this.sid=sid;}}
+    int  getSID(){ return this.sid; }
+    private void init() {
+           
+        File knownHostFile = new File(knownHostPath);
+        if ( knownHostFile.exists() )  {
+            try {
+                database.addHostkeys(knownHostFile);
+            }catch (java.io.IOException e) { }
+        }
+        
+        //loginFrame = new JPanel();
+        
+        start();
+    }
+    
+   
+    @Override
+    public void    setClosed(){ 
+        super.setClosed();
+        if ( in   != null ) try {  in.close(); }catch(java.io.IOException io) { }finally{   in=null; }
+        if ( outw != null ) try {outw.close(); }catch(java.io.IOException io) { }finally{ outw=null; }
+        if ( out  != null ) try { out.close(); }catch(java.io.IOException io) { }finally{  out=null; }
+        if ( err  != null ) try { err.close(); }catch(java.io.IOException io) { }finally{  err=null; }
+        
+        if ( sess != null ) { sess.close(); sess=null; }
+        if ( conn != null ) { conn.close(); conn=null; }
+    }
+    
+    public Session            getSession(    ) { return sess; }
+    public InputStream        getOutput(     ) { return in;   }
+    public OutputStream       getInput(      ) { return out;  }
+    public OutputStreamWriter getInputWriter() { return outw; }
+    
+    public boolean write(int c) { try { out.write(c); if (c==10) { flush(); } }catch(IOException io){ return false; } return true; }
+    public boolean flush()      { try { out.flush();                          } catch(IOException io){ return false; } return true;  }
+    public byte[] read() throws IOException {
+        int count = in.available();
+        if ( count > 0 ) { 
+            byte[] b=new byte[count];
+            in.read(b, 0, count);
+            return b;
+        }
+           count = err.available();
+        if ( count > 0 ) { 
+            byte[] b=new byte[count];
+            err.read(b, 0, count);
+            return b;
+        }   
+        
+        return null;
+    }
+    
+    public boolean isLoggedIn() { return login; }
+    
+    
+    public boolean login(){
+        final String func="login()";
+        if ( host == null || host.isEmpty() ) { log("ERROR: hostname are not set"); return false; }
+        if ( user == null || user.isEmpty() ) { log("ERROR: user are not set"); return false; }
+        if ( pass == null || pass.isEmpty() ) { log("ERROR: password are not set or empty"); return false; }
+        
+        try {
+            if( debug > 0 ) {log(func+"create ssh connection to "+getHost());}
+            conn = new Connection(host,port);
+            if ( proxy != null ) { conn.setProxyData(proxy); }
+            conn.connect();
+            setUnClosed();
+            
+            boolean isAuthenticated = conn.authenticateWithPassword(user, pass);
+
+            if (!isAuthenticated)  { 
+                if( debug > 0 ) {log(func+"ssh authentication fails to "+getHost()+" user:"+user+":  pass:"+pass+":");}
+                throw new java.io.IOException("Authentication fails");
+            }
+            
+            
+            
+            sess = conn.openSession();
+            err  = sess.getStderr();
+            in   = sess.getStdout();
+            out  = sess.getStdin();
+            outw = new OutputStreamWriter(out, "utf-8");
+            if ( ! setShell("bash") ) {
+                 throw new java.io.IOException("shell could not started");
+            }
+            
+            if( debug > 0 ) {log(func+"ssh login completed "+getHost());}
+            login=true;
+            sleep(2000);
+            String[] sr =this.stdoutReceived().toString().split("\n");
+            lastLine=sr[ sr.length-1 ];
+            System.out.println(">|"+lastLine+"|<");
+        } catch(java.io.IOException io) {
+             if ( debug > 0 ) {  log("ERROR: "+io.getMessage()); }
+             setClosed();
+        }
+        
+        return isLogin();
+    }
+    
+    String lastLine="\\$ ";
+    
+    public boolean setShell(String shell) {
+        boolean b=true;    
+    
+        try {  sess.requestPTY(shell); } catch (java.io.IOException io) { b=false; }
+        try {  sess.startShell();      } catch (java.io.IOException io) { b=false; } finally { return b; }
+    }
+    
+    public String getHost(){ return host+((port==22)?"":":"+port); }
+    boolean login = false;
+    public boolean isLogin() { return login; }
+    
+    public StringBuilder sendSingleCommand(String comm) {
+        login();
+        StringBuilder sw=new StringBuilder();
+        if ( isLogin() ) {
+            if ( send(comm+"\n") ) {
+               sw.append(getFullResponse().toString());
+            } else { sw.append("ERROR: Could not send command:").append(comm); }
+            setClosed();
+            return sw;
+        } else { return new StringBuilder("ERROR: Authentication not successful"); }
+        
+    }
+
+    public boolean send(String s) {
+        if (! isLogin()) { return false; }
+        try {
+            outw.write(s);
+            outw.flush();
+            return true;
+        } catch(Exception ex) {
+            return false;
+        }
+    }
+    
+    //public TerminalDialog getFrame() { return ct.getTerminalDialog(); }
+    
+    public StringBuilder stdoutReceived() {
+        StringBuilder sw=new StringBuilder();
+        byte[] b = new byte[4096];
+            try { 
+                while( in.available() > 0) {
+                    int j= in.available(); 
+                    if (j > 4095) { j=4095;}
+                    in.read(b, 0, j);
+                    for ( int i=0; i<j; i++ ) { sw.append((char) b[i]); }
+                }
+            }catch(IOException io) {}  
+         return sw;       
+    }
+    
+    public StringBuilder stderrReceived() {
+        StringBuilder sw=new StringBuilder();
+        byte[] b = new byte[4096];
+            try { 
+                while( err.available() > 0) {
+                    int j= err.available(); 
+                    if (j > 4095) { j=4095;}
+                    err.read(b, 0, j);
+                    for ( int i=0; i<j; i++ ) { sw.append((char) b[i]); }
+                }
+            }catch(IOException io) {}  
+         return sw;       
+    }
+    
+    public void setProxy() {
+        String ho=""; int po=3180; String u=null; String p=null;
+        if ( System.getProperty("https.proxyHost") != null ) {
+            ho=System.getProperty("https.proxyHost");
+            try { po=Integer.parseInt( System.getProperty("https.proxyPort") ); }catch(Exception e) { po=3180; }
+            u=System.getProperty("http.proxyUsername");
+            p=System.getProperty("http.proxyPassword");
+        } else if ( System.getProperty("http.proxyHost") != null ) {
+            ho=System.getProperty("http.proxyHost");
+            try { po=Integer.parseInt( System.getProperty("http.proxyPort") ); }catch(Exception e) { po=3180; }
+            u=System.getProperty("http.proxyUsername");
+            p=System.getProperty("http.proxyPassword");
+        }
+        if ( ho != null && !ho.isEmpty()) { setProxy(ho,po,u,p); }
+    }
+    
+    private HTTPProxyData proxy=null;
+    public void setProxy(String proxyHost, int proxyPort) { setProxy(proxyHost,proxyPort,null,null);}
+    public void setProxy(String proxyHost, int proxyPort, String proxyUser, String proxyPass) {
+        
+        if ( proxyUser ==null || proxyUser.isEmpty() ) {
+            proxy=new HTTPProxyData(proxyHost, proxyPort);
+        } else {
+            proxy=new HTTPProxyData(proxyHost, proxyPort, proxyUser, proxyPass);
+        }    
+    }
+    
+    public StringBuilder getFullResponse() {
+        final String func="SSHshell::getFullResponse() - ";
+        StringBuilder sw=new StringBuilder();
+        Pattern pa = Pattern.compile(lastLine);
+        if ( isLogin() ) {
+            int len=sw.length();
+            boolean notComplete=false;
+            while(! notComplete) {
+                sw.append(stderrReceived().toString());
+                sw.append(stdoutReceived().toString());
+                if ( len == sw.length()) {
+                     sleep(300);
+                } else {                    
+                    String[] sp = sw.toString().split("\n");
+                    if ( sp[ sp.length-1].equals(lastLine)) { notComplete=true; }
+                    if (debug >0) log(func+"complete:"+notComplete+"  lastLine|"+lastLine+"|"+sp[ sp.length-1]+"|");
+                }
+            }    
+        } else {
+            sw.append("user not logged in\n");
+        }
+        return sw;
+    }
+    
+    @Override
+    public void run() {
+        setRunning();
+        while( ! isClosed() ) {
+            sleep(300);
+        }
+        setRunning();
+    }
+    
+    public static void main(String[] args) {
+           String ho = "localhost";  int po = 22; 
+           String u="";  String p=""; StringBuilder comm = new StringBuilder();
+           if ( args.length > 0 ) {
+                    for(int i=0; i<args.length; i++) {
+                        if      ( args[i].startsWith("host=")) { ho=args[i].substring("host=".length());}
+                        else if ( args[i].startsWith("user=")) { u=args[i].substring("user=".length());}
+                        else if ( args[i].startsWith("pass=")) { p=args[i].substring("pass=".length());}
+                        else if ( args[i].startsWith("port=")) { po= Integer.parseInt( args[i].substring("port=".length()) ); }
+                        else { 
+                            if ( comm.length() > 0 ) { comm.append(" "); }
+                            comm.append(args[i]);
+                        }
+                    }
+            }
+           
+           
+           SSHshell.confDir=System.getProperty("user.dir")+File.separator+"config";
+           SSHshell.debug=1;
+           SSHshell ssh = new SSHshell(ho,po,u,p,false);
+                    ssh.setProxy();
+           System.out.println(ssh.sendSingleCommand(comm.toString()));
+    }
+    
+    
+    @Override
+    public String toString() {
+        
+        return "SSHshell to "+this.user+"@"+this.host+":"+this.port;
+        
+    }
+    
+}

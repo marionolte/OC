@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+exec 2>&1
+PHOME="__PROGRAM_HOME__/OC"
+SERVICEJAR=$PHOME/lib/OC.jar
+CLASSP=`( cd "${PHOME}/lib" && for i in *.jar; do echo $i; done | awk -v pa="${PHOME}/lib/" -v st="$SERVICEJAR" 'BEGIN{s="";se=":"}{s=s se pa $0}END{print st s}' )`
+dir=`dirname $0`
+if [[ "$dir" == "" ]]; then dir="." ; fi
+java -cp "${CLASSP}" "$@"
+exit $?
