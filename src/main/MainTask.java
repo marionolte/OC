@@ -51,4 +51,16 @@ abstract class MainTask extends Version{
        return ( getCommand().matches(comm) );
    } 
    
+   public synchronized String getProperty(String key) {
+       return prop.getProperty(key);
+   }
+   
+   public synchronized String getProperty(String key, String def) {
+       return prop.getProperty(key, def);
+   }
+   
+   public synchronized boolean getBooleanProperty(String key) {
+       String s = prop.getProperty(key);
+       return ( prop != null && s != null && s.toLowerCase().matches("true"));
+   }
 }
