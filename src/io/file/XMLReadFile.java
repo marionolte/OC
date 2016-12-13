@@ -62,4 +62,41 @@ public class XMLReadFile extends ReadFile{
       }
     }
     
+    
+    public NodeList getNodeList(String name){
+        NodeList nList = doc.getElementsByTagName(name);
+        return nList;
+    }
+    public String getContext(String eName,String node) {
+        NodeList nList = getNodeList(node);
+         
+         for (int temp = 0; temp < nList.getLength(); temp++) {
+            Node nNode = nList.item(temp);
+            System.out.println("\nCurrent Element :"  + nNode.getNodeName()+" NODE:"+nNode);
+            if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+                Element eElement = (Element) nNode;
+                System.out.println(temp+":"+eElement);
+                if ( eElement != null ) {
+                    NodeList m = eElement.getElementsByTagName(eName);
+                    if ( m != null && m.getLength()>0) {
+                        String t = m.item(0).getTextContent();
+                        System.out.println(eName+" : " +t);
+                    }    
+                } else {
+                    System.out.println(eName+" : NULL");
+                }     
+            }
+        }
+        return "";
+    }
+    
+    public static void main(String[] args) {
+        if ( args.length == 0 ) { throw new RuntimeException("ERROR: missing file propertie");}
+        for(int i=0; i< args.length; i++) {
+             XMLReadFile f = (new XMLReadFile(args[i]));
+             f.printOut(); 
+             
+             f.getContext("NAME", "HOME");
+        }
+    }
 }
