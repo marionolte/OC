@@ -13,7 +13,10 @@ import java.util.Properties;
  *
  * @author SuMario
  */
-abstract class MainTask extends Version{
+public abstract class MainTask extends Version{
+    
+    public MainTask() { this(null);}
+    public MainTask(String[] args) { prop = parseArgs(args); }
     Properties prop=null;
     public Properties parseArgs(String[] args) {
         Properties p = new Properties();
@@ -52,7 +55,9 @@ abstract class MainTask extends Version{
    } 
    
    public synchronized String getProperty(String key) {
-       return prop.getProperty(key);
+       String a = prop.getProperty(key);
+       if ( a.contains(__rep) ) { return getReplaceSeparatorBack(a); }
+       return a;
    }
    
    public synchronized String getProperty(String key, String def) {
