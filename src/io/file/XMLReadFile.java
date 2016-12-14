@@ -7,10 +7,12 @@ package io.file;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.util.HashMap;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -67,27 +69,53 @@ public class XMLReadFile extends ReadFile{
         NodeList nList = doc.getElementsByTagName(name);
         return nList;
     }
+    
     public String getContext(String eName,String node) {
+        final String func="getContext(String eName,String node)";
         NodeList nList = getNodeList(node);
-         
-         for (int temp = 0; temp < nList.getLength(); temp++) {
+        printf(func,2, "node has "+nList.getLength()+" elements"); 
+        for (int temp = 0; temp < nList.getLength(); temp++) {
             Node nNode = nList.item(temp);
-            System.out.println("\nCurrent Element :"  + nNode.getNodeName()+" NODE:"+nNode);
+            printf(func,3,"Current Element :"  + nNode.getNodeName()+" NODE:"+nNode);
             if (nNode.getNodeType() == Node.ELEMENT_NODE) {
                 Element eElement = (Element) nNode;
-                System.out.println(temp+":"+eElement);
+                printf(func,3,"Element"+temp+":"+eElement);
                 if ( eElement != null ) {
                     NodeList m = eElement.getElementsByTagName(eName);
                     if ( m != null && m.getLength()>0) {
-                        String t = m.item(0).getTextContent();
-                        System.out.println(eName+" : " +t);
-                    }    
+                        if ( m.item(0).getNodeName().matches(eName) ) {
+                            String t = m.item(0).getNodeValue();
+                            printf(func,2,"found "+eName+" : " +t);
+                            return t;
+                        }
+                    }
+                    
+                    HashMap<String,String> p =  getAttributes(nNode) ;
+                    if ( p.get(eName) != null ) {  
+                        printf(func,2,"found "+eName+" : with value " +p.get(eName));
+                        return p.get(eName); 
+                    }
+
                 } else {
-                    System.out.println(eName+" : NULL");
-                }     
+                    printf(func,3,"getting for "+eName+" : NULL");
+                }  
+                
             }
         }
         return "";
+    }
+    
+    
+    public HashMap<String,String> getAttributes(Node n) {
+        final String func="getAttributes(Node n)";
+        NamedNodeMap m = n.getAttributes();
+        HashMap<String, String> sp = new HashMap<String, String>();
+        for ( int j=0; j<m.getLength(); j++ ) {
+                    Node l = m.item(j);
+                    printf(func, 2, "Attribute Node =>|"+l+"|<= >>"+l.getNodeName()+"<<  >>"+l.getNodeValue()+"<<");
+                    sp.put(l.getNodeName(), l.getNodeValue());
+        }
+        return sp;
     }
     
     public static void main(String[] args) {
