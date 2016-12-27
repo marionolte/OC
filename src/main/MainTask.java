@@ -6,6 +6,7 @@
 package main;
 
 import general.Version;
+import io.crypt.Crypt;
 import java.io.File;
 import java.util.Properties;
 
@@ -14,9 +15,18 @@ import java.util.Properties;
  * @author SuMario
  */
 public abstract class MainTask extends Version{
+    public int exitCode=-1;
+    private final String name;
+    public Crypt crypt = new Crypt();
     
-    public MainTask() { this(null);}
-    public MainTask(String[] args) { prop = parseArgs(args); }
+    public MainTask() { this(null,"MajorOfMainTask");}
+    public MainTask(String[] args,String name) { 
+        this.prop = parseArgs(args);
+        this.name = name;
+    }
+    
+    public String getName() { return this.name; }
+    public String getFunc(String func){ return getName()+"::"+func; }
     Properties prop=null;
     public Properties parseArgs(String[] args) {
         Properties p = new Properties();
@@ -56,10 +66,14 @@ public abstract class MainTask extends Version{
    
    public synchronized String getProperty(String key) {
        String a = prop.getProperty(key);
-       if ( a.contains(__rep) ) { return getReplaceSeparatorBack(a); }
+       if ( a != null &&  a.contains(__rep) ) { return getReplaceSeparatorBack(a); }
        return a;
    }
    
+   public synchronized void   setProperty(String key, String val) {
+       if ( key != null && !key.isEmpty() )
+                    prop.setProperty(key, val);
+   }
    public synchronized String getProperty(String key, String def) {
        return prop.getProperty(key, def);
    }
