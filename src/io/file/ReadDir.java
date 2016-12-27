@@ -95,6 +95,44 @@ public class ReadDir extends Version{
         return ar;
     }
     
+    public String[] getFiles(String filter, boolean subDir) {
+        final String func="getFiles(String filter, boolean subDir)";
+        String baseD=this.getDirName();
+        String[] myfiles = getFiles(filter);
+        ArrayList<String> ar = new ArrayList<String>();
+        for ( String d : myfiles ) {
+            if ( ! d.isEmpty() ) {
+                ar.add(baseD+File.separator+d);
+            }
+        }
+        printf(func,3,"find "+ar.size()+" files in Directory "+baseD+ " check SubDir:"+subDir);
+        if ( subDir ) {
+            String[] ap = getDirectories();
+            printf(func,3,"find "+ap.length+" Directories in "+baseD);
+            if ( ap.length > 0 ) {
+                String df = this.getFQDNDirName();
+                for( String d : ap ) {
+                    if ( ! d.isEmpty() && ! d.matches(".") && ! d.matches("..") ) {
+                        ReadDir rd = new ReadDir(df+File.separator+d);
+                        if ( rd.isDirectory() ) {
+                            printf(func,3,"run Directories in "+rd.getFQDNDirName() );
+                            String[] mp = rd.getFiles(filter, subDir );
+                            for ( String f : mp ) {
+                                if ( ! f.isEmpty() ) {
+                                    ar.add(baseD+File.separator+f);
+                                }
+                            }
+                            printf(func,2,"run complete in directory "+rd.getFQDNDirName() +" -  find "+mp.length+" files");
+                        }
+                    }
+                }
+            }
+        }
+        String[] sp = new String[ ar.size() ];
+        int i=0; while( ar.size() > 0 ) { sp[i]=ar.remove(0); i++; }
+        return sp;
+    }
+    
     public String getParent()     { return readDir.getParent(); }
     public File   getParentFile() { return readDir.getParentFile(); }
 
