@@ -10,9 +10,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-//import ch.ethz.ssh2.Connection;
-//import ch.ethz.ssh2.Session;
-//import ch.ethz.ssh2.StreamGobbler;
 
 public class Basic
 {
@@ -46,7 +43,7 @@ public class Basic
 			/* Create a session */
 
 			Session sess = conn.openSession();
-
+                        
 			sess.execCommand("uname -a && date && uptime && who");
 
 			System.out.println("Here is some information about the remote host:");
