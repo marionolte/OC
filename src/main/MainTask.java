@@ -26,7 +26,6 @@ public abstract class MainTask extends Version{
     }
     
     public String getName() { return this.name; }
-    public String getFunc(String func){ return getName()+"::"+func; }
     Properties prop=null;
     public Properties parseArgs(String[] args) {
         Properties p = new Properties();
