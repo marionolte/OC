@@ -96,12 +96,14 @@ public class ReadDir extends Version{
     }
     
     public String[] getFiles(String filter, boolean subDir) {
-        final String func="getFiles(String filter, boolean subDir)";
+        final String func=getFunc("getFiles(String filter, boolean subDir)");
         String baseD=this.getDirName();
         String[] myfiles = getFiles(filter);
+        printf(func,3,"find "+myfiles.length+" Files in Directories in "+baseD);
         ArrayList<String> ar = new ArrayList<String>();
         for ( String d : myfiles ) {
             if ( ! d.isEmpty() ) {
+                printf(func,3,"add file "+d+" to Directories of "+baseD);
                 ar.add(baseD+File.separator+d);
             }
         }
@@ -119,6 +121,7 @@ public class ReadDir extends Version{
                             String[] mp = rd.getFiles(filter, subDir );
                             for ( String f : mp ) {
                                 if ( ! f.isEmpty() ) {
+                                    printf(func,3,"add File "+f+" from directories "+baseD);
                                     ar.add(baseD+File.separator+f);
                                 }
                             }
@@ -127,9 +130,17 @@ public class ReadDir extends Version{
                     }
                 }
             }
+            
         }
+        printf(func,3,"have found "+ar.size()+" files in "+baseD);
         String[] sp = new String[ ar.size() ];
-        int i=0; while( ar.size() > 0 ) { sp[i]=ar.remove(0); i++; }
+        int i=0; 
+        while( ar.size() > 0 ) {
+            String l = ar.remove(0);
+            printf(func,3,"update return ["+i+"/"+(sp.length-1)+"]  add "+l);
+            sp[i]=l; i++; 
+        }
+        printf(func,3,"return "+ar.size()+"/"+sp.length+" from "+baseD+" =>"+sp.toString());
         return sp;
     }
     
