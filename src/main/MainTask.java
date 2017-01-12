@@ -28,6 +28,7 @@ public abstract class MainTask extends Version{
     public String getName() { return this.name; }
     Properties prop=null;
     public Properties parseArgs(String[] args) {
+        final String func="parseArgs(String[] args)";
         Properties p = new Properties();
         if ( args != null && args.length > 0 ) {
             for(int i=0; i < args.length; i++ ) {
@@ -37,7 +38,13 @@ public abstract class MainTask extends Version{
                 else {
                     if( args[i].startsWith("-") ) {
                         String a=args[i].replaceAll("^-", "");
-                        p.setProperty(a, getReplaceSeparator(args[++i]));
+                        printf(getFunc(func),0,"args.length:"+args.length+":  i="+i+"  ("+( args.length > (i+i))+") - ("+( args.length > (i+i))+")" );
+                        if ( args.length <= i+1 || ( args.length > (i+1) && args[ i+1 ].startsWith("-") ) ) {
+                            p.setProperty(a,"true"); 
+                            if ( p.getProperty("COMMAND") == null ) { p.setProperty("COMMAND",a.toUpperCase()); }
+                        } else {    
+                            p.setProperty(a, getReplaceSeparator(args[++i]));
+                        }    
                         //System.out.println(a+"="+p.getProperty(a)+"|");
                     } else {
                         p.setProperty("COMMAND", args[i].toUpperCase() ); 
@@ -63,22 +70,27 @@ public abstract class MainTask extends Version{
        return ( getCommand().matches(comm) );
    } 
    
-   public synchronized String getProperty(String key) {
-       String a = prop.getProperty(key);
-       if ( a != null &&  a.contains(__rep) ) { return getReplaceSeparatorBack(a); }
-       return a;
+   
+   public synchronized boolean getBooleanProperty(String key) {
+       String a = getProperty(key,"false");
+       return ( a!= null && a.toLowerCase().matches("true") );
+   }
+   
+   public synchronized int getIntProperty(String key) { return getIntProperty(key,"-1"); }
+   public synchronized int getIntProperty(String key, String def) {
+       String a = getProperty(key,def);
+       return Integer.parseInt(a);
    }
    
    public synchronized void   setProperty(String key, String val) {
        if ( key != null && !key.isEmpty() )
                     prop.setProperty(key, val);
    }
+   public synchronized String getProperty(String key            ) { return getProperty(key,""); }
    public synchronized String getProperty(String key, String def) {
-       return prop.getProperty(key, def);
+       String a = prop.getProperty(key, def);
+       if ( a != null &&  a.contains(__rep) ) { return getReplaceSeparatorBack(a); }
+       return a;
    }
    
-   public synchronized boolean getBooleanProperty(String key) {
-       String s = prop.getProperty(key);
-       return ( prop != null && s != null && s.toLowerCase().matches("true"));
-   }
 }
