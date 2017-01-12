@@ -127,4 +127,25 @@ public class XMLReadFile extends ReadFile{
              f.getContext("NAME", "HOME");
         }
     }
+
+    public void nodeReadout(NodeList nlf, HashMap<String, String> nh) {
+        if ( nlf == null ) { return; }
+        final String func="nodeReadout(NodeList nlf, HashMap<String, String> nh)";
+        if ( nlf.getLength() > 0 ) {
+            for(int i=0;i<nlf.getLength(); i++) {
+                Node n = nlf.item(i);
+                NamedNodeMap na = n.getAttributes();
+                printf(getFunc(func),3,"node["+i+"]="+n.getNodeName()+"=>"+n.getNodeValue()+"\n"
+                      +getFunc(func)+"content:"+n.getTextContent()+"|\n"
+                      +getFunc(func)+" map:"+na);
+                if ( nh.get(n.getNodeName()) == null )
+                  nh.put(n.getNodeName(), ((n.getNodeValue()==null)?n.getTextContent():n.getNodeValue()) );
+                if ( n.hasChildNodes() ) {
+                    nodeReadout(n.getChildNodes(),nh);
+                }
+            }
+        }
+    }
+    
+    
 }
