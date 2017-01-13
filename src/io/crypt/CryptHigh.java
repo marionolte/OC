@@ -91,7 +91,7 @@ class CryptHigh extends Version {
                catch(NoSuchPaddingException   nse) { cipher=null;}
             }
         } catch(NoSuchAlgorithmException ne) {}    
-        println(1,func+"max length = "+maxKeyLen+" cipher are:"+cipher+" ("+doing+")");
+        println(2,func+"max length = "+maxKeyLen+" cipher are:"+cipher+" ("+doing+")");
         
        
     }
