@@ -157,6 +157,11 @@ public class Http extends Version implements Cloneable {
     // "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2486.0 Safari/537.36 Edge/13.10586"  // win10 edge browser
     private String useragent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:34.0) Gecko/20100101 Firefox/34.0";
     
+    final private int defTimeout=15000;
+    private int timeout=defTimeout;
+    public int setTimeout(int msec) { timeout=(msec>0 && msec < 60000 )?msec:timeout; return timeout; } 
+    public int setDefaultTimeout() { this.timeout=this.defTimeout; return this.timeout; }
+    
     private HashMap<String, String> hmap=new HashMap<String, String>();
     public  void setConnectionDefault(HashMap<String, String> map) { this.hmap=(map!=null)?map:new HashMap<String, String>();  }
     private void setConnectionDefaults(HttpURLConnection con) {
@@ -174,7 +179,7 @@ public class Http extends Version implements Cloneable {
                     con.setRequestProperty(k, hmap.get(k));
              }
         }     
-        con.setConnectTimeout(15000);
+        con.setConnectTimeout(timeout);
         
                 
         //con.getInstanceFollowRedirects(); // (AutoFollowRedirects)
@@ -283,6 +288,8 @@ public class Http extends Version implements Cloneable {
             return "md5sum not working";
         }    
     }
+    public  int getResponseCode() throws IOException { if( status == -1){ connect(); }; return status; }
+    
     public  void connect(URL u) throws IOException {
             if ( cm == null ) { setCookieManager( newCookieManager() ); }
             status = -1;  Long size=0L;
