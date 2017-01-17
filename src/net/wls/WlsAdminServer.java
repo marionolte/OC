@@ -13,8 +13,14 @@ import java.util.Properties;
  * @author SuMario
  */
 public class WlsAdminServer extends WlsServer {
+    private String baseAdminUrl="/console/";
     
-    public WlsAdminServer(Properties prop) { super(prop,"WlsAdminServer"); }
-    public WlsAdminServer(HashMap<String,String> nh) { super(nh,"WlsAdminServer"); }
+    
+    public WlsAdminServer(Properties prop) throws Exception { super(prop,"WlsAdminServer"); }
+    public WlsAdminServer(HashMap<String,String> nh) throws Exception { super(nh,"WlsAdminServer"); }
+    
+    WlsAdminServer(WlsServer ws) { super(ws,"WlsAdminServer"); }
+    
+    
     
 }
