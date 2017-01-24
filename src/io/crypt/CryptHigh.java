@@ -22,21 +22,33 @@ import javax.crypto.spec.SecretKeySpec;
  * @author SuMario
  */
 class CryptHigh extends Version {
+
+    final private String  sysId;
+    final private String  usrId;
+    final private String hostId;
     final private UUID uuid;
     final private String pass;
     private String Ukey="5fa4a40a-53b4-4f7a-b132-61bd19b79a8e";
     int maxKeyLen;
+    final private String  usrIdPass;
+    final private String  sysIdPass;
+    final private String hostIdPass;
     
     CryptHigh(UUID u) {
         this.uuid=u;
         this.pass=getPass(uuid.toString());
+        this.usrId  = Crypt.usrId;  this.usrIdPass  = getPass( this.usrId  );
+        this.sysId  = Crypt.sysId;  this.sysIdPass  = getPass( this.sysId  );
+        this.hostId = Crypt.hostId; this.hostIdPass = getPass( this.hostId );
         init();
     }
     
     private CryptHigh() {
-        
         uuid= UUID.fromString(Ukey);
         pass=getPass(uuid.toString());
+        this.usrId  = Crypt.usrId;  this.usrIdPass  = getPass( this.usrId  );
+        this.sysId  = Crypt.sysId;  this.sysIdPass  = getPass( this.sysId  );
+        this.hostId = Crypt.hostId; this.hostIdPass = getPass( this.hostId );
         init();
     }
     
@@ -81,16 +93,17 @@ class CryptHigh extends Version {
         catch(NoSuchPaddingException   nse) { cipher=null;}
         if ( cipher==null ) { doing=false; } else { doing=true; }   
         
-        try {
-            maxKeyLen = Cipher.getMaxAllowedKeyLength("AES");
-            if (maxKeyLen <= 128 ) {  
-               try { 
-                cipher= Cipher.getInstance("AES"); 
-               }
-               catch(NoSuchAlgorithmException nsa) { cipher=null;}
-               catch(NoSuchPaddingException   nse) { cipher=null;}
-            }
-        } catch(NoSuchAlgorithmException ne) {}    
+        if ( ! doing )
+            try {
+                maxKeyLen = Cipher.getMaxAllowedKeyLength("AES");
+                if (maxKeyLen <= 128 ) {  
+                   try { 
+                    cipher= Cipher.getInstance("AES"); 
+                   }
+                   catch(NoSuchAlgorithmException nsa) { cipher=null;}
+                   catch(NoSuchPaddingException   nse) { cipher=null;}
+                }
+            } catch(NoSuchAlgorithmException ne) {}    
         println(2,func+"max length = "+maxKeyLen+" cipher are:"+cipher+" ("+doing+")");
         
        
