@@ -195,29 +195,41 @@ public class Http extends Version implements Cloneable {
         
     }
     
+    public void setTrustAll() {
+        if (trustAllCerts == null ) { try { setDefaultTrust(); } catch(Exception e){} }
+        if (trustAllCerts != null ) {  trustAll=true; }
+    }
+    private TrustManager[] trustAllCerts=null;
+    public boolean trustAll=false;
+    
     private void setDefaultTrust() throws NoSuchAlgorithmException, KeyManagementException{
-        TrustManager[] trustAllCerts = new TrustManager[] {new X509TrustManager() {
-                        @Override
-	                public java.security.cert.X509Certificate[] getAcceptedIssuers() { 
-                            if (debug >2 ) {
-                                printf("Http::getAcceptedIssuers::trustAllCerts",3,"TrustManager return null with ");
-                            }
-                            return null; 
-                        }
-                        @Override
-	                public void checkClientTrusted(X509Certificate[] certs, String authType) { 
-                            if (debug >2 ) {
-                                printf("Http::checkClientTrusted::trustAllCerts",3," authType:"+authType+":  certs >|"+certs+"|<");
-                            }
-                        }
-                        @Override
-	                public void checkServerTrusted(X509Certificate[] certs, String authType) {
-                            if (debug >2 ) {
-                                printf("Http::checkServerTrusted::trustAllCerts",3," authType:"+authType+":  certs >|"+certs+"|<");
-                            }
-                        }
-	            }
-	        };
+        if ( trustAllCerts == null ) {
+            trustAllCerts = new TrustManager[] {new X509TrustManager() {
+                int debug=3;
+                
+                @Override
+                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                    if (this.debug >2 ) {
+                        printf("Http::getAcceptedIssuers::trustAllCerts",3,"TrustManager return null with ");
+                    }
+                    if( trustAll ) return null;
+                    return null;
+                }
+                @Override
+                public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                    if (this.debug >2 ) {
+                        printf("Http::checkClientTrusted::trustAllCerts",3," authType:"+authType+":  certs >|"+certs+"|<");
+                    }
+                }
+                @Override
+                public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                    if (this.debug >2 ) {
+                        printf("Http::checkServerTrusted::trustAllCerts",3," authType:"+authType+":  certs >|"+certs+"|<");
+                    }
+                }
+            }
+            };
+        }
 	 
 	        // Install the all-trusting trust manager
 	SSLContext sc = SSLContext.getInstance("TLS");
@@ -292,6 +304,12 @@ public class Http extends Version implements Cloneable {
     
     public  void connect(URL u) throws IOException {
             if ( cm == null ) { setCookieManager( newCookieManager() ); }
+            if ( this.trustAllCerts == null ) { try { this.setDefaultTrust();}
+                                                catch(Exception e) { 
+                                                    System.out.println("TrustDefault Error:"+e.getMessage());
+                                                    e.printStackTrace();
+                                                } 
+            } 
             status = -1;  Long size=0L;
             asciiResponse=true;
             reshmap.clear();    ressw = new StringBuilder(); binary = new  ArrayList<byte[]>(); 
@@ -307,29 +325,31 @@ public class Http extends Version implements Cloneable {
                               printf("Http::connect(URL u)",3," - doPost return true");  
                           }
             printf("Http::connect(URL u)",3,"connection creating now to : "+u.toString());           
-            status = conn.getResponseCode();
+            try { status = conn.getResponseCode(); } catch(java.net.ConnectException ce) { status=-1; }
             printf("DEBUG: Http::connect(URL u)",3,"connect done with status "+status);  
             
-            trace("\n\n"+conn.getRequestMethod()+" "+u.toString()+" "+status+" "+conn.getResponseMessage()+"\n");
-            String key; Pattern pa = Pattern.compile("image|gzip|rar|java-archive");
-            for (int i = 1; (key = conn.getHeaderFieldKey(i)) != null; i++) {
-                String val = conn.getHeaderField(i);
-                reshmap.put( key, val );
-                trace(""+key+": "+val+"\n");
-                printf("Http::connect(URL u)",2," - key="+key+"|<= ");
-                if ( key.toLowerCase().matches("content-type")) {
-                    printf("Http::connect(URL u)",2,"content-type found key="+key+"|<= =>"+val+"<=");
-                    Matcher ma = pa.matcher(val);
-                    if( ma.find() ) {
-                        printf("Http::connect(URL u)",2,"content-type binary set with="+val+"|<= ");
-                        asciiResponse=false;
+            if ( status > 0 ) {
+                trace("\n\n"+conn.getRequestMethod()+" "+u.toString()+" "+status+" "+conn.getResponseMessage()+"\n");
+                String key; Pattern pa = Pattern.compile("image|gzip|rar|java-archive");
+                for (int i = 1; (key = conn.getHeaderFieldKey(i)) != null; i++) {
+                    String val = conn.getHeaderField(i);
+                    reshmap.put( key, val );
+                    trace(""+key+": "+val+"\n");
+                    printf("Http::connect(URL u)",2," - key="+key+"|<= ");
+                    if ( key.toLowerCase().matches("content-type")) {
+                        printf("Http::connect(URL u)",2,"content-type found key="+key+"|<= =>"+val+"<=");
+                        Matcher ma = pa.matcher(val);
+                        if( ma.find() ) {
+                            printf("Http::connect(URL u)",2,"content-type binary set with="+val+"|<= ");
+                            asciiResponse=false;
+                        }
+                    }
+                    else if (  key.toLowerCase().matches("content-length") ) {
+                        printf("Http::connect(URL u)",2,"content-length found key="+key+"|<= =>"+val+"<=");
+                        size= Long.parseLong(val);
                     }
                 }
-                else if (  key.toLowerCase().matches("content-length") ) {
-                    printf("Http::connect(URL u)",2,"content-length found key="+key+"|<= =>"+val+"<=");
-                    size= Long.parseLong(val);
-                }
-            }
+            } else { return ; }    
 
             if ( status == 302 ) {
                 
