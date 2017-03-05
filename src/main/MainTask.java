@@ -38,7 +38,7 @@ public abstract class MainTask extends Version{
                 else {
                     if( args[i].startsWith("-") ) {
                         String a=args[i].replaceAll("^-", "");
-                        printf(getFunc(func),0,"args.length:"+args.length+":  i="+i+"  ("+( args.length > (i+i))+") - ("+( args.length > (i+i))+")" );
+                        printf(getFunc(func),2,"args.length:"+args.length+":  i="+i+"  ("+( args.length > (i+i))+") - ("+( args.length > (i+i))+")" );
                         if ( args.length <= i+1 || ( args.length > (i+1) && args[ i+1 ].startsWith("-") ) ) {
                             p.setProperty(a,"true"); 
                             if ( p.getProperty("COMMAND") == null ) { p.setProperty("COMMAND",a.toUpperCase()); }
@@ -83,8 +83,10 @@ public abstract class MainTask extends Version{
    }
    
    public synchronized void   setProperty(String key, String val) {
-       if ( key != null && !key.isEmpty() )
-                    prop.setProperty(key, val);
+       if ( key != null && !key.isEmpty() ) { 
+           System.out.println("key:"+((key==null)?"NULL":key)+";  val:"+((val==null)?"NULL":val));
+           prop.setProperty(key, val); 
+       }
    }
    public synchronized String getProperty(String key            ) { return getProperty(key,""); }
    public synchronized String getProperty(String key, String def) {
