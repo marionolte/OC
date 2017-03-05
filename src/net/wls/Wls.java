@@ -7,10 +7,12 @@ package net.wls;
 
 import io.file.ReadDir;
 import io.file.ReadFile;
+import io.file.WriteFile;
 import io.file.XMLReadFile;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Properties;
 import main.MainTask;
 import org.w3c.dom.Node;
@@ -21,12 +23,14 @@ import org.w3c.dom.NodeList;
  * @author SuMario
  */
 public class Wls extends MainTask{
+    private final HashMap<String, WlsDomain> wlsd;
     
     public Wls(String[] args) {
-        super(args,"Wls");        
+        super(args,"Wls");
+        wlsd = new HashMap<String, WlsDomain>();
     }
     
-    public void scan() {
+    public void scan() throws Exception {
         final String func=getFunc("scan()");
         String udir=System.getProperty("user.dir");
         ArrayList<ReadDir> ar = new ArrayList<ReadDir>();
@@ -95,7 +99,12 @@ public class Wls extends MainTask{
         }
     }
     
-    private void readDomains(String mwhome) {
+    public WlsDomain getDomain(String dname) {
+         if (  wlsd.isEmpty() ) { try { scan(); } catch(Exception e){} }
+         return wlsd.get(dname);
+    }
+    
+    private void readDomains(String mwhome) throws Exception {
         final String func=getFunc("readDomains(String mwhome)");
         XMLReadFile nf = new XMLReadFile(mwhome+File.separator+"domain-registry.xml");
         NodeList    xn = nf.getNodeList("domain");
@@ -109,9 +118,15 @@ public class Wls extends MainTask{
                                      printf(func,2,"find domain location :"+nl);
                                      try { 
                                          WlsDomain w = WlsDomain.getInstance(nl);
-                                         printf(func,0,"domain:"+w);
+                                         printf(func,2,"domain:"+w);
+                                         if ( getBooleanProperty("test") ) { w.testAlive(); }
+                                         wlsd.put(w.getDomainName(), w);
+                                         
                                      }catch(RuntimeException re) {
                                          printf(func,1,"no domain location :"+nl);
+                                         if ( debug > 1 ) {
+                                             re.printStackTrace();
+                                         }
                                      } //no domain entry
                                  }
             } 
@@ -119,17 +134,47 @@ public class Wls extends MainTask{
         }
     }
     
+    private String store() {
+        StringBuilder sw = new StringBuilder();
+        Iterator<String> itwd = wlsd.keySet().iterator();
+        while( itwd.hasNext() ) {
+            WlsDomain wd = wlsd.get(itwd.next());
+                      sw.append("[domain:{domainname:").append(wd.getDomainName()).append(" ");
+                      sw.append(wd.store());
+                      sw.append("}\n");
+                      
+        }
+        return sw.toString();
+    }
+    
     private String usage="";
-    public void run() {
+    public void run() throws Exception {
+        final String func=getFunc("run()");
         if      ( isCommand("VERSION") ) { System.out.println("WlsDomainChecker - "+Wls.getFullInfo()); exitCode=0; }
         else if ( isCommand("USAGE")   ) { System.out.println(usage); exitCode=0; }
-        else if ( isCommand("SCAN")    ) { scan(); }
+        else if ( isCommand("SCAN")    ) { 
+            
+            scan();
+            String fn = System.getProperty("user.dir")+File.separator+".wlsdomains.propertie";        
+            if ( getProperty("storefile")!=null ) {fn=getProperty("storefile"); }
+            
+            printf(func,0,"like to store ? =>"+getBooleanProperty("store")+"<= to file:"+fn );
+            
+            if ( getBooleanProperty("store")) {
+                String store = store();
+                printf(func,0,"like to store =>"+store+"<= to file:"+fn );
+                (new WriteFile(fn)).replace(store);
+            }
+            exitCode=0;
+        }
         else {
             System.out.println(usage); exitCode=-1; 
         }
+        
+        
     }
     
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         Wls w = new Wls(args);
             w.run();
         System.exit(w.exitCode);
