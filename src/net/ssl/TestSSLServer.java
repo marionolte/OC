@@ -65,10 +65,13 @@ import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Formatter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -85,18 +88,27 @@ public class TestSSLServer {
         
         static String name = "localhost";
 	static int    port = 443;
+        static boolean vulnBEAST  = false;
+        static boolean vulnPOODLE = false;
+        static boolean compress = false;
+        
+        static HashMap<String, HashMap<String,String>> map;
         
         public TestSSLServer(String ho, int po) {
                this.name=ho;
                this.port=po;
+               this.map=new HashMap();
         }
                 
         public static void test() {
-            
+               vulnBEAST  = false;
+               vulnPOODLE = false;
+               compress = false;
+        
 		InetSocketAddress isa = new InetSocketAddress(name, port);
 
 		Set<Integer> sv = new TreeSet<Integer>();
-		boolean compress = false;
+		
 		for (int v = 0x0300; v <= 0x0303; v ++) {
 			ServerHello sh = connect(isa,
 				v, CIPHER_SUITES.keySet());
@@ -160,8 +172,7 @@ public class TestSSLServer {
 			if (lastSuppCS == null || !lastSuppCS.equals(vsc)) {
 				System.out.println("  " + versionString(v));
 				for (int c : vsc) {
-					System.out.println("     "
-						+ cipherSuiteString(c));
+					System.out.println("     " + cipherSuiteString(c));
 				}
 				lastSuppCS = vsc;
 			} else {
@@ -169,39 +180,69 @@ public class TestSSLServer {
 					+ ": idem)");
 			}
 		}
+                
+                int agMaxStrength  = STRONG;
+		int agMinStrength  = STRONG;
+
+		for (int v : sv) {
+			Set<Integer> vsc = suppCS.get(v);
+			agMaxStrength = Math.min( maxStrength(vsc), agMaxStrength);
+			agMinStrength = Math.min( minStrength(vsc), agMinStrength);
+                        testServer(isa,v,vsc);
+			if (!vulnBEAST) {
+                            testSrv(isa, v, vsc);
+			}
+                        /*if ( !vulnPOODLE ) {
+                                vulnPOODLE = testPOODLE(isa,v,vsc);
+                        }*/
+		}
+                
 		System.out.println("----------------------");
 		if (certID.size() == 0) {
 			System.out.println("No server certificate !");
 		} else {
-			System.out.println("Server certificate(s):");
+			StringBuilder sw= new StringBuilder("Server certificate(s):");
+                        long now = getCalendar("");
+                        
 			for (String cc : certID) {
-				System.out.println("  " + cc);
+                                String[] sp = cc.split(":");
+                                HashMap<String,String> imap = map.get(sp[0]);
+                                sw.append("\n  " + cc);
+                                if ( imap != null ) {
+                                    sw.append("\n\t Serial:\t").append(imap.get("serial"));
+                                    long d = getCalendar(imap.get("notbefore"));
+                                    sw.append("\n\t NotBefore:\t").append(imap.get("notbefore"))
+                                            .append(" (").append( ((now>d)?"OK":"FAILED") ).append(")"); 
+                                         d = getCalendar(imap.get("notafter"));
+                                    sw.append("\n\t NotAfter:\t").append(imap.get("notafter"))
+                                            .append(" (").append( ((now<d)?"OK":"FAILED") ).append(")");
+                                } else {
+                                    System.out.println("imap is null for :"+cc);
+                                }
+                                
+                                
 			}
+                        System.out.println(sw.toString());
 		}
 		System.out.println("----------------------");
-		int agMaxStrength = STRONG;
-		int agMinStrength = STRONG;
-		boolean vulnBEAST = false;
-		for (int v : sv) {
-			Set<Integer> vsc = suppCS.get(v);
-			agMaxStrength = Math.min(
-				maxStrength(vsc), agMaxStrength);
-			agMinStrength = Math.min(
-				minStrength(vsc), agMinStrength);
-			if (!vulnBEAST) {
-				vulnBEAST = testBEAST(isa, v, vsc);
-			}
-		}
-		System.out.println("Minimal encryption strength:     "
-			+ strengthString(agMinStrength));
-		System.out.println("Achievable encryption strength:  "
-			+ strengthString(agMaxStrength));
-		System.out.println("BEAST status: "
-			+ (vulnBEAST ? "vulnerable" : "protected"));
-		System.out.println("CRIME status: "
-			+ (compress ? "vulnerable" : "protected"));
+		
+		System.out.println("Minimal encryption strength:     " + strengthString(agMinStrength));
+		System.out.println("Achievable encryption strength:  " + strengthString(agMaxStrength));
+                System.out.println("POODLE status: " + (vulnPOODLE ? "vulnerable" : "protected"));
+		System.out.println("BEAST  status: " + (vulnBEAST ? "vulnerable" : "protected"));
+		System.out.println("CRIME  status: " + (compress ? "vulnerable" : "protected"));
                 
         }
+        
+        private static long getCalendar(String date) {
+            //System.out.println("date income: "+date);
+            Calendar cal = Calendar.getInstance();
+            SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM dd HH:mm:ss z yyyy");
+            try { cal.setTime( sdf.parse(date) ); } catch(Exception e) {}
+            //System.out.println("date return: "+cal.getTime().toString());
+            return cal.getTimeInMillis();
+        } 
+        
 	public static void main(String[] args) throws IOException
 	{
 		if (args.length == 0 || args.length > 2) {
@@ -251,8 +292,7 @@ public class TestSSLServer {
 			cs.remove(sh.cipherSuite);
 			rs.add(sh.cipherSuite);
 			if (sh.serverCertName != null) {
-				serverCertID.add(sh.serverCertHash
-					+ ": " + sh.serverCertName);
+                                serverCertID.add(sh.serverCertHash + ": " + sh.serverCertName);
 			}
 		}
 		return rs;
@@ -287,16 +327,40 @@ public class TestSSLServer {
 		}
 		return m;
 	}
+        
+        static void testServer(InetSocketAddress isa, int version, Set<Integer> supp) {
+            List<Integer> stream = new ArrayList<Integer>();
+            for (int suite : supp) {
+                CipherSuite cs = CIPHER_SUITES.get(suite);
+                if (cs == null) {
+				continue;
+                }
+                stream.add(suite);
+            }
+            
+            List<Integer> ns = new ArrayList<Integer>(stream);
+	      ServerHello sh = connect(isa, version, ns);
+            
+            if ( ! map.containsKey(sh.serverCertHash) ) {
+                    HashMap<String,String> imap=new HashMap<String,String>();
+                    imap.put("notbefore", sh.serverNotBefore.toString() );
+                    imap.put("notafter" , sh.serverNotAfter.toString()  );
+                    imap.put("serial",    sh.serverSerial);
+                    
+                    map.put(sh.serverCertHash, imap);
+                    //System.out.println("key:"+sh.serverCertHash+":  cert:"+imap);
+            }
+        }
 
-	static boolean testBEAST(InetSocketAddress isa,
-		int version, Set<Integer> supp)
+        
+	static void testSrv(InetSocketAddress isa, int version, Set<Integer> supp)
 	{
 		/*
-		 * TLS 1.1+ is not vulnerable to BEAST.
+		 * TLS 1.1+ is not vulnerable to BEAST and Poodle.
 		 * We do not test SSLv2 either.
 		 */
 		if (version < 0x0300 || version > 0x0301) {
-			return false;
+			return ;
 		}
 
 		/*
@@ -322,16 +386,17 @@ public class TestSSLServer {
 				strongStream.add(suite);
 			}
 		}
-		if (strongCBC.size() == 0) {
-			return false;
+		/*if (strongCBC.size() == 0) {
+			return ;
 		}
 		if (strongStream.size() == 0) {
 			return true;
-		}
+		}*/
 		List<Integer> ns = new ArrayList<Integer>(strongCBC);
 		ns.addAll(strongStream);
 		ServerHello sh = connect(isa, version, ns);
-		return !strongStream.contains(sh.cipherSuite);
+                vulnBEAST =  !strongStream.contains(sh.cipherSuite);
+                vulnPOODLE=  !strongCBC.contains(sh.cipherSuite);
 	}
 
 	static String versionString(int version)
@@ -758,6 +823,7 @@ public class TestSSLServer {
 		String serverCertHash;
                 Date   serverNotAfter;
                 Date   serverNotBefore;
+                String serverSerial="NOT";
 
 		ServerHello(InputStream in)
 			throws IOException
@@ -864,17 +930,15 @@ public class TestSSLServer {
 			byte[] ec = new byte[len2];
 			System.arraycopy(buf, 6, ec, 0, len2);
 			try {
-				CertificateFactory cf =
-					CertificateFactory.getInstance("X.509");
-				X509Certificate xc =
-					(X509Certificate)cf.generateCertificate(
-						new ByteArrayInputStream(ec));
-				serverCertName =
-					xc.getSubjectX500Principal().toString();
-				serverCertHash = doSHA1(ec);
+				CertificateFactory cf = CertificateFactory.getInstance("X.509");
+                                
+                                X509Certificate    xc = (X509Certificate) cf.generateCertificate( new ByteArrayInputStream(ec) );
+                                serverCertName =  xc.getSubjectX500Principal().toString();
+				serverCertHash =  doSHA1(ec);
                                 
                                 serverNotBefore = xc.getNotBefore();
                                 serverNotAfter  = xc.getNotAfter();
+                                serverSerial    = ""+xc.getSerialNumber();
                                 
                                 xc.checkValidity();
                                 
@@ -976,11 +1040,8 @@ public class TestSSLServer {
 			try {
 				CertificateFactory cf =
 					CertificateFactory.getInstance("X.509");
-				X509Certificate xc =
-					(X509Certificate)cf.generateCertificate(
-						new ByteArrayInputStream(cert));
-				serverCertName =
-					xc.getSubjectX500Principal().toString();
+				X509Certificate xc =  (X509Certificate) cf.generateCertificate( new ByteArrayInputStream(cert));
+				serverCertName = xc.getSubjectX500Principal().toString();
 				serverCertHash = doSHA1(cert);
                                 
                                 serverNotBefore = xc.getNotBefore();
