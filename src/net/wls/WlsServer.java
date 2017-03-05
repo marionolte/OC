@@ -28,22 +28,23 @@ public class WlsServer extends TcpHost{
     public WlsServer(HashMap<String,String> nh) throws Exception { this(nh,"WlsServer"); }
     public WlsServer(HashMap<String,String> nh,String name) throws Exception {   
         super(null,name);
-        if (debug < 3 ) { while ( debug < 3 ) { debug++; } }
+        final String func=getFunc("WlsServer(HashMap<String,String> nh,String name)");
         this.map = new HashMap<String,String>();
-        final String func="WlsServer(HashMap<String,String> nh)";
         Iterator<String> itter = nh.keySet().iterator();
+        map.put("sslenabled", "false");
         while(itter.hasNext()) {
             String k = itter.next().toLowerCase();
-            printf(func,0,"get key="+k+"|  value =>|"+nh.get(k)+"|<=");
+            printf(func,3,"get key="+k+"|  value =>|"+nh.get(k)+"|<=");
             if      ( k.equals("#text") ) {}
             else if ( k.equals("ssl")   ) {
                 String val = nh.get(k);
                 String nam = nh.get("name");
-                printf(getFunc(func),3,"ssl value:"+val);
+                printf(func,3,"ssl value:"+val);
                 if ( val != null & ! val.isEmpty() ) {
                      for(String valk : val.split("\n") ) {
                          valk =valk.replaceAll("\t", "").replaceAll(" ","");
                          if ( ! valk.isEmpty() ) {
+                             printf(func,3,"k:"+k+": valk ="+valk+"|");
                              String m = "";
                              if ( valk.equals(nam)     ) { m="sslname";     }
                              else if ( isBoolean(valk) ) { m="sslenabled";  }
@@ -51,7 +52,7 @@ public class WlsServer extends TcpHost{
                              else if ( isHostIp(valk)  ) { m="ssllistenaddress";  }
                              
                              if ( isValidServerKey(m) ) { 
-                                      printf(getFunc(func),2,"ssl key:"+m+":  value:"+valk+":");
+                                      printf(func,2,"ssl key:"+m+":  value:"+valk+":");
                                       map.put(m, valk);
                              } 
                          }    
@@ -59,13 +60,14 @@ public class WlsServer extends TcpHost{
                 }
             }
             else if ( k.endsWith("listen-port")) { 
+                printf(func,2,"listen if :: k:"+k+": valk ="+nh.get(k)+"|");
                 map.put(k.replaceAll("-", ""), nh.get(k));
             }
             else {
                 final String m=k.replaceAll("-", "");
-                printf(getFunc(func),3,"key:"+m+":  have =>"+nh.get(k));
+                printf(func,3,"else :: key:"+m+":  have =>"+nh.get(k));
                 if ( isValidServerKey(m) ) { //&& nh.get(k) != null )  { 
-                    printf(getFunc(func),2,"key:"+m+":  value:"+nh.get(k)+":");
+                    printf(func,2,"else key:"+m+":  value:"+nh.get(k)+":");
                     map.put(m, nh.get(k)); 
                 }
             }    
@@ -86,14 +88,17 @@ public class WlsServer extends TcpHost{
     public WlsServer(Properties prop) throws Exception { this(prop,"WlsServer"); init(); }
     
     public String  getServerValue(String key, String def) {
-        if ( key == null || key.isEmpty() ) { return ""; } 
+        final String func=getFunc("getServerValue(String key, String def)");
+        printf(func,2,"key:"+((key==null)?"NULL":key)+" def:"+((def==null)?"NULL":def)+":");
+        if ( key == null || key.isEmpty() ) { return def; } 
         final String k = key.toLowerCase();
         String val=this.map.get(k);
         if ( val == null ) { val=def; }
-        if ( val == null ) { return null; }
+        if ( val == null ) { return def; }
         if ( k.contains("pass") && ! val.isEmpty() ) {
             return getReplaceSeparatorBack(crypt.getUnCrypted(val));
         }
+        printf(func,2,"key:"+key+": =>"+val+"<=");
         return getReplaceSeparatorBack(val);
     }
     public String  getServerValue(String key) { return getServerValue(key, null); }
@@ -127,20 +132,67 @@ public class WlsServer extends TcpHost{
     
     }
     
+    public String getAdminServerHost() {
+        return null;
+    }
+    public boolean isAdminServer() {
+        final String s = this.map.get("adminserver");
+        return ( s != null &&  s.matches("true") );
+    }
+    
+    @Override
+    public String getName() { String s = getServerValue("name");   return (  (s!=null && ! s.isEmpty() )?s:"unknown") ; }
+    public String getURIString(){
+        
+        //String s = getProperty("enabled"); if ( s==null || s.isEmpty() ) { return null; }
+        String        s = getServerValue("sslenabled");
+        boolean bs = ( s !=  null && s.matches("true") );
+        StringBuilder sw=new StringBuilder( (bs)?"https://":"http://" );
+               s = (bs)?getServerValue("ssllistenaddress","localhost"):getServerValue("listenaddress","localhost");
+              sw.append( (s==null||s.isEmpty())?"localhost":s  );
+               s = (bs)?getServerValue("ssllistenport"):getServerValue("listenport");
+               
+              sw.append( ( (s==null || s.isEmpty())?"/":":"+s+"/")   );
+              
+        return sw.toString(); 
+        //return this.baseUrl+"/";
+    }
+    
+    public boolean isRunning() {
+        final String func=getFunc("isRunning()");
+        boolean b = false;
+        String u = getURIString();
+        printf(func,3,"server:"+getName()+" uri =>"+u+"<=");
+        try { 
+            Http ht = new Http(new URL(u) );
+                 
+                 ht.setTimeout(3000);  ht.setTrustAll();
+                 ht.connect();
+                 printf(func,2,"connection ends with :"+ht.getResponseCode());
+                 if ( ht.getResponseCode() != -1 ) { b=true; }
+                 
+        } catch(Exception io) {
+            printf(func,1,"server:"+getName()+" uri =>"+u+"<=  produce errror:"+io.getMessage());
+            io.printStackTrace();
+        }    
+        return b;
+    }
     
     private void init() throws Exception {
-        this.baseUrl=( (getBooleanProperty("sslenabled"))?
+        /*this.baseUrl=( (getBooleanProperty("sslenabled"))?
                                     "https://"+getServerValue("ssllistenaddress","localhost")+":"+getServerValue("ssllistenport","7002")
                                 :
                                     "https://"+getServerValue("listenaddress","localhost")+":"+getServerValue("listenport","7001") 
                           );
+        */
+        this.baseUrl=this.getURIString();
         
         if ( getServerValue("adminuser") != null && getServerValue("adminpass") != null ) {
              wu = new WlsUser(this.baseUrl, getServerValue("adminuser"),getServerValue("adminpass"));
         }
         
         if ( ht == null ) {
-            printf(getFunc("init()"),0, "baseurl :"+this.baseUrl);
+            printf(getFunc("init()"),2, "baseurl :"+this.baseUrl);
             sleep(1000);
             ht = new Http(new URL(this.baseUrl));
         }    
@@ -176,11 +228,27 @@ public class WlsServer extends TcpHost{
         
     }
     
+    public void starting() {
+        final String func=getFunc("starting()");
+        if ( isAdminServer() ) {
+            printf(func,0,"request to start wls admin severer:"+getName()+" on server:");
+        } else {
+            printf(func,0,"request to start wls severer:"+getName());
+        }
+    }
+    
+    public void stopping() {
+        final String func=getFunc("stopping()");
+    }
+    
     public void setTimeout(int time) { ht.setTimeout(time); }
         
     public WlsAdminServer getAdminInstance(){ 
-        WlsAdminServer a = new WlsAdminServer(this);
-        return a; 
+        if ( isAdminServer() ) {
+            WlsAdminServer a = new WlsAdminServer(this);
+            return a;
+        }
+        return null; 
     }
     
     public static void main(String[] args) throws Exception {
