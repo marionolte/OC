@@ -325,7 +325,9 @@ public class Http extends Version implements Cloneable {
                               printf("Http::connect(URL u)",3," - doPost return true");  
                           }
             printf("Http::connect(URL u)",3,"connection creating now to : "+u.toString());           
-            try { status = conn.getResponseCode(); } catch(java.net.ConnectException ce) { status=-1; }
+            try { status = conn.getResponseCode(); } 
+            catch(java.net.ConnectException ce) { status=-1; }
+            catch(java.net.SocketException  se) { status=-1; } 
             printf("DEBUG: Http::connect(URL u)",3,"connect done with status "+status);  
             
             if ( status > 0 ) {
