@@ -117,10 +117,13 @@ public class WlsRollingRestart extends MainTask{
                  if ( s != null ) {
                     if ( s.isAdminServer() ) {
                         adm = s.getAdminInstance();
+                        String f = rmap.get( s.getName() );
+                        if ( f != null &&  f.matches("true") ) { }
                         updateAdmOnline(adm);
+                        
                     } else {
                        String f = rmap.get( s.getName() ); 
-                       if ( ( f != null &&  f.matches("true") ) || s.isRunning() ) { 
+                       if ( f != null &&  f.matches("true") ) { // || s.isRunning() ) { 
                            ws.add(s); 
                        } else {
                            System.out.println("INFO: wls server: "+s.getServerValue("name")+" is down - leave untouched");
@@ -129,10 +132,12 @@ public class WlsRollingRestart extends MainTask{
                  }
              }
              if ( adm != null ) {
-                 if ( adm.isRunning() ) {
-                      adm.stopping();
-                 }
-                 adm.starting();
+                 if ( rmap.get(adm.getServerValue("name")).matches("true") ) {
+                    if ( adm.isRunning() ) {
+                         adm.stopping();
+                    }
+                    adm.starting();
+                 }    
                  
                  while ( ! ws.isEmpty() ) {
                       WlsServer s = ws.remove(0);
