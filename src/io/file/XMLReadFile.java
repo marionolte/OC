@@ -107,7 +107,7 @@ public class XMLReadFile extends ReadFile{
     
     
     public HashMap<String,String> getAttributes(Node n) {
-        final String func="getAttributes(Node n)";
+        final String func=getFunc("getAttributes(Node n)");
         NamedNodeMap m = n.getAttributes();
         HashMap<String, String> sp = new HashMap<String, String>();
         for ( int j=0; j<m.getLength(); j++ ) {
@@ -130,21 +130,28 @@ public class XMLReadFile extends ReadFile{
 
     public void nodeReadout(NodeList nlf, HashMap<String, String> nh) {
         if ( nlf == null ) { return; }
-        final String func="nodeReadout(NodeList nlf, HashMap<String, String> nh)";
+        int savdebug=debug;
+        debug=4;
+        final String func=getFunc("nodeReadout(NodeList nlf, HashMap<String, String> nh)");
         if ( nlf.getLength() > 0 ) {
             for(int i=0;i<nlf.getLength(); i++) {
                 Node n = nlf.item(i);
                 NamedNodeMap na = n.getAttributes();
-                printf(getFunc(func),3,"node["+i+"]="+n.getNodeName()+"=>"+n.getNodeValue()+"\n"
-                      +getFunc(func)+"content:"+n.getTextContent()+"|\n"
-                      +getFunc(func)+" map:"+na);
+                printf(func,3,"node["+i+"]="+n.getNodeName()+"=>"+n.getNodeValue()+"\n\t"
+                      +func+"content:"+n.getTextContent()+"|\n\t"
+                      +func+"map (na) =>|"+na+"|<=");
                 if ( nh.get(n.getNodeName()) == null )
                   nh.put(n.getNodeName(), ((n.getNodeValue()==null)?n.getTextContent():n.getNodeValue()) );
                 if ( n.hasChildNodes() ) {
-                    nodeReadout(n.getChildNodes(),nh);
+                    HashMap<String, String> nhn = new HashMap<String, String>();
+                    nodeReadout(n.getChildNodes(),nhn);
+                    if ( ! nhn.isEmpty() ) {
+                        printf(func,2,"nhn =>"+nhn+"<=");
+                    }
                 }
             }
         }
+        debug=savdebug;
     }
     
     
