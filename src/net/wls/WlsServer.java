@@ -17,17 +17,18 @@ import main.Http;
  */
 public class WlsServer extends TcpHost{
     private final HashMap<String,String> map;
-            WlsUser wu=null;
     private Http    ht=null;
     private String  baseUrl=null;
+    final WlsDomain dom;
     
-    WlsServer(WlsServer ws , String name ) {
+    WlsServer(WlsServer ws , String name , WlsDomain dom) {
         super(null,name);
-        this.map=ws.map;
+        this.map=ws.map; 
+        this.dom=dom;
     }
-    public WlsServer(HashMap<String,String> nh) throws Exception { this(nh,"WlsServer"); }
-    public WlsServer(HashMap<String,String> nh,String name) throws Exception {   
-        super(null,name);
+    public WlsServer(HashMap<String,String> nh, WlsDomain dom) throws Exception { this(nh,"WlsServer",dom); }
+    public WlsServer(HashMap<String,String> nh,String name, WlsDomain dom) throws Exception {   
+        super(null,name); this.dom=dom;
         final String func=getFunc("WlsServer(HashMap<String,String> nh,String name)");
         this.map = new HashMap<String,String>();
         Iterator<String> itter = nh.keySet().iterator();
@@ -76,7 +77,7 @@ public class WlsServer extends TcpHost{
     }
     
     public WlsServer(Properties prop, String name) throws Exception {
-        super(null,name);
+        super(null,name);  this.dom=new WlsDomain("name");
         this.map=new HashMap<String,String>();
         Iterator itter =prop.keySet().iterator();
         while(itter.hasNext()) {
@@ -140,6 +141,11 @@ public class WlsServer extends TcpHost{
         return ( s != null &&  s.matches("true") );
     }
     
+    public String getNodeManager() {
+        final String s = this.map.get("machine");
+        return ( s == null )? "":s ;
+    }
+    
     @Override
     public String getName() { String s = getServerValue("name");   return (  (s!=null && ! s.isEmpty() )?s:"unknown") ; }
     public String getURIString(){
@@ -188,7 +194,7 @@ public class WlsServer extends TcpHost{
         this.baseUrl=this.getURIString();
         
         if ( getServerValue("adminuser") != null && getServerValue("adminpass") != null ) {
-             wu = new WlsUser(this.baseUrl, getServerValue("adminuser"),getServerValue("adminpass"));
+             dom.wu = new WlsUser(this.baseUrl, getServerValue("adminuser"),getServerValue("adminpass"));
         }
         
         if ( ht == null ) {
@@ -203,13 +209,13 @@ public class WlsServer extends TcpHost{
     public void testAlive() throws Exception{ init(); connect(this.baseUrl); }
     
     public void connect(String url) throws Exception { 
-        printf(getFunc("connect(String url)"),0,"url =>"+url+":<=");
+        printf(getFunc("connect(String url)"),2,"url =>"+url+":<=");
         connect(new URL(url)); 
     }
     public void connect(URL url) throws Exception {
         final String func="connect(URL url)";
         init();
-        printf(getFunc(func),0," url :"+url); 
+        printf(getFunc(func),2," url :"+url); 
         HashMap<String, String> cmap= new HashMap<String,String>();
         cmap.put("startupdate",   ""+System.currentTimeMillis());
         try { 
@@ -237,6 +243,17 @@ public class WlsServer extends TcpHost{
         }
     }
     
+    public String getOnline() {
+        boolean b=false;
+        
+        try {
+            connect(this.getURIString()); 
+            if (ht.getResponseCode() >=200 ) { b=true; }
+        } catch(Exception e) {}
+        
+        return (b)?"1":"0";
+    }
+    
     public void stopping() {
         final String func=getFunc("stopping()");
     }
@@ -245,7 +262,7 @@ public class WlsServer extends TcpHost{
         
     public WlsAdminServer getAdminInstance(){ 
         if ( isAdminServer() ) {
-            WlsAdminServer a = new WlsAdminServer(this);
+            WlsAdminServer a = new WlsAdminServer(this, dom);
             return a;
         }
         return null; 
@@ -256,8 +273,8 @@ public class WlsServer extends TcpHost{
         for (int i=0; i< args.length; i++ ){
             if ( args[i].startsWith("-") ) {  m.put(args[i].substring(1).toLowerCase(), args[++i]);  }
         }
-        WlsServer ws = new WlsServer(m);
-        System.out.println("WlsServer Info:"+ws);
+        //WlsServer ws = new WlsServer(m);
+        //System.out.println("WlsServer Info:"+ws);
     }
     
     public Iterator<String> getMapIterator() {
