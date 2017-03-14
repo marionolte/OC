@@ -29,25 +29,28 @@ public class WlsRollingRestart extends MainTask{
             Wls w = new Wls( new String[]{"-scan"});
             this.domain = w.getDomain(getProperty("domain"));         // = new WlsDomain( new String[] { "-conf", getProperty("domain") } );
         } else {
-            String dom = getProperty("domain");
             WlsDomain.debug=debug;
-            this.domain = new WlsDomain(dom);
-            printf(func,2,"domain:"+dom+": loc:"+getProperty("domainlocation","none")+":");
-            if ( getProperty("domainlocation","none").matches("none") ) {
-                ReadFile f = new ReadFile(  (System.getProperty("user.dir")+File.separator+"locations"));
+            this.domain = new WlsDomain(getProperty("domain"));
+        }    
+        printf(func,2,"domain:"+getProperty("domain")+": loc:"+getProperty("domainlocation","none")+":");
+        if ( getProperty("domainlocation","none").matches("none") ) {
+                ReadFile f = new ReadFile(  (System.getProperty("user.dir")+File.separator+"location"));
                 String[] sp = f.readOut().toString().split("\n");
+                final String dom = getProperty("domain");
                 for(String s: sp) {
                     String[] fp = s.trim().split(";");
                     if ( fp[0].matches(dom)) {
+                        printf(func,2,"readout for domain:"+getProperty("domain")+": loc:"+fp[1]+":  from"+f.getFQDNFileName());
+        
                         setProperty("domainlocation", fp[1]);
                         this.domain.setDomainLocation(fp[1]);
                     }
                 }
-            } else {
-                 printf(func,3,"take domain:"+dom+": domainlocaltion:"+getProperty("domainlocation"));
+        } else {
+                 printf(func,2,"take domain:"+getProperty("domain")+": domainlocaltion:"+getProperty("domainlocation"));
                  this.domain.setDomainLocation(getProperty("domainlocation"));
-            }
         }
+        
         this._rollingWaitTime= getIntProperty("waittime", "30000");
         printf(func,2,"domain-info:"+this.domain);
         
@@ -126,7 +129,7 @@ public class WlsRollingRestart extends MainTask{
                        if ( f != null &&  f.matches("true") ) { // || s.isRunning() ) { 
                            ws.add(s); 
                        } else {
-                           System.out.println("INFO: wls server: "+s.getServerValue("name")+" is down - leave untouched");
+                           // System.out.println("INFO: wls server: "+s.getServerValue("name")+" is down - leave untouched");
                        }
                     }
                  }
