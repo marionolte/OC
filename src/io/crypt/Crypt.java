@@ -6,11 +6,9 @@
 package io.crypt;
 
 import general.Version;
-import io.file.ReadFile;
 import io.file.WriteFile;
 import java.util.UUID;
 import main.Mos;
-
 
 /**
  *
@@ -39,7 +37,10 @@ public class Crypt extends Version {
     public String getUnCrypted(String info) {
         return ( cl == null )? ch.getUnCrypted(info) : cl.getUnCrypted(info);
     }
-     
+    
+    public byte[] getUnCryptedByte(String info) {
+        return ( cl == null )? ch.getUnCryptedByte(info) : cl.getUnCryptedByte(info);
+    }
     
     public void runArgs(String[] args) {
         boolean test = false; 
@@ -98,6 +99,7 @@ public class Crypt extends Version {
          Crypt c = new Crypt();
                c.runArgs(args);
     }
+
     
     private void log(String func, int level, String msg) {
         if ( level == 0 ) {
