@@ -118,6 +118,17 @@ class CryptLow extends Version {
         
     }
     
+    public byte[] getUnCryptedByte(String info) {
+        final String func="getUnCrypted(String info)";
+        byte[] b=Base64.decodeBase64(info);
+        try { 
+            return this.decryptByte(b);
+        } catch (Exception e) {
+            return b;
+        }    
+        
+    }
+    
     //private static final char[] PASSWORD = "enfldsgbnlsngdlksdsgm".toCharArray();
     private  final byte[] SALT = {
         (byte) 0xde, (byte) 0x33, (byte) 0x10, (byte) 0x12,
@@ -147,6 +158,14 @@ class CryptLow extends Version {
         Cipher pbeCipher = Cipher.getInstance("PBEWithMD5AndDES");
         pbeCipher.init(Cipher.DECRYPT_MODE, key, new PBEParameterSpec(SALT, 20));
         return new String(pbeCipher.doFinal(deBase64(property)), "UTF-8");
+    }
+    
+    private byte[] decryptByte(byte[] b) throws GeneralSecurityException, IOException {
+        SecretKeyFactory keyFactory = SecretKeyFactory.getInstance("PBEWithMD5AndDES");
+        SecretKey key = keyFactory.generateSecret(new PBEKeySpec(this.pass.toCharArray())); // keyFactory.generateSecret(new PBEKeySpec(PASSWORD));
+        Cipher pbeCipher = Cipher.getInstance("PBEWithMD5AndDES");
+        pbeCipher.init(Cipher.DECRYPT_MODE, key, new PBEParameterSpec(SALT, 20));
+        return pbeCipher.doFinal(b);
     }
 
 /*    private static byte[] base64Decode(String property) throws IOException {
