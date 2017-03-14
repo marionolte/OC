@@ -22,33 +22,21 @@ import javax.crypto.spec.SecretKeySpec;
  * @author SuMario
  */
 class CryptHigh extends Version {
-
-    final private String  sysId;
-    final private String  usrId;
-    final private String hostId;
     final private UUID uuid;
     final private String pass;
     private String Ukey="5fa4a40a-53b4-4f7a-b132-61bd19b79a8e";
     int maxKeyLen;
-    final private String  usrIdPass;
-    final private String  sysIdPass;
-    final private String hostIdPass;
     
     CryptHigh(UUID u) {
         this.uuid=u;
         this.pass=getPass(uuid.toString());
-        this.usrId  = Crypt.usrId;  this.usrIdPass  = getPass( this.usrId  );
-        this.sysId  = Crypt.sysId;  this.sysIdPass  = getPass( this.sysId  );
-        this.hostId = Crypt.hostId; this.hostIdPass = getPass( this.hostId );
         init();
     }
     
     private CryptHigh() {
+        
         uuid= UUID.fromString(Ukey);
         pass=getPass(uuid.toString());
-        this.usrId  = Crypt.usrId;  this.usrIdPass  = getPass( this.usrId  );
-        this.sysId  = Crypt.sysId;  this.sysIdPass  = getPass( this.sysId  );
-        this.hostId = Crypt.hostId; this.hostIdPass = getPass( this.hostId );
         init();
     }
     
@@ -93,18 +81,17 @@ class CryptHigh extends Version {
         catch(NoSuchPaddingException   nse) { cipher=null;}
         if ( cipher==null ) { doing=false; } else { doing=true; }   
         
-        if ( ! doing )
-            try {
-                maxKeyLen = Cipher.getMaxAllowedKeyLength("AES");
-                if (maxKeyLen <= 128 ) {  
-                   try { 
-                    cipher= Cipher.getInstance("AES"); 
-                   }
-                   catch(NoSuchAlgorithmException nsa) { cipher=null;}
-                   catch(NoSuchPaddingException   nse) { cipher=null;}
-                }
-            } catch(NoSuchAlgorithmException ne) {}    
-        println(2,func+"max length = "+maxKeyLen+" cipher are:"+cipher+" ("+doing+")");
+        try {
+            maxKeyLen = Cipher.getMaxAllowedKeyLength("AES");
+            if (maxKeyLen <= 128 ) {  
+               try { 
+                cipher= Cipher.getInstance("AES"); 
+               }
+               catch(NoSuchAlgorithmException nsa) { cipher=null;}
+               catch(NoSuchPaddingException   nse) { cipher=null;}
+            }
+        } catch(NoSuchAlgorithmException ne) {}    
+        println(1,func+"max length = "+maxKeyLen+" cipher are:"+cipher+" ("+doing+")");
         
        
     }
@@ -147,6 +134,16 @@ class CryptHigh extends Version {
         }
         log(func, 6, "return info |"+info+"|");
         return info;
+    }
+    
+    public byte[] getUnCryptedByte(String info) {
+        if ( info != null && info.endsWith("=")) {
+            byte[] b=Base64.decodeBase64(info);
+                   if ( ! doing ) { return b; }
+                   b=decryptByte(b,uuid.toString(),pass);
+            return b;       
+        }
+        return new byte[0];
     }
     
     private byte[] enBase64(byte[] b   ) { return Base64.encodeBase64(b); }
@@ -213,6 +210,22 @@ class CryptHigh extends Version {
          }
          
          return null;       
+    } 
+    
+    private byte[] decryptByte(byte[] cipherText, String encryptionKey, String pass) {
+         final String func="decrypt(byte[] cipherText, String encryptionKey, String pass)";
+         SecretKeySpec key;IvParameterSpec iv;
+         try {
+              
+		 key = new SecretKeySpec(getBytes(updateLength(encryptionKey,64)), "AES");
+                  iv = new IvParameterSpec(getBytes(updateLength(pass, 16)));
+		cipher.init(Cipher.DECRYPT_MODE, key,iv);
+		return cipher.doFinal(cipherText);
+         } catch (Exception e) {
+             log(func, 1, "encrption error (with unlimited size)- "+e.getMessage(),e);
+         }
+         
+         return cipherText;       
     } 
     
     public static void main(String[] args) throws Exception {
