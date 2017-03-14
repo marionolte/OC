@@ -6,8 +6,8 @@
 
 package io.file;
 
-import com.jcraft.jzlib.GZIPOutputStream;
 import general.Version;
+import io.thread.RunnableT;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -17,16 +17,15 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.nio.channels.FileChannel;
+import java.io.RandomAccessFile;
 import java.security.MessageDigest;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Iterator;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -206,15 +205,6 @@ public class ReadFile extends Version {
     
     public boolean isAsciiFile() { return ! isBinaryFile(); } 
     public boolean isBinaryFile() {
-        
-        /*String type = null; 
-        try {  type = Files.probeContentType(filer.toPath()); } catch(IOException io) {}
-        
-        if (type != null && type.startsWith("text")) {
-            return false;
-        } else {
-            return true;
-        }*/
         byte[] data = new byte[0]; 
         try {
             FileInputStream in = new FileInputStream(filer);
@@ -479,10 +469,112 @@ public class ReadFile extends Version {
         return ret;
     }
     
+    public Properties getProperties() {
+        Properties p = new Properties();
+                  try { p.load(this.getInputStream()); } 
+                  catch( java.io.IOException  io) {} 
+                  catch( NullPointerException ne){}
+        return p;
+    }
+    
+    private TailTask tailer =null;
+    public String tail() {
+        if ( tailer == null || (tailer != null && tailer.onError)) { if (tailer!=null){ tailer.setClosed(); } ;tailer = new TailTask(this); tailer.start(); }
+        return tailer.read();
+    }
     
     public static void main(String[] args) {
         ReadFile f = new ReadFile(args[0]);
-        System.out.println("rotate  file:"+f.getFQDNFileName()+" "+f.toString()+":");
+        System.out.println("tail file:"+f.getFQDNFileName()+":");
+        long d = System.currentTimeMillis()+30000;
+        while(d > System.currentTimeMillis() ) {
+            String fa=f.tail();
+            if( ! fa.isEmpty() ) System.out.println(fa); 
+            sleep(100);
+        }
+        System.out.println("tail completed");
+        System.exit(0);
     }
     
+    
+    private class TailTask extends RunnableT {
+        
+        private final ReadFile f ;
+        
+        TailTask(ReadFile f) {
+            this.f=f;
+            this.debug=f.debug;
+        }    
+        
+        boolean onError=false;
+        
+        private final ArrayList<String> ar = new ArrayList();
+        
+        String read() {
+            synchronized(lock) {
+                if( ar.size() == 0) { return ""; }
+                StringBuilder sw = new StringBuilder();               
+                while ( ar.size() > 0 ) { sw.append(ar.remove(0)); }
+                return sw.toString();
+            }    
+        }
+        
+        void updateIO(String io) {
+            synchronized(lock) {
+                ar.add(io);
+            }
+            if ( ar.size() > 10 ) {
+                 while ( ar.size() > 10 ) { sleep(300); }
+            }
+            
+        }    
+        
+        @Override
+        public void run() {
+            setRunning(); 
+            onError=false;
+            RandomAccessFile raF=null;
+            long time = 0;
+            String line = "";
+
+            //go to the end of File
+            long fSize= f.filer.length();
+            try {
+                raF = new RandomAccessFile(f.filer, "r");
+                while( line != null ) { line = raF.readLine(); }  
+                raF.seek(fSize);
+            } catch(IOException io){ onError=true; }    
+            time = f.filer.lastModified();
+
+            //Now print the additions in the file from now on
+
+            long size=f.getSize();
+            while ( ! isClosed() ) {
+                if (time != f.filer.lastModified()) {
+                    // System.out.println("changed");
+                     time = f.filer.lastModified();
+                     if ( size > f.getSize() ) { size=0l; }
+                     StringBuilder sw = new StringBuilder();
+                     try {
+                        raF.seek(size);
+                        while( (line =raF.readLine() )!= null )  
+                        {   
+                           sw.append(line.trim()).append("\n");
+                        }
+                        size=f.getSize();
+                     } catch(java.io.IOException io) { onError=true; }
+                     //System.out.println("have read:"+sw.toString()+":");
+                     updateIO(sw.toString());
+                     
+                }
+
+                sleep(100);
+            }
+          
+        }
+        
+    }
+    
+    
+            
 }
