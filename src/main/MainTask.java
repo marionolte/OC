@@ -84,8 +84,14 @@ public abstract class MainTask extends Version{
    
    public synchronized void   setProperty(String key, String val) {
        if ( key != null && !key.isEmpty() ) { 
-           System.out.println("key:"+((key==null)?"NULL":key)+";  val:"+((val==null)?"NULL":val));
-           prop.setProperty(key, val); 
+           printf(getFunc("setProperty(String key, String val)"),2,"key:"+((key==null)?"NULL":key)+";  val:"+((val==null)?"NULL":val));
+           if ( key != null && ! key.isEmpty() ) {
+               if ( val == null ) {
+                 prop.remove(key);
+               } else {
+                 prop.setProperty(key, val); 
+               } 
+           }
        }
    }
    public synchronized String getProperty(String key            ) { return getProperty(key,""); }
