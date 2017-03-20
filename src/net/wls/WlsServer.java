@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Properties;
 import main.Http;
+import net.tcp.ClientSocket;
 
 /**
  *
@@ -164,6 +165,18 @@ public class WlsServer extends TcpHost{
         //return this.baseUrl+"/";
     }
     
+    public String getHost(){ 
+        String        s = getServerValue("sslenabled");
+        boolean bs = ( s !=  null && s.matches("true") );
+        return (bs)?getServerValue("ssllistenaddress","localhost"):getServerValue("listenaddress","localhost");
+    }
+    
+    public int getPort() {
+        String        s = getServerValue("sslenabled");
+        boolean bs = ( s !=  null && s.matches("true") );
+        return  Integer.parseInt( (bs)?getServerValue("ssllistenport"):getServerValue("listenport") ) ;
+    }
+    
     public boolean isRunning() {
         final String func=getFunc("isRunning()");
         boolean b = false;
@@ -247,8 +260,12 @@ public class WlsServer extends TcpHost{
         boolean b=false;
         
         try {
-            connect(this.getURIString()); 
-            if (ht.getResponseCode() >=200 ) { b=true; }
+            //connect(this.getURIString()); 
+            //if (ht.getResponseCode() >=200 ) { b=true; }
+            ClientSocket cs = new ClientSocket(getHost(),getPort(),false);
+                         cs.setSocketTimeout(1000);
+                         b=cs.connectSocket();
+                         cs.close();
         } catch(Exception e) {}
         
         return (b)?"1":"0";

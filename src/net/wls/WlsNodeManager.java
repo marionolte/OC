@@ -5,22 +5,121 @@
  */
 package net.wls;
 
+import java.net.URL;
+import java.util.HashMap;
+import main.Http;
 import main.MainTask;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 /**
  *
  * @author SuMario
  */
-public class WlsNodeManager extends MainTask {
+public class WlsNodeManager extends TcpHost {
       private boolean bosted;
       private String  domain;
+      private HashMap<String,String> map;
       public WlsNodeManager(String[] args, String dom) {
           super(args, "WlsNodeManager");
           this.bosted=( dom == null || dom.isEmpty() ); 
           this.domain=dom;
+          this.map = new HashMap<String,String>();
+          this.map.put("name", dom);
+          this.map.put("domain", dom);
+          this.map.put("listenaddress", "localhost");
       }
     
       public WlsNodeManager(String dom) {
           this(new String[]{}, dom);
       }
+      
+      public void updateNodeManager(Node m) {
+          if ( m== null ) { return; } 
+          final String func = getFunc("updateNodeManager(Node n)");
+          NodeList nl = m.getChildNodes();
+          for ( int i=0; i< nl.getLength(); i++ ) {
+               Node n = nl.item(i);
+               final String k = n.getNodeName().replaceAll("-", "").toLowerCase();
+               boolean b = this.isValidNodeManagerKey(k);
+               if ( b ) {
+                    printf(func,2,"machine  value:"+n.getNodeName()+"="+n.getNodeValue()+": =>"
+                                  +n.getLocalName()+"<= ||"+n.getTextContent()+"|| valid key:"+b);
+                    map.put(k, ( (n.getNodeValue()==null) ? n.getTextContent() : n.getNodeValue() ) );
+               }
+                        
+          }
+      }
+      
+      public String getMachineName() { return map.get("name"); }
+      
+      public boolean isValidNodeManagerKey(String key) { 
+        switch(key) {
+            case "name":                
+            case "listenport":          
+            case "listenaddress":       
+            case "sslenabled":          
+            case "ssllistenport":       
+            case "ssllistenaddress":    
+            case "adminuser":           
+            case "adminpass":           
+            case "domain":              
+            case "domainlocation":      
+            case "enabled":             return true;
+            
+        }
+        return false;
+    
+    }
+    
+      
+    @Override
+    public String toString() { return this.map.toString(); }  
+    
+    @Override
+    public String getName() { String s = this.map.get("name");   return (  (s!=null && ! s.isEmpty() )?s:"unknown") ; }
+    public String getURIString(){
+        
+        //String s = getProperty("enabled"); if ( s==null || s.isEmpty() ) { return null; }
+        String        s = this.map.get("sslenabled");
+        boolean bs = ( s !=  null && s.matches("true") );
+        StringBuilder sw=new StringBuilder( (bs)?"https://":"http://" );
+        
+               s = (bs)?this.map.get("ssllistenaddress"):this.map.get("listenaddress");
+              sw.append( (s==null||s.isEmpty())?"localhost":s  );
+              
+              s = (bs)?this.map.get("ssllistenport"):this.map.get("listenport");
+              sw.append( ( (s==null || s.isEmpty())?"/":":"+s+"/")   );
+              
+        return sw.toString(); 
+        
+    }
+
+    
+    public String getOnline() {
+        boolean b=false;
+        
+        try {
+            Http ht = new Http( new URL( this.getURIString() )); 
+                 ht.setTimeout(3000);
+            if (ht.getResponseCode() >=200 ) { b=true; }
+        } catch(Exception e) {
+            System.out.println("online error:"+e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return (b)?"1":"0";
+    
+    }
+
+    private String user="";
+    public String getNodeManagerUser() { return this.user; }
+    public void   setNodeManagerUser(String u) { this.user=(u==null)?"":u; }
+
+    private String pw="";
+    public void   setNodeManagerPass(String pw) {
+        if ( pw == null || pw.isEmpty() ) { this.pw=""; return;}
+        this.pw=crypt.getCrypted(pw);
+    }
+    public String getNodeManagerPass() { return (pw.isEmpty())?pw:crypt.getUnCrypted(this.pw); }
 }

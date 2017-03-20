@@ -37,6 +37,8 @@ public class WlsUserEnv {
                 map.put("ADMINSTOPURL", wsd.getAdminStopUrl()   ); 
                 map.put("ADMINSERVER",  wsd.getAdminServerName());
                 map.put("ADMINRUNNING", wsd.getAdminOnline()    );
+                map.put("MWHOME",       wsd.getMWHome()         );
+                map.put("WLHOME",       wsd.getWeblogicHome()   );
              }
              ArrayList<WlsServer> lmap = wsd.getNoneAdminServers();
              StringBuilder sm=new StringBuilder();
@@ -48,6 +50,18 @@ public class WlsUserEnv {
                  map.put("SERVER"+ws.getName()+"NODE",    ws.getNodeManager());
              }
              map.put("SERVERS",sm.toString());
+             
+             ArrayList<WlsNodeManager> nmap = wsd.getNodeManagers();
+             sm=new StringBuilder();
+             while(nmap.size() >0 ) {
+                 WlsNodeManager s = nmap.remove(0);
+                 sm.append(s.getName()).append(",");
+                 map.put("NODE"+s.getName()+"URL",       s.getURIString());
+                 map.put("NODE"+s.getName()+"RUNNING",   s.getOnline()   );
+                 map.put("NODE"+s.getName()+"NODEUSER",  s.getNodeManagerUser());
+                 map.put("NODE"+s.getName()+"NODEPASS",  s.getNodeManagerPass());
+             }
+             map.put("NODES",sm.toString());
         
              if( crypt == null ) { crypt = new Crypt(); }
              StringBuilder sw = fn.readOut();
