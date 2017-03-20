@@ -258,15 +258,17 @@ public class WlsServer extends TcpHost{
     
     public String getOnline() {
         boolean b=false;
-        
+        final String func=getFunc("getOnline()");
         try {
             //connect(this.getURIString()); 
             //if (ht.getResponseCode() >=200 ) { b=true; }
             ClientSocket cs = new ClientSocket(getHost(),getPort(),false);
                          cs.setSocketTimeout(1000);
-                         b=cs.connectSocket();
-                         cs.close();
-        } catch(Exception e) {}
+                         b=cs.isReachable();
+                         
+        } catch(Exception e) {
+            printf(func,0,"is reacheable ends for : "+getHost()+":"+getPort()+" with ERROR:"+e.getMessage());
+        }
         
         return (b)?"1":"0";
     }

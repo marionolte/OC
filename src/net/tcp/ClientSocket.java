@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.net.InetAddress;
+import java.net.SocketAddress;
 
 
 /**
@@ -173,6 +175,35 @@ public class ClientSocket extends RunnableT {
         return isConnected();
     }
     
+    public boolean isReachable() {
+        final String func=getFunc("isReachable()");
+        
+        printf(func,0,"is reacheable called for"+getHost()+":"+getPort());
+        SocketAddress saddr = new InetSocketAddress(getHost(), getPort());
+        Socket sock = new Socket();
+        try {
+               sock.setSoTimeout(     getSocketTimeout());
+               sock.setSoLinger(true, getSocketTimeout());
+               sock.setTcpNoDelay(true);
+               sock.setReuseAddress(false);
+        } catch(Exception e) {}       
+        boolean online = false;
+        try {
+             sock.connect(saddr,getSocketTimeout());
+             sleep(500);
+             online=( sock.isConnected() && ! sock.isClosed() );
+             try {sock.close();}catch(Exception e){}
+        } catch (IOException io) {
+            printf(func,0,"socket exception for : "+getHost()+":"+getPort()+" reason "+io.getMessage());
+             
+            online=false;       
+        }
+        
+        printf(func,0,"is reacheable ends for : "+getHost()+":"+getPort()+" with "+online);
+        
+        return online;
+    }
+    
     private SocketTyp connSSLTyp=SocketTyp.TLS;
     
     public  void setSSLConnectionType(Enum typ) { }
@@ -227,7 +258,7 @@ public class ClientSocket extends RunnableT {
     }
     
     private void initSocket() throws UnknownHostException, IOException {
-       String meth="initSocket()";
+       String meth=getFunc("initSocket()");
        checkProxy();
        if ( inSSL ) {
             try {
@@ -298,10 +329,10 @@ public class ClientSocket extends RunnableT {
            //test
            //proxyHost=null;
            if ( proxyHost == null || host.matches("localhost") || host.matches("127.0.0.1") ) {
-                printf("initSocket()",2,"like to create socket to =>"+host+":"+port);
+                printf(meth,2,"like to create socket to =>"+host+":"+port);
                 socket = new java.net.Socket(host, port);
            }else {
-                printf("initSocket()",2,"like to create socket to =>"+host+":"+port+" over proxy =>"+proxyHost+":"+proxyPort);
+                printf(meth,2,"like to create socket to =>"+host+":"+port+" over proxy =>"+proxyHost+":"+proxyPort);
                 //Socket s = new Socket(new Proxy(Proxy.Type.SOCKS, new InetSocketAddress("socks.mydom.com", 1080)));
                 if ( proxy == null ) { proxy=new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyHost, proxyPort)); }
                 proxysocket = new Socket(proxy);
@@ -310,12 +341,12 @@ public class ClientSocket extends RunnableT {
            }     
         }
        
-        printf("initSocket()",2,"socket created "+socket);
+        printf(meth,2,"socket created "+socket);
         
         createOutputStream();
         //createInputStream();
         
-        printf("initSocket()",4,"return");
+        printf(meth,4,"return");
     }
 
     public void setSocket   (   Socket sock ) { this.socket=sock; }
@@ -549,18 +580,6 @@ public class ClientSocket extends RunnableT {
        
         printf("readln()",4,"read available now");
 
-        /*readAvailblabe();
-        
-        printf("readln()",4,"return from readAvailable ");
-        
-        String s = read().replaceAll("\r\n", "\n").replaceAll("\r", "\n");
-        String sp[] = s.split("\n");
-        s=""; 
-        for(int i=0; i<sp.length; i++ ) { if ( ! sp[i].isEmpty() ){ s=sp[i]; } }
-
-        printf("readln()",2,"return String |@>|"+s+"|<@|");
-        * 
-        */
         String s = rt.readln().replaceAll("\r\n", "\n").replaceAll("\r", "\n");
         printf("readln()",2,"return String |@>|"+s+"|<@|");
         

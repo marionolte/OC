@@ -5,10 +5,12 @@
  */
 package net.wls;
 
+import static general.Version.printf;
 import java.net.URL;
 import java.util.HashMap;
 import main.Http;
 import main.MainTask;
+import net.tcp.ClientSocket;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -95,21 +97,36 @@ public class WlsNodeManager extends TcpHost {
         
     }
 
+    public String getHost(){ 
+        String        s = this.map.get("sslenabled");
+        boolean bs = ( s !=  null && s.matches("true") );
+        s = (bs)?this.map.get("ssllistenaddress"):this.map.get("listenaddress");
+        return (s!=null)?s:"localhost";
+    }
+    
+    public int getPort() {
+        String        s = this.map.get("sslenabled");
+        boolean bs = ( s !=  null && s.matches("true") );
+        String po = (bs)?this.map.get("ssllistenport"):this.map.get("listenport") ;
+        return  Integer.parseInt( (po==null)?"5556":po ) ;
+    }
     
     public String getOnline() {
         boolean b=false;
-        
+        final String func=getFunc("getOnline()");
         try {
-            Http ht = new Http( new URL( this.getURIString() )); 
-                 ht.setTimeout(3000);
-            if (ht.getResponseCode() >=200 ) { b=true; }
+            //connect(this.getURIString()); 
+            //if (ht.getResponseCode() >=200 ) { b=true; }
+            ClientSocket cs = new ClientSocket(getHost(),getPort(),false);
+                         cs.setSocketTimeout(1000);
+                         b=cs.isReachable();
+                         
         } catch(Exception e) {
-            System.out.println("online error:"+e.getMessage());
-            e.printStackTrace();
+            printf(func,0,"is reacheable ends for : "+getHost()+":"+getPort()+" with ERROR:"+e.getMessage());
         }
         
         return (b)?"1":"0";
-    
+
     }
 
     private String user="";
