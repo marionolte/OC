@@ -175,31 +175,32 @@ public class ClientSocket extends RunnableT {
         return isConnected();
     }
     
-    public boolean isReachable() {
+    public boolean isReachable(int timeout) {
         final String func=getFunc("isReachable()");
         
-        printf(func,0,"is reacheable called for"+getHost()+":"+getPort());
+        printf(func,3,"is reacheable called for"+getHost()+":"+getPort());
         SocketAddress saddr = new InetSocketAddress(getHost(), getPort());
         Socket sock = new Socket();
+        int time=(timeout >0 && timeout<30000)?timeout:1000;
         try {
-               sock.setSoTimeout(     getSocketTimeout());
-               sock.setSoLinger(true, getSocketTimeout());
+               sock.setSoTimeout(     time);
+               sock.setSoLinger(true, time);
                sock.setTcpNoDelay(true);
                sock.setReuseAddress(false);
         } catch(Exception e) {}       
         boolean online = false;
         try {
-             sock.connect(saddr,getSocketTimeout());
+             sock.connect(saddr,time);
              sleep(500);
              online=( sock.isConnected() && ! sock.isClosed() );
              try {sock.close();}catch(Exception e){}
         } catch (IOException io) {
-            printf(func,0,"socket exception for : "+getHost()+":"+getPort()+" reason "+io.getMessage());
+            printf(func,1,"socket exception for : "+getHost()+":"+getPort()+" reason "+io.getMessage());
              
             online=false;       
         }
         
-        printf(func,0,"is reacheable ends for : "+getHost()+":"+getPort()+" with "+online);
+        printf(func,2,"is reacheable ends for : "+getHost()+":"+getPort()+" with "+online);
         
         return online;
     }

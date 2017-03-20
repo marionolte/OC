@@ -118,11 +118,10 @@ public class WlsNodeManager extends TcpHost {
             //connect(this.getURIString()); 
             //if (ht.getResponseCode() >=200 ) { b=true; }
             ClientSocket cs = new ClientSocket(getHost(),getPort(),false);
-                         cs.setSocketTimeout(1000);
-                         b=cs.isReachable();
-                         
+                         b=cs.isReachable(1000);
+                         cs.setClosed(); cs.close();
         } catch(Exception e) {
-            printf(func,0,"is reacheable ends for : "+getHost()+":"+getPort()+" with ERROR:"+e.getMessage());
+            printf(func,1,"is reacheable ends for : "+getHost()+":"+getPort()+" with ERROR:"+e.getMessage());
         }
         
         return (b)?"1":"0";
