@@ -46,7 +46,7 @@ public class SecFile extends ReadFile {
             StringBuilder sw = new StringBuilder("<BINARY>\n");
             
             byte[] b = new byte[1000];
-            int i = -1;
+            int i;
             try { 
                 while( in.available() > 0 ) {
                 
@@ -152,9 +152,9 @@ public class SecFile extends ReadFile {
 
     
     public static void main(String[] args) {
-        for(int i=0; i< args.length;i++) {
-            SecFile f = new SecFile(args[i]);
-                    System.out.println("OUT:"+f.readOut().toString()+":");
+        for (String arg : args) {
+            SecFile f = new SecFile(arg);
+            System.out.println("OUT:"+f.readOut().toString()+":");
         }
     }
 }
