@@ -231,6 +231,13 @@ public class WlsDomain extends MainTask{
                       if ( w != null ) { w.setNodeManagerUser(nmu); w.setNodeManagerPass(nmp); }
                 }
              }
+             if ( ! servers.isEmpty() ) {
+                Iterator<String> itter = servers.keySet().iterator();
+                while(itter.hasNext()) {
+                      WlsServer w = servers.get( itter.next() );
+                      if ( w != null ) { w.setAdminUser(u); w.setAdminPass(p); }
+                }
+             }
         } else {
              printf(func,2,"ERROR: Couldn't read pwfile:"+nf.getFQDNFileName() );
         }

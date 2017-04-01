@@ -120,6 +120,7 @@ class CryptHigh extends Version {
         if ( info != null && info.endsWith("=")) {
             byte[] b=Base64.decodeBase64(info);
             String s=decrypt(b,uuid.toString(),pass); 
+            if ( s == null ) { return info; }
             //String s=decrypt(b,Ukey,pass); 
             StringBuilder sw= new StringBuilder();
             int c=0;
@@ -200,7 +201,6 @@ class CryptHigh extends Version {
          final String func="decrypt(byte[] cipherText, String encryptionKey, String pass)";
          SecretKeySpec key;IvParameterSpec iv;
          try {
-              
 		 key = new SecretKeySpec(getBytes(updateLength(encryptionKey,64)), "AES");
                   iv = new IvParameterSpec(getBytes(updateLength(pass, 16)));
 		cipher.init(Cipher.DECRYPT_MODE, key,iv);

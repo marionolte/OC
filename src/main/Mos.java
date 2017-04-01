@@ -7,14 +7,17 @@ package main;
 
 import io.Console;
 import io.crypt.Crypt;
+import io.file.ReadDir;
 import io.file.WriteFile;
 import io.thread.RunnableT;
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import javax.naming.NamingException;
-import net.ldap.LdapSearch;
 import static net.ldap.LdapMain.objList;
+import net.ldap.LdapSearch;
 import net.ssl.TestSSLServer;
+import net.wls.WlsToolConfig;
 
 /**
  *
@@ -121,15 +124,16 @@ public class Mos extends RunnableT{
             else if ( args[i].matches("-debugssl")) { System.setProperty("javax.net.debug","ssl"); }
             else if ( args[i].matches("-ldap")    ) { ldap( getArgsLower(args,++i) ); i=args.length;  fin=true; }
             else if ( args[i].matches("-testhttp")) { String[] ar = getArgsLower(args,++i);
-                                                      printf(func,0,"testhttp - start");
+                                                      printf(func,1,"testhttp - start");
                                                       for (String s: ar) {
                                                             printf(func,0,"testhttp:"+s);
                                                             Http ht= new Http(new URL(s) ); 
-                                                                 //System.out.println( ht.getResponse().toString());
+                                                                 System.out.println( ht.getResponse().toString());
                                                       }
-                                                      printf(func,0,"testhttp - fin");
+                                                      printf(func,1,"testhttp - fin");
                                                       fin=true;
                                                     }
+            else if ( args[i].matches("-wlsconfig")){ wlsConfigTools(args,i); fin=true; }
             else if ( args[i].matches("-crypt")   ) { crypt.runArgs(getArgsLower(args,++i)); }//  fin=runs("io.crypt.Crypt",getArgsLower(args,i++)); } 
             else if ( args[i].matches("-d")       ) { debug++; }
             else if ( args[i].matches("-version") ) { version(); }
@@ -140,10 +144,23 @@ public class Mos extends RunnableT{
         } 
     }
     
-    
+    private void wlsConfigTools(String[] args, int j) {
+          if ( args.length <= j+1 ) { return; }
+          String dest=System.getProperty("user.home")+File.separator+"bin";
+          WlsToolConfig w = new WlsToolConfig();
+          for( int i=j+1; i <args.length; i++ ) {
+              ReadDir d = new ReadDir(args[i]);
+              if ( d.isDirectory() && d.isReadable() ) {
+                w.updateConfig(args[i]);
+              } else {
+                  if ( args[i].matches("-dest") ) { dest=args[++i]; }
+              }  
+          }
+    }
     
     @Override
     public void run() {
+        setRunning();
         boolean fail=false;
         if (args != null && args.length > 0 ) {
            try{ parseArgs(); 
@@ -153,7 +170,7 @@ public class Mos extends RunnableT{
             usage();
         }
         if ( ! fail ) {
-            setRunning();
+            // do someting else
         }
         setClosed();
             
@@ -169,9 +186,14 @@ public class Mos extends RunnableT{
     private void version() {
         System.out.println(this.getFullInfo());
     }
+    
     private static void usage() {
         System.out.println("Options:\n"
-                + "\t\t-testssl <host> <port>\t-\tTest SSL Connection to the server and port ");
+                + "\t\t-version \t\t-\tprint version information\n\n"
+                + "\t\t-crypt <crypt|uncrypt> <String|File>\n\t\t\t\t\t-\tTest URL Connection to URL\n\n"
+                + "\t\t-testssl <host> <port>\t-\tTest SSL Connection to the server and port \n"
+                + "\t\t-testhttp <url> [url1,]\t-\tTest URL Connection to URL\n"
+                + "\n\t\t-wlsconfig <dir> [-location <script dir>]\n\t\t\t\t\t-\tConfigure Wls Starting scripts in directory <dir>\n");
         System.exit(-1);
     }
 }

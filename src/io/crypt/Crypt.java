@@ -9,6 +9,7 @@ import general.Version;
 import io.file.WriteFile;
 import java.util.UUID;
 import main.Mos;
+import net.tcp.Host;
 
 /**
  *
@@ -17,25 +18,183 @@ import main.Mos;
 public class Crypt extends Version {
     final private CryptHigh ch;
     final private CryptLow  cl;
+          private CryptHigh hostch;
+          private CryptLow  hostcl;
+          private CryptLow  custcl=null;
+          private CryptHigh custch=null;
+          private CryptHigh userch;
+          private CryptLow  usercl;
+          
     final private UUID uuid;
     private final String Ukey="5fa4a40a-53b4-4f7a-b132-61bd19b79a8e";
+    private       String host=Host.getHostname();
+    private       String user=getUserKey();
     int maxKeyLen;
+    
+    private int cryptLevel=0;
     public Crypt() {
         uuid= UUID.fromString(Ukey);
         ch=new CryptHigh(uuid);
-        if (ch.getHighAllow()) { cl=null; }else{ cl=new CryptLow(uuid);}
-        
+        if (ch.getHighAllow()) { 
+            cl=null; 
+        } else{ 
+            cl=new CryptLow(uuid);
+        }
+        init();
     }
     public Crypt(Mos m) {
         this();
     }
     
+    
+    public void setHostKey(String info) {
+        if ( info == null || info.isEmpty() ) { return; }
+        host = getUUIDCode(info).toString();
+        init();
+    }
+    
+    public void setUserKey(String info) {
+        if ( info == null || info.isEmpty() ) { return; }
+        user = getUUIDCode(info).toString();
+        init();
+    }
+    
+    public void setCustomerKey(String info) {
+        if ( info == null || info.isEmpty() ) { return; }
+        if ( cl == null ) {
+            custch = new CryptHigh(getUUIDCode(info)) ;
+        } else { 
+            custcl = new CryptLow(getUUIDCode(info)) ;
+        }    
+        
+    }
+    
+    public void setCryptLevel(int level) {
+        this.cryptLevel=(level>0)?level:0;
+    }
+    
+    
+    private void init() {
+        if (ch.getHighAllow()) { 
+            hostcl=null; 
+            usercl=null; 
+            hostch=new CryptHigh(getUUIDCode(host));
+            userch=new CryptHigh(getUUIDCode(user));
+        } else{ 
+            hostcl=new CryptLow(getUUIDCode(host));
+            usercl=new CryptLow(getUUIDCode(user));
+            hostch=null;
+            userch=null;
+        }
+    }
+    
+    private UUID getUUIDCode(String info) {
+        try { 
+            return UUID.fromString(info);
+        } catch(java.lang.IllegalArgumentException iae) { 
+            StringBuilder sw = new StringBuilder();
+                          
+            byte[] b = getMD5(info).getBytes();  // [8]-[4]-[4]-[12]
+            for ( int i=0; i<27; i++) {
+                if (i==8 || i==12 || i==16 || i==20) { sw.append("-");}
+                if (i< 27 ){
+                    if ( i < b.length ) { sw.append( (char)b[i] ); }
+                    else { sw.append("1"); }
+                }
+            }
+            
+            return UUID.fromString(sw.toString());
+        }
+    }
+    
+    private MD5 md5;
+    public String getMD5(String info) {
+        if ( md5 == null ) { md5=new MD5(); }
+        String md = md5.toMD5Hash(info);
+        return md;
+    }
+    
     public String getCrypted(String txt) {
-         return ( cl == null )? ch.getCrypted(txt) : cl.getCrypted(txt);
+         String out = getUserCrypted(txt);
+                out = getHostCrypted(out);
+                out = getCustCrypted(out);
+         return ( cl == null )? ch.getCrypted(out) : cl.getCrypted(out);
+    }
+        
+    private String getUserCrypted(String txt) {
+        if( cryptLevel > 0 && ( (cl==null && userch!=null) || ( cl!=null && usercl!=null) ) ) {
+            StringBuilder sw = new StringBuilder();
+                          sw.append(
+                                     (( cl == null )? userch.getCrypted(getHostCrypted(txt)) 
+                                                    : usercl.getCrypted(getHostCrypted(txt)))
+                                    );
+                          if ( ! sw.substring(sw.capacity()-1).equals("=") ) { sw.append("="); }
+            return "<"+user+">"+sw.toString()+"</"+user+">";
+        }
+        return txt;
+    }
+    
+    private String getHostCrypted(String txt) {
+        if( cryptLevel > 1 ) {
+            StringBuilder sw = new StringBuilder();
+                          sw.append(
+                                       (( cl == null )? hostch.getCrypted(txt) 
+                                                      : hostcl.getCrypted(txt))
+                                    );
+                          if ( ! sw.substring(sw.capacity()-1).equals("=") ) { sw.append("="); }
+            return "<"+host+">"+sw.toString()+"</"+host+">";
+        }
+        return txt;
+    }
+    
+    private String getCustCrypted(String txt) {
+        if(  ( custch!=null ) || ( custcl!=null )  ) {
+            StringBuilder sw = new StringBuilder();
+                          sw.append(
+                                   (( custcl == null )? custch.getCrypted(txt) 
+                                                      : custcl.getCrypted(txt))
+                                    );
+                          if ( ! sw.substring(sw.capacity()-1).equals("=") ) { sw.append("="); }
+            return sw.toString();
+        }
+        return txt;
     }
     
     public String getUnCrypted(String info) {
-        return ( cl == null )? ch.getUnCrypted(info) : cl.getUnCrypted(info);
+        String out=( cl == null )? ch.getUnCrypted(info) : cl.getUnCrypted(info);
+               out=getUnCryptedCust(out);
+               out=getUnCryptedHost(out);
+               out=getUnCryptedUser(out);
+               out=getUnCryptedHost(out);
+        return out;
+    }
+    private String getUnCryptedHost(String info) {
+        final String a = "<"+host+">"; final String e="</"+host+">";
+        if ( info.startsWith(a) && info.endsWith(e) ) {
+           return ( cl == null )? hostch.getUnCrypted(info.substring(a.length(),info.length()-e.length())) 
+                                : hostcl.getUnCrypted(info.substring(a.length(),info.length()-e.length())); 
+        }
+        return info;
+    }
+    private String getUnCryptedUser(String info) {
+        final String a = "<"+user+">"; final String e="</"+user+">";
+        if ( info.startsWith(a) && info.endsWith(e) ) {
+           return ( cl == null )? userch.getUnCrypted(info.substring(a.length(),info.length()-e.length())) 
+                                : usercl.getUnCrypted(info.substring(a.length(),info.length()-e.length())); 
+        }
+        return info;
+    }
+    
+    private String getUnCryptedCust(String info) {
+        //if ( custcl == null && custch == null ) { return info; }
+        if( ( custch !=null ) || ( custcl!=null )  && info.endsWith("=") ) {
+            //System.out.println("in cust:"+info+":");
+            String out = (( custcl == null )? custch.getUnCrypted(info) 
+                                            : custcl.getUnCrypted(info) ); 
+            //System.out.println("un cust:"+out+":");
+            return out;
+        }
+        return info;
     }
     
     public byte[] getUnCryptedByte(String info) {
@@ -43,10 +202,20 @@ public class Crypt extends Version {
     }
     
     public void runArgs(String[] args) {
-        boolean test = false; 
+        boolean test = false;  String cust=Host.getHostname()+"1234@456789-0";
          
          for ( int i=0; i<args.length; i++ ) {
-             if ( args[i].matches("-test") ) {
+             if ( args[i].matches("-max") ) {
+                    setCryptLevel(Integer.parseInt(args[++i]));
+                    
+             }
+             else if ( args[i].matches("-custKey")) {
+                    setCustomerKey(args[++i]);
+             }
+             else if ( args[i].matches("-usecustKey")) {
+                    setCustomerKey(cust);
+             }
+             else if ( args[i].matches("-test") ) {
                  int j=args.length;
                  for( j=++i; j<args.length; j++) {
                    String s=args[j];
@@ -97,6 +266,7 @@ public class Crypt extends Version {
     
     public static void main(String[] args) throws Exception {
          Crypt c = new Crypt();
+         //System.out.println("USERKEY |"+c.getUserKey()+"|\nHOSTKEY |"+c.getHostKey()+"|");
                c.runArgs(args);
     }
 

@@ -25,7 +25,31 @@ public class ReadDir extends Version{
 
     public ReadDir(String d){ this(new File(d)); }//this.readDir=new File(d); this.file=d; }
 
-    public ReadDir(File dir) { readDir=dir; this.file=dir.toString();  }
+    public ReadDir(File dir) { 
+        dir = getCanonical(dir);
+        readDir=dir; this.file=dir.toString();  
+    }
+    
+    private File getCanonical(File d) {
+        final String sepa="__@@__";
+        final ArrayList<String> ar = new ArrayList();
+        String[] sp= d.getAbsolutePath().replaceAll("^~", System.getProperty("user.home"))
+                                        .replaceAll("^.$", System.getProperty("user.dir")+File.separator )
+                                        .replaceAll("^."+File.separator, System.getProperty("user.dir")+File.separator)
+                      .split(File.separator);
+        for(String s : sp) {
+            if ( ! s.isEmpty() ) {
+                if ( s.equals("..") ) { ar.remove(ar.size()-1); }
+                else if ( s.equals(".") ) {}
+                else { ar.add(s); }
+            }
+        }
+        
+        StringBuilder sw = new StringBuilder(sepa);
+        while( ar.size() > 0 ) {sw.append(ar.remove(0)).append(sepa); }
+        
+        return new File(sw.toString().replaceAll(sepa, File.separator));
+    }
 
     public boolean isDirectory() { return ( this.readDir.isDirectory() ) ? true : false;  }
     public boolean isFile()      { return ! isDirectory(); }

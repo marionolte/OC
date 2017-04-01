@@ -65,6 +65,11 @@ public class WlsServer extends TcpHost{
                 printf(func,2,"listen if :: k:"+k+": valk ="+nh.get(k)+"|");
                 map.put(k.replaceAll("-", ""), nh.get(k));
             }
+            else if ( k.endsWith("listen-address")) { 
+                printf(func,2,"listen if :: k:"+k+": valk ="+nh.get(k)+"|");
+                map.put(k.replaceAll("-", ""), nh.get(k));
+                if( map.get("ssllistenaddress") == null ) { map.put("ssllistenaddress",nh.get(k)); }
+            }
             else {
                 final String m=k.replaceAll("-", "");
                 printf(func,3,"else :: key:"+m+":  have =>"+nh.get(k));
@@ -133,6 +138,9 @@ public class WlsServer extends TcpHost{
         return false;
     
     }
+    
+    public void   setAdminUser(String u) { this.map.put("adminuser", u); }
+    public void   setAdminPass(String p) { this.map.put("adminpass", p); }
     
     public String getAdminServerHost() {
         return null;

@@ -26,6 +26,7 @@ public class SecFile extends ReadFile {
         super(fn);
         this.rFile = new WriteFile(fn);
         this.crypt = new Crypt();
+        this.crypt.setCustomerKey(rFile.getFQDNFileName());
     }
     
     public boolean isCrypted() {
@@ -87,5 +88,24 @@ public class SecFile extends ReadFile {
             }
         }
         return isCrypted();
+    }
+    
+    @Override
+    public StringBuilder readOut() {
+        StringBuilder sw = new StringBuilder(crypt.getUnCrypted(super.readOut().toString()));
+        return sw;
+    }
+    
+    @Override
+    public StringBuilder readOut(String begin, String end) {
+        StringBuilder sw = new StringBuilder( crypt.getUnCrypted(super.readOut(begin, end).toString()));
+        return sw;
+    }
+    
+    public static void main(String[] args) {
+        for(int i=0; i< args.length;i++) {
+            SecFile f = new SecFile(args[i]);
+                    System.out.println("OUT:"+f.readOut().toString()+":");
+        }
     }
 }

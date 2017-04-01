@@ -49,12 +49,34 @@ public class ReadFile extends Version {
     }
 
     public ReadFile(File file) {
-         this.filer= file;
+         this.filer= getCanonical(file);
          this.file = file.getName();
          this.dir  = file.getParent();
     }
 
 
+    private File getCanonical(File d) {
+        final String sepa="__@@__";
+        final ArrayList<String> ar = new ArrayList();
+        String[] sp= d.getAbsolutePath().replaceAll("^~", System.getProperty("user.home"))
+                                        .replaceAll("^.$", System.getProperty("user.dir")+File.separator )
+                                        .replaceAll("^."+File.separator, System.getProperty("user.dir")+File.separator)
+                      .split(File.separator);
+        for(String s : sp) {
+            if ( ! s.isEmpty() ) {
+                if ( s.equals("..") ) { ar.remove(ar.size()-1); }
+                else if ( s.equals(".") ) {}
+                else { ar.add(s); }
+            }
+        }
+        
+        StringBuilder sw = new StringBuilder(sepa);
+        while( ar.size() > 0 ) {sw.append(ar.remove(0)).append(sepa); }
+        
+        return new File(sw.toString().replaceAll(sepa, File.separator));
+    }
+    
+    
     public void checkLog(){
         if ( sb == null ) { this.sb=this.readOut(); }
     }

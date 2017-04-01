@@ -9,8 +9,11 @@ package general;
 //import com.oracle.OraConst;
 import io.file.ReadFile;
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.URLDecoder;
 import java.util.logging.Logger;
+import net.tcp.Host;
 
 /**
  *
@@ -24,7 +27,7 @@ public abstract class Version { //extends OraConst {
     final public static int majorVersion=0;
     final public static int minorVersion=0;
     final public static int patchVersion=1;
-    final public static int fixedVersion=2;
+    final public static int fixedVersion=5;
     final public static int   libVersion=0;
     final public static int  betaVersion=1;
     
@@ -36,6 +39,8 @@ public abstract class Version { //extends OraConst {
        JAVAHOME    = System.getProperty("java.home");
        OSNAME      = System.getProperty("os.name").toLowerCase();
        JAVAVERSION = System.getProperty("java.version");
+       USERKEY     = System.getProperty("user.name");
+       HOSTKEY     = Host.getHostname(); //System.getProperty("os.name")+System.getProperty("os.version");
        
     }
     
@@ -105,12 +110,16 @@ public abstract class Version { //extends OraConst {
     private static final String OSNAME   ;
     private static final String JAVAHOME ;
     private static final String JAVAVERSION;
+    private static final String USERKEY;
+    private static final String HOSTKEY;
     public static int debug=0;
    
     public final int getJavaMajor() { return Integer.parseInt( ( JAVAVERSION.split("\\.") )[1] ); }
     public final int getJavaMinor() { return Integer.parseInt( ( JAVAVERSION.split("[\\.|_]") )[2] ); }
     public final int getJavaMinorPatch() { return Integer.parseInt(  ( JAVAVERSION.split("_") )[1] ); }
     public final String getJavaVersion() { return JAVAVERSION; }
+    public final String getUserKey()     { return USERKEY; }
+    public final String getHostKey()     { return HOSTKEY; }
     
     public final void updateReleaseVersion(String v) { if (v != null) this.releaseVersion = v; }
     public final void updateReleaseMD5(String     v) { if (v != null) this.releaseMD5 = v;  } 
@@ -123,12 +132,12 @@ public abstract class Version { //extends OraConst {
     public final boolean compareBetaMD5(String md5) { return (this.betaMD5.matches(md5)); }
     public final boolean compateReleaseMD5(String md5) { return (this.releaseMD5.matches(md5)); }
     
-    public final boolean isWindows() { return OSNAME.contains("win"); } 
-    public final boolean isUnix()    { return !isWindows(); } 
-    public final boolean isMac()     { return (OSNAME.contains("mac")) || (OSNAME.contains("mac")); } 
-    public final boolean isSolaris() { return (OSNAME.contains("sunos")) || (OSNAME.contains("solaris")); } 
-    public final boolean isAIX()     { return OSNAME.contains("aix");}
-    public final boolean isLinux()   { return OSNAME.contains("linux"); }
+    static public final boolean isWindows() { return OSNAME.contains("win"); } 
+    static public final boolean isUnix()    { return !isWindows(); } 
+    static public final boolean isMac()     { return (OSNAME.contains("mac")) || (OSNAME.contains("mac")); } 
+    static public final boolean isSolaris() { return (OSNAME.contains("sunos")) || (OSNAME.contains("solaris")); } 
+    static public final boolean isAIX()     { return OSNAME.contains("aix");}
+    static public final boolean isLinux()   { return OSNAME.contains("linux"); }
     public final String  getJavaHome(){ return JAVAHOME; }
 
     
@@ -162,10 +171,21 @@ public abstract class Version { //extends OraConst {
         } else { pserr.print(msg); pserr.flush(); }
     }
     
+    
+    
     public synchronized static void printf(String cName, String meth, int level, String msg ) { printf(cName+"::"+meth,level,msg); }
     public synchronized static void printf(String cName, int level, String msg ) { 
         if ( level >= debug ) {
             println(level, cName+" - "+msg);
+        }
+    }
+    
+    public synchronized static void printf(String cName, int level, String msg , Exception e) { 
+        if ( level >= debug ) {
+             StringWriter sw = new StringWriter();
+             PrintWriter  pw = new PrintWriter(sw);
+             e.printStackTrace(pw);
+             printf(cName, level, msg+"\n"+sw.toString());
         }
     }
     
@@ -183,6 +203,6 @@ public abstract class Version { //extends OraConst {
     }
     
     
-   
+    final public String getFunc(String func){ return this.getClass().getName()+"::"+func; }
     
 }
