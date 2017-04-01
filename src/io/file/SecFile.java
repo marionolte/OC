@@ -28,8 +28,19 @@ public class SecFile extends ReadFile {
         super(fn);
         this.rFile = new WriteFile(fn);
         this.crypt = new Crypt();
-        this.crypt.setCustomerKey(rFile.getFQDNFileName());
+        this.crypt.setCustomKey(rFile.getFQDNFileName());
+        setCryptLevel(1);
     }
+    
+    public void setCryptLevel(int level) {
+        this.crypt.setCryptLevel( (level>0)?level:0 );
+    }
+    
+    public void setHostKey(  String key) { this.crypt.setHostKey(key); }
+    public void setUserKey(  String key) { this.crypt.setUserKey(key); }
+    public void setCustomKey(String key) { this.crypt.setCustomKey(key); }
+    
+    
     
     public boolean isCrypted() {
         StringBuilder sw=rFile.readOut();

@@ -59,7 +59,7 @@ public class Crypt extends Version {
         init();
     }
     
-    public void setCustomerKey(String info) {
+    public void setCustomKey(String info) {
         if ( info == null || info.isEmpty() ) { return; }
         if ( cl == null ) {
             custch = new CryptHigh(getUUIDCode(info)) ;
@@ -209,12 +209,8 @@ public class Crypt extends Version {
                     setCryptLevel(Integer.parseInt(args[++i]));
                     
              }
-             else if ( args[i].matches("-custKey")) {
-                    setCustomerKey(args[++i]);
-             }
-             else if ( args[i].matches("-usecustKey")) {
-                    setCustomerKey(cust);
-             }
+             else if ( args[i].matches("-custKey")   ) { cust=args[++i];     }
+             else if ( args[i].matches("-usecustKey")) { setCustomKey(cust); }
              else if ( args[i].matches("-test") ) {
                  int j=args.length;
                  for( j=++i; j<args.length; j++) {
