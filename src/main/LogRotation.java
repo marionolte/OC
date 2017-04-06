@@ -39,7 +39,7 @@ public class LogRotation extends MainTask{
     }
     
     public void rotate() {
-        final String func="rotate()";
+        final String func=getFunc("rotate()");
         Calendar now = Calendar.getInstance();
         Long old = now.getTimeInMillis(); 
         try { old -= Long.parseLong(prop.getProperty("minold")); }catch(Exception e) {}
@@ -53,13 +53,13 @@ public class LogRotation extends MainTask{
             printf(func,2,"Check for BACKUP Directory "+dTo.getFQDNDirName()+" OK");
         } else {
             if ( dTo.isDirectory() ) {
-                printf(func,0,"ERROR: skipping rotation - backup directory "+dTo.getFQDNDirName()+" is not writable");
+                printf(func,1,"ERROR: skipping rotation - backup directory "+dTo.getFQDNDirName()+" is not writable");
                 return;
             } else {
                 if ( dTo.mkdirs() ) {
                     printf(func,2,"Check for BACKUP Directory "+dTo.getFQDNDirName()+" OK (created)");
                 } else {
-                    printf(func,0,"ERROR: skipping rotation - creation of BACKUP Directory "+dTo.getFQDNDirName()+" Failed");
+                    printf(func,1,"ERROR: skipping rotation - creation of BACKUP Directory "+dTo.getFQDNDirName()+" Failed");
                     return;
                 }
             }
@@ -83,25 +83,29 @@ public class LogRotation extends MainTask{
         }
     }
     
-    private  void usage(){
+    public String usage(boolean b){
         StringBuilder sw = new StringBuilder();
-        sw.append("usage()  <command> ");
+        //sw.append();
         Iterator it = prop.keySet().iterator();
         while ( it.hasNext() ) { 
                 String s=(String)it.next();  
                 if ( ! s.matches("COMMAND"))
-                    sw.append(" [-").append(s).append(" <value>").append("]");
+                    sw.append(" [-").append(s)
+                                    .append(" <value [")
+                                    .append(getReplaceSeparatorBack(prop.getProperty(s)))
+                                    .append("]> ]");
         }
-        
-        System.out.println(sw.toString());
+        if (b)
+            System.out.println("usage()  <command> "+sw.toString());
+        return sw.toString();
     }
     
     public static void main(String[] args) {        
         LogRotation lr = new LogRotation(args);
         if ( lr.isCommand("VERSION")   ) {  System.out.println("LogRotation v"+lr.getVersion()+" of "+lr.getFullInfo()); }
-        else if ( lr.isCommand("USAGE")) { lr.usage(); }
-        else {
-            lr.rotate();
+        else if ( lr.isCommand("ROTATE") ) { lr.rotate();    }
+        else  { 
+             lr.usage(true); 
         }
     }
 

@@ -17,6 +17,7 @@ import javax.naming.NamingException;
 import static net.ldap.LdapMain.objList;
 import net.ldap.LdapSearch;
 import net.ssl.TestSSLServer;
+import net.tcp.PortScanner;
 import net.wls.WlsToolConfig;
 
 /**
@@ -108,10 +109,10 @@ public class Mos extends RunnableT{
     private String[] getArgsLower(String[]args,int j) {
         final String func="getArgsLower(String[]args,int j)";
         String[] ar = new String[ args.length-j ];
-        printf(func,0," trans args["+args.length+"]=from args["+j+"]");
+        printf(func,3," trans args["+args.length+"]=from args["+j+"]");
         int a=0;
         for ( int i=j; i <args.length; i++ ) {
-              printf(func,0," trans ar["+a+"/"+i+"]=args["+i+"]");
+              printf(func,2," trans ar["+a+"/"+i+"]=args["+i+"]");
               ar[a]=args[i]; a++;
         }
         return ar;
@@ -133,8 +134,10 @@ public class Mos extends RunnableT{
                                                       printf(func,1,"testhttp - fin");
                                                       fin=true;
                                                     }
-            else if ( args[i].matches("-wlsconfig")){ wlsConfigTools(args,i); fin=true; }
-            else if ( args[i].matches("-crypt")   ) { crypt.runArgs(getArgsLower(args,++i)); }//  fin=runs("io.crypt.Crypt",getArgsLower(args,i++)); } 
+            else if ( args[i].matches("-logrotate")){ logRotate(getArgsLower(args,++i)); fin=true; }
+            else if ( args[i].matches("-portscan") ){ portScanner(getArgsLower(args,++i)); fin=true; }
+            else if ( args[i].matches("-wlsconfig")){ wlsConfigTools(getArgsLower(args,++i),0); fin=true; }
+            else if ( args[i].matches("-crypt")   ) { crypt.runArgs(getArgsLower(args,++i)); fin=true;  }//  fin=runs("io.crypt.Crypt",getArgsLower(args,i++)); } 
             else if ( args[i].matches("-d")       ) { debug++; }
             else if ( args[i].matches("-version") ) { version(); }
             else {
@@ -142,6 +145,28 @@ public class Mos extends RunnableT{
             }
             if ( fin ) { setClosed(); return; }
         } 
+    }
+    
+    private void logRotate(String[] args) {
+        LogRotation lr = new LogRotation(args);
+        if      ( lr.isCommand("VERSION") ) {  System.out.println("LogRotation v"+lr.getVersion()+" of "+lr.getFullInfo()); }
+        else if ( lr.isCommand("ROTATE")  ) { lr.rotate();    }
+        else  {                               lr.usage(true); }
+    }
+    
+    private void portScanner(String[] args) {
+        String min=""; String max = ""; String host="localhost";
+        for( int i=0; i<args.length; i++ ) {
+              if      ( args[i].matches("-pmin") ) {  min=args[++i]; }
+              else if ( args[i].matches("-pmax") ) {  max=args[++i]; }
+              else if ( args[i].matches("-host") ) {  host=args[++i]; }
+        }
+        PortScanner pc=new PortScanner(host);
+                    if ( ! max.isEmpty()) pc.setMaxPort(max); 
+                    if ( ! min.isEmpty()) pc.setMinPort(min);
+                    
+        System.out.println("Scan host:"+host+" from min port: "+pc.getMinPort()+" to max port: "+pc.getMaxPort()+" for listening");
+        pc.test();
     }
     
     private void wlsConfigTools(String[] args, int j) {
@@ -156,6 +181,8 @@ public class Mos extends RunnableT{
                   if ( args[i].matches("-dest") ) { dest=args[++i]; }
               }  
           }
+          w.checkConfig(dest);
+          if ( w.isUpdateNeeded() ) { w.updateDestination(); }
     }
     
     @Override
@@ -180,20 +207,26 @@ public class Mos extends RunnableT{
     public static void main(String[] args) {
            Mos m = new Mos(args); m.silent=true;
                m.start();
-           //System.out.println("done.");    
+               //while( m.isRunning() ) { sleep(300); }
+               //System.out.println("done.");    
     }
     
     private void version() {
         System.out.println(this.getFullInfo());
     }
     
-    private static void usage() {
+    private void usage() {
         System.out.println("Options:\n"
                 + "\t\t-version \t\t-\tprint version information\n\n"
-                + "\t\t-crypt <crypt|uncrypt> <String|File>\n\t\t\t\t\t-\tTest URL Connection to URL\n\n"
+                + "\t\t-crypt "+crypt.usage(false)+"\n\t\t\t\t\t-\tcrypt or uncrypt a string or file\n\n"
                 + "\t\t-testssl <host> <port>\t-\tTest SSL Connection to the server and port \n"
+                + "\t\t-portscan [-host <host>] [-pmin <min port>] [-pmax <max port>]\t-\tport  scanner \n"
                 + "\t\t-testhttp <url> [url1,]\t-\tTest URL Connection to URL\n"
-                + "\n\t\t-wlsconfig <dir> [-location <script dir>]\n\t\t\t\t\t-\tConfigure Wls Starting scripts in directory <dir>\n");
+                + "\t\t-ldap -D <bindDN> -j <Password File> <-h <Host>> <-p <Port>> -filter <filter> -b <baseDN>\n"
+                + "\n\t\t-wlsconfig [-dest <script dir>] <dir <dir...>>\n\t\t\t\t\t-\tConfigure Wls Starting scripts in directory <dest>\n"
+                + "\n\t\t-logrotate\t"+(new LogRotation(new String[]{}).usage(false) )
+                + "\n\n"
+        );
         System.exit(-1);
     }
 }

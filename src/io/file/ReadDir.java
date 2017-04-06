@@ -62,6 +62,8 @@ public class ReadDir extends Version{
 
     public String[] getFiles(){ return loadDir(false); }
     public String[] getDirectories() { return loadDir(true); }
+    
+    public ReadFile getFile(String file) {  return new ReadFile( this.getFQDNDirName()+File.separator+file); }
 
     public String[] loadDir(boolean dir){
         String[] s = new String[] {};

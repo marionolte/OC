@@ -30,7 +30,7 @@ import java.net.SocketAddress;
  *
  * @author SuMario
  */
-public class ClientSocket extends RunnableT {
+public class ClientSocket extends RunnableT{
 
     private boolean inSSL=false;
     private String host;
@@ -52,14 +52,16 @@ public class ClientSocket extends RunnableT {
     
     
     public ClientSocket(){ setMyHostName(); addSSLTrustedDomain(getMyDomainname()); }
-    public ClientSocket(String host, String port             ) throws UnknownHostException, IOException { this(host, new Integer ( port ),false); }
-    public ClientSocket(String host, int port                ) throws UnknownHostException, IOException { this(host, port,                false); }
-    public ClientSocket(String host, int port, boolean inssl ) throws UnknownHostException, IOException {
-         this.inSSL=inssl;
+    public ClientSocket(String host, String port             ) throws UnknownHostException, IOException { this(host, new Integer ( port ),false, false);}
+    public ClientSocket(String host, int port                ) throws UnknownHostException, IOException { this(host, port,                false, false);}
+    public ClientSocket(String host, int port, boolean inssl ) throws UnknownHostException, IOException { this(host, port,                inssl, false);}
+    public ClientSocket(String host, int port, boolean inssl, boolean noproxy ) throws UnknownHostException, IOException {
+        this.inSSL=inssl;
          this.host=host;
          this.port=port;
          
          setMyHostName();
+         if(noproxy) { this.setNoProxy(); } 
          
          if ( inssl && map.isEmpty() ) {
              map.put("provider","SunJSSE");      
@@ -75,7 +77,7 @@ public class ClientSocket extends RunnableT {
          if ( inssl ) { addSSLTrustedDomain(getMyDomainname()); }
          
          startComm();
-    }    
+    }
 
     public String[] getMyDomainname(){
         String meth="getMyDomainname()";
@@ -214,12 +216,17 @@ public class ClientSocket extends RunnableT {
     private    Socket proxyTunnel=null;
     private SSLSocket proxySSlTunnel=null;
     private boolean   proxySSL=false;
+    private boolean   noproxy=false;
+    
+    public void setNoProxy() { this.noproxy=true; proxyHost=null; checkProxy(); }
     
     private void checkProxy() {
         if ( proxyHost != null ) { return; }
+        if ( noproxy ) { proxy=null; proxyHost=null;  return; }
         boolean ptyp=false;
+        
         try {
-            if ( inSSL ) {
+            if ( inSSL &&  ( proxyHost != null && proxyPort>0 ) ) {
                 proxySSL=true;
                 proxyHost = System.getProperty("https.proxyHost");
                 proxyPort = Integer.getInteger("https.proxyPort").intValue();
@@ -247,6 +254,7 @@ public class ClientSocket extends RunnableT {
         } catch(RuntimeException rl) {
                 proxyHost=null;
         }
+        
         if ( proxyHost != null) {
              if (ptyp) {
                 proxy = new Proxy( Proxy.Type.SOCKS, new InetSocketAddress(proxyHost, proxyPort) ); 
@@ -256,6 +264,7 @@ public class ClientSocket extends RunnableT {
         } else {
                 proxy = null;
         }
+        //System.out.println("Proxy:"+proxy+" proxyHost:"+proxyHost);
     }
     
     private void initSocket() throws UnknownHostException, IOException {
@@ -327,25 +336,35 @@ public class ClientSocket extends RunnableT {
                 throw new SocketException( e.getMessage() );
             }
         } else {
-           //test
-           //proxyHost=null;
-           if ( proxyHost == null || host.matches("localhost") || host.matches("127.0.0.1") ) {
-                printf(meth,2,"like to create socket to =>"+host+":"+port);
-                socket = new java.net.Socket(host, port);
-           }else {
-                printf(meth,2,"like to create socket to =>"+host+":"+port+" over proxy =>"+proxyHost+":"+proxyPort);
-                //Socket s = new Socket(new Proxy(Proxy.Type.SOCKS, new InetSocketAddress("socks.mydom.com", 1080)));
-                if ( proxy == null ) { proxy=new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyHost, proxyPort)); }
-                proxysocket = new Socket(proxy);
-                proxysocket.connect(new InetSocketAddress(host,port));
-                socket=proxysocket;
-           }     
+          try { 
+            //test
+            //proxyHost=null;
+            Host ho = new Host(); 
+            // System.out.println("proxyhost:"+proxyHost +" noproxy:"+noproxy); 
+              
+            if ( proxyHost == null || noproxy ||  ho.isLocalAddress(host) ){ //host.matches("localhost") || host.matches("127.0.0.1") ) {
+                 printf(meth,2,"like to create socket to =>"+host+":"+port);
+                 socket = new java.net.Socket(host, port);
+            }else {
+                 printf(meth,2,"like to create socket to =>"+host+":"+port+" over proxy =>"+proxyHost+":"+proxyPort);
+                 //Socket s = new Socket(new Proxy(Proxy.Type.SOCKS, new InetSocketAddress("socks.mydom.com", 1080)));
+                 if ( proxy == null ) { proxy=new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyHost, proxyPort)); }
+                 proxysocket = new Socket(proxy);
+                 proxysocket.connect(new InetSocketAddress(host,port));
+                 socket=proxysocket;
+            }
+          }catch(Exception e) { 
+              throw new SocketException( e.getMessage() );
+          } 
         }
-       
-        printf(meth,2,"socket created "+socket);
-        
-        createOutputStream();
-        //createInputStream();
+        if ( socket != null ) {
+            printf(meth,2,"socket created "+socket);
+
+            createOutputStream();
+            //createInputStream();
+        } else {
+            printf(meth,1,"socket creation failed to host"+host+":"+port);
+        }    
         
         printf(meth,4,"return");
     }

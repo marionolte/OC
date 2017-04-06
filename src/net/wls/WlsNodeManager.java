@@ -5,6 +5,7 @@
  */
 package net.wls;
 
+import net.tcp.TcpHost;
 import static general.Version.printf;
 import java.net.URL;
 import java.util.HashMap;
@@ -18,7 +19,7 @@ import org.w3c.dom.NodeList;
  *
  * @author SuMario
  */
-public class WlsNodeManager extends TcpHost {
+public class WlsNodeManager extends MainTask {
       private boolean bosted;
       private String  domain;
       private HashMap<String,String> map;

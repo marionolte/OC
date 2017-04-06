@@ -13,7 +13,7 @@ import java.util.Scanner;
  *
  * @author SuMario
  */
-public class Host extends Version{
+public class Host extends TcpHost{
     
     public static String getHostname() { 
        try { return execReadToString("hostname"); } catch(java.io.IOException io){ return "localhost"; }

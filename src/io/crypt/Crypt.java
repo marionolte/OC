@@ -209,8 +209,8 @@ public class Crypt extends Version {
                     setCryptLevel(Integer.parseInt(args[++i]));
                     
              }
-             else if ( args[i].matches("-custKey")   ) { cust=args[++i];     }
-             else if ( args[i].matches("-usecustKey")) { setCustomKey(cust); }
+             else if ( args[i].matches("-custkey")   ) { cust=args[++i];     }
+             else if ( args[i].matches("-usecustkey")) { setCustomKey(cust); }
              else if ( args[i].matches("-test") ) {
                  int j=args.length;
                  for( j=++i; j<args.length; j++) {
@@ -255,6 +255,8 @@ public class Crypt extends Version {
                         System.out.println("WARNING:  do not handle binary files ");
                     }
                 }    
+             } else {
+                 System.out.println(usage(true));
              }
          }
          
@@ -266,6 +268,12 @@ public class Crypt extends Version {
                c.runArgs(args);
     }
 
+    public String usage(boolean b) {
+        StringBuilder sw=new StringBuilder();
+        if (b) sw.append("usage() : ");
+        sw.append("[-max <0..2>] [-custkey <custom key> -usecustkey] <-crypt|-uncrypt> <String|File>");
+        return sw.toString();
+    }
     
     private void log(String func, int level, String msg) {
         if ( level == 0 ) {

@@ -24,8 +24,9 @@ import java.util.Calendar;
 public class WriteFile extends ReadFile{
     
     public WriteFile(String dir, String file) { super(dir, file);   }    
-    public WriteFile(String nfile){             super( nfile );     }
-    public WriteFile(File file) {               super(file);        }
+    public WriteFile(String nfile           ) { super( nfile );     }
+    public WriteFile(File file              ) { super(file);        }
+    public WriteFile(ReadFile file          ) { super(file.filer);  }
     
     public ReadFile getReadFile() { return (ReadFile) this; }
     

@@ -264,6 +264,11 @@ public class WlsDomain extends MainTask{
     public String getDomainName()   { return this._domainname;   }
     public String getWeblogicHome() { return this._wlhome;       }
     public String getMWHome()       { return this._mwhome;       }
+    public String getAdminUser()    { return this.wu.getUsername(); }
+    public String getAdminPassword(){ return this.wu.getPassword(); }
+    public String getNodeUser()     { return this._nodeMUser; }
+    public String getNodePassword() { return this._nodeMPass; }
+    
     
     public HashMap<String, WlsServer> getServers() { return servers; }
     

@@ -5,11 +5,13 @@
  */
 package net.wls;
 
+import net.tcp.TcpHost;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Properties;
 import main.Http;
+import main.MainTask;
 import net.tcp.ClientSocket;
 
 /**
@@ -270,7 +272,7 @@ public class WlsServer extends TcpHost{
         try {
             //connect(this.getURIString()); 
             //if (ht.getResponseCode() >=200 ) { b=true; }
-            ClientSocket cs = new ClientSocket(getHost(),getPort(),false);
+            ClientSocket cs = new ClientSocket(getHost(),getPort(),false, true);                        
                          b=cs.isReachable(1000);
                          cs.setClosed(); cs.close();
         } catch(Exception e) {
