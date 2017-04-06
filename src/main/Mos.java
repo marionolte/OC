@@ -19,6 +19,7 @@ import net.ldap.LdapSearch;
 import net.ssl.TestSSLServer;
 import net.tcp.PortScanner;
 import net.wls.WlsToolConfig;
+import net.wls.WlsUserEnv;
 
 /**
  *
@@ -134,10 +135,11 @@ public class Mos extends RunnableT{
                                                       printf(func,1,"testhttp - fin");
                                                       fin=true;
                                                     }
-            else if ( args[i].matches("-logrotate")){ logRotate(getArgsLower(args,++i)); fin=true; }
-            else if ( args[i].matches("-portscan") ){ portScanner(getArgsLower(args,++i)); fin=true; }
+            else if ( args[i].matches("-logrotate")){ logRotate(getArgsLower(args,++i));        fin=true; }
+            else if ( args[i].matches("-portscan") ){ portScanner(getArgsLower(args,++i));      fin=true; }
             else if ( args[i].matches("-wlsconfig")){ wlsConfigTools(getArgsLower(args,++i),0); fin=true; }
-            else if ( args[i].matches("-crypt")   ) { crypt.runArgs(getArgsLower(args,++i)); fin=true;  }//  fin=runs("io.crypt.Crypt",getArgsLower(args,i++)); } 
+            else if ( args[i].matches("-wlsinfo")  ){ wlsInfoTools(getArgsLower(args,++i));     fin=true; }
+            else if ( args[i].matches("-crypt")   ) { crypt.runArgs(getArgsLower(args,++i));    fin=true; }//  fin=runs("io.crypt.Crypt",getArgsLower(args,i++)); } 
             else if ( args[i].matches("-d")       ) { debug++; }
             else if ( args[i].matches("-version") ) { version(); }
             else {
@@ -169,6 +171,30 @@ public class Mos extends RunnableT{
         pc.test();
     }
     
+    private void wlsInfoTools(String[] args ) {
+         WlsUserEnv wue = null;
+    
+         String domdir=""; String k="";
+         if( args.length>0) {
+            wue = new WlsUserEnv(); 
+            for( int i=0; i<args.length; i++ ) {
+                ReadDir nf = new ReadDir(args[i]);
+                if ( nf.isDirectory() && nf.isReadable() ) { domdir=args[i]; } 
+                else { 
+                    if ( args[i].matches("-server") ) {
+                        if ( args.length > i+1 ) { wue.setServer(args[++i]); }
+                        else { wue.setServer("*"); }
+                    } else {
+                            k=args[i]; 
+                    }        
+                }
+            }
+         }
+         //System.out.println("wue:"+wue);
+         if ( wue != null ) {
+             wue.updateEnv(domdir+File.separator+"domainkeys",k);
+         }
+    }
     private void wlsConfigTools(String[] args, int j) {
           if ( args.length <= j+1 ) { return; }
           String dest=System.getProperty("user.home")+File.separator+"bin";
@@ -223,7 +249,8 @@ public class Mos extends RunnableT{
                 + "\t\t-portscan [-host <host>] [-pmin <min port>] [-pmax <max port>]\t-\tport  scanner \n"
                 + "\t\t-testhttp <url> [url1,]\t-\tTest URL Connection to URL\n"
                 + "\t\t-ldap -D <bindDN> -j <Password File> <-h <Host>> <-p <Port>> -filter <filter> -b <baseDN>\n"
-                + "\n\t\t-wlsconfig [-dest <script dir>] <dir <dir...>>\n\t\t\t\t\t-\tConfigure Wls Starting scripts in directory <dest>\n"
+                + "\n\t\t-wlsconfig [-dest <script dir [.]>] <domaindir <domaindir1...>>\n\t\t\t\t\t-\tConfigure Wls Starting scripts in directory <dest>\n"
+                + "\n\t\t-wlsinfo <domainhome> [<-server <servername>]\t-\n\t\t\t\t\tprint domain use informario\n"
                 + "\n\t\t-logrotate\t"+(new LogRotation(new String[]{}).usage(false) )
                 + "\n\n"
         );

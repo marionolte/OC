@@ -118,7 +118,7 @@ public class WlsNodeManager extends MainTask {
         try {
             //connect(this.getURIString()); 
             //if (ht.getResponseCode() >=200 ) { b=true; }
-            ClientSocket cs = new ClientSocket(getHost(),getPort(),false);
+            ClientSocket cs = new ClientSocket(getHost(),getPort(),false,true);
                          b=cs.isReachable(1000);
                          cs.setClosed(); cs.close();
         } catch(Exception e) {
@@ -139,4 +139,9 @@ public class WlsNodeManager extends MainTask {
         this.pw=crypt.getCrypted(pw);
     }
     public String getNodeManagerPass() { return (pw.isEmpty())?pw:crypt.getUnCrypted(this.pw); }
+    
+    public boolean isManagingServer(String srv) {
+        
+        return false;
+    }
 }

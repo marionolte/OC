@@ -340,9 +340,9 @@ public class ClientSocket extends RunnableT{
             //test
             //proxyHost=null;
             Host ho = new Host(); 
-            // System.out.println("proxyhost:"+proxyHost +" noproxy:"+noproxy); 
+            //System.out.println("proxyhost:"+proxyHost +" noproxy:"+noproxy); 
               
-            if ( proxyHost == null || noproxy ||  ho.isLocalAddress(host) ){ //host.matches("localhost") || host.matches("127.0.0.1") ) {
+            if ( noproxy || proxyHost == null ||  ho.isLocalAddress(host) ){ //host.matches("localhost") || host.matches("127.0.0.1") ) {
                  printf(meth,2,"like to create socket to =>"+host+":"+port);
                  socket = new java.net.Socket(host, port);
             }else {
