@@ -141,7 +141,12 @@ public class WlsNodeManager extends MainTask {
     public String getNodeManagerPass() { return (pw.isEmpty())?pw:crypt.getUnCrypted(this.pw); }
     
     public boolean isManagingServer(String srv) {
-        
-        return false;
+        if ( srv == null || srv.isEmpty() ) { return false; }
+        return ( smap.get(srv) != null );
+    }
+    private HashMap<String,String> smap=new HashMap<String,String>();
+    public void setManagedServer(String srv) {
+        if ( srv == null || srv.isEmpty() ) { return; }
+        smap.put(srv, srv);
     }
 }

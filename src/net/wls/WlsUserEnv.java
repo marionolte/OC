@@ -21,7 +21,7 @@ public class WlsUserEnv {
     private static Crypt crypt=null;
     private static final String sepa="__@__";
     
-    private static String updateEnv(String fname, String key) {
+    public static String updateEnv(String fname, String key) {
         StringBuilder ret = new StringBuilder();
         WriteFile fn = new WriteFile(fname);
         final Hashtable<String,String> map = new Hashtable<String,String>();
@@ -40,26 +40,41 @@ public class WlsUserEnv {
                 map.put("MWHOME",       wsd.getMWHome()         );
                 map.put("WLHOME",       wsd.getWeblogicHome()   );
              }
+             ArrayList<WlsNodeManager> nmap = wsd.getNodeManagers();
              ArrayList<WlsServer> lmap = wsd.getNoneAdminServers();
              StringBuilder sm=new StringBuilder();
              while(lmap.size() >0 ) {
                  WlsServer ws = lmap.remove(0);
                  sm.append(ws.getName()).append(",");
                  map.put("SERVER"+ws.getName()+"URL",     ws.getURIString());
+                if ( server.isEmpty() || ws.getName().toLowerCase().matches(server)) {
                  map.put("SERVER"+ws.getName()+"RUNNING", ws.getOnline()   );
-                 map.put("SERVER"+ws.getName()+"NODE",    ws.getNodeManager());
+                }else{
+                 map.put("SERVER"+ws.getName()+"RUNNING", "2");
+                }
+                String ns=ws.getNodeManager();
+                 map.put("SERVER"+ws.getName()+"NODE",  ns );
+                for ( int j=0; j< nmap.size() ; j++ ) {
+                    WlsNodeManager s = nmap.get(j);
+                    if ( s.getName().matches(ns)) {
+                         s.setManagedServer(ws.getName());
+                    }
+                } 
              }
              map.put("SERVERS",sm.toString());
              
-             ArrayList<WlsNodeManager> nmap = wsd.getNodeManagers();
              sm=new StringBuilder();
              while(nmap.size() >0 ) {
                  WlsNodeManager s = nmap.remove(0);
                  sm.append(s.getName()).append(",");
-                 map.put("NODE"+s.getName()+"URL",       s.getURIString());
-                 map.put("NODE"+s.getName()+"RUNNING",   s.getOnline()   );
-                 map.put("NODE"+s.getName()+"NODEUSER",  s.getNodeManagerUser());
-                 map.put("NODE"+s.getName()+"NODEPASS",  s.getNodeManagerPass());
+                        map.put("NODE"+s.getName()+"URL",       s.getURIString());
+                    if ( server.isEmpty() || s.isManagingServer(server) ) {
+                        map.put("NODE"+s.getName()+"RUNNING",   s.getOnline()   );
+                        map.put("NODE"+s.getName()+"NODEUSER",  s.getNodeManagerUser());
+                        map.put("NODE"+s.getName()+"NODEPASS",  s.getNodeManagerPass());
+                    } else {
+                        map.put("NODE"+s.getName()+"RUNNING","2");
+                    }
              }
              map.put("NODES",sm.toString());
         
@@ -94,12 +109,27 @@ public class WlsUserEnv {
         }
         return ret.toString();
     }
+    
+    private static String server="";
+    
+    public static void setServer(String srv) {
+        server = (srv==null || srv.isEmpty() || srv.matches("\\*"))?"":srv.toLowerCase();
+    }
+    
     public static void main(String[] args) {
         String f=""; String k="";
         if( args.length>0) {
             for( int i=0; i<args.length; i++ ) {
-                ReadDir nf = new ReadDir(args[i]);
-                if ( nf.isDirectory() && nf.isReadable() ) { f=args[i]; } else { k=args[i]; }
+                if ( args[i].matches("-server") ) {
+                        if ( args.length > i+1 ) { setServer(args[++i]); }
+                        else { setServer("*"); }
+                } else {        
+                    ReadDir nf = new ReadDir(args[i]);
+                    if ( nf.isDirectory() && nf.isReadable() ) { f=nf.getFQDNDirName(); } 
+                    else { 
+                            k=args[i]; 
+                    }        
+                }
             }
         }
         

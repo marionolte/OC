@@ -61,7 +61,9 @@ public abstract class TcpHost extends MainTask{
                  || host.toLowerCase().equals("::1")        ) { return true; }
         
         readHosts();
-        if ( map.containsValue(host.toLowerCase())){ return true;}
+        if ( map.containsValue(host.toLowerCase())){ 
+            System.out.println("host is local");
+            return true; }
         
         return false;
     }
@@ -106,6 +108,7 @@ public abstract class TcpHost extends MainTask{
                     InetAddress inf = addrs.nextElement();
                     if ( inf.isAnyLocalAddress() ) {
                           String ho = inf.getHostAddress().toLowerCase();  String ip=inf.getHostAddress();
+                          System.out.println("host:"+ho+":  ip:"+ip+":");
                           if ( ho == null || ho.isEmpty() ) { ho=ip; }
                           map.put(ho,ip); map.put(ip, ho);
                     }

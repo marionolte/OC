@@ -178,21 +178,22 @@ public class Mos extends RunnableT{
          if( args.length>0) {
             wue = new WlsUserEnv(); 
             for( int i=0; i<args.length; i++ ) {
-                ReadDir nf = new ReadDir(args[i]);
-                if ( nf.isDirectory() && nf.isReadable() ) { domdir=args[i]; } 
-                else { 
-                    if ( args[i].matches("-server") ) {
+                if ( args[i].matches("-server") ) {
                         if ( args.length > i+1 ) { wue.setServer(args[++i]); }
                         else { wue.setServer("*"); }
-                    } else {
-                            k=args[i]; 
+                } else {
+                    ReadDir nf = new ReadDir(args[i]);
+                    if ( nf.isDirectory() && nf.isReadable() ) { domdir=nf.getFQDNDirName(); } 
+                    else { 
+                                k=args[i]; 
                     }        
                 }
             }
          }
          //System.out.println("wue:"+wue);
          if ( wue != null ) {
-             wue.updateEnv(domdir+File.separator+"domainkeys",k);
+             //System.out.println("dom key:"+domdir+File.separator+"domainkeys"+":   k:"+k+":");
+             System.out.println(wue.updateEnv(domdir+File.separator+"domainkeys",k));
          }
     }
     private void wlsConfigTools(String[] args, int j) {
