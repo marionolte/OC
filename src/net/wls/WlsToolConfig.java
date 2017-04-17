@@ -75,7 +75,7 @@ public class WlsToolConfig extends Version{
         }
         String p= wd.getAdminPassword();
         if ( p == null || p.isEmpty() ) {
-            char[] pass = console.readPassword("Admin User "+u+" Password : ", new String[]{});
+            char[] pass = console.readPassword("Admin User "+u+" Password : ", (Object[]) new String[]{});
             p=new String(pass);
         }
         String un =  wd.getNodeUser(); 
@@ -86,7 +86,7 @@ public class WlsToolConfig extends Version{
         }
         String pn= wd.getNodePassword();
         if ( pn == null || pn.isEmpty() ) {
-            char[] pass = console.readPassword("Admin NodeUserUser "+pn+" Password : ", new String[]{});
+            char[] pass = console.readPassword("Admin NodeUserUser "+pn+" Password : ", (Object[]) new String[]{});
             pn=new String(pass);
         }
         

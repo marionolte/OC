@@ -236,24 +236,48 @@ public class ReadFile extends Version {
             in.read(data);
             in.close();
         } catch(IOException io) {}
-        int ascii = 0;
-        int other = 0;
-
-        for(int i = 0; i < data.length; i++) {
-            byte b = data[i];
-            if( b < 0x09 ) return true;
-
-            if( b == 0x09 || b == 0x0A || b == 0x0C || b == 0x0D ) ascii++;
-            else if( b >= 0x20  &&  b <= 0x7E ) ascii++;
-            else other++;
-        }
-
-        if( other == 0 ) return false;
-
-        return 100 * other / (ascii + other) > 95;
+        return checkAscii(data,data.length);
     }
     
-    public long getLastModified() { return filer.lastModified(); }
+    boolean checkAscii(byte[] buf,int len) {
+            int ascii = 0;
+            int other = 0;
+
+            for(int i = 0; i < buf.length; i++) {
+                byte b = buf[i];
+                if( b < 0x09 ) return true;
+
+                if( b == 0x09 || b == 0x0A || b == 0x0C || b == 0x0D ) ascii++;
+                else if( b >= 0x20  &&  b <= 0x7E ) ascii++;
+                else other++;
+            }
+
+            if( other == 0 ) return false;
+
+            return 100 * other / (ascii + other) > 95;
+            
+    }
+    
+    synchronized public void setLastModified(long d){ filer.setLastModified(d); }
+    synchronized public long getLastModified() { return filer.lastModified(); }
+    synchronized public boolean isOlderThanXDays(int days) {
+        if ( days < 0 ) { return false; }
+        return ( getLastModified() < ( System.currentTimeMillis() - (days*24*60*60*1000L) ));
+    }
+    
+    
+    synchronized public boolean isBiggerThan(long size) {
+         if( size < 0 ) { return false;}
+         return (getSize() > size );
+    }
+    synchronized public boolean isMatching(String req) {
+        if ( req == null || req.isEmpty() ) { return false; }
+        return  Pattern.compile(req).matcher(filer.getName()).find();
+    }
+    synchronized public boolean isCompresssed() {        
+        return isMatching("\\.bz2$|\\.gz$|\\.zip$|\\.7z");
+    }
+    
     public File getParent() { return filer.getParentFile(); }
     
     public InputStream getInputStream() { 

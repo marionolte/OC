@@ -41,6 +41,8 @@ public class SecFile extends ReadFile {
     public void setCustomKey(String key) { this.crypt.setCustomKey(key); }
     
     
+    public boolean delete() { return rFile.delete(); }
+    public boolean append(String line) { return rFile.append( crypt.getCrypted(line) ); }
     
     public boolean isCrypted() {
         StringBuilder sw=rFile.readOut();

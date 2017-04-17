@@ -26,8 +26,9 @@ public class ReadDir extends Version{
     public ReadDir(String d){ this(new File(d)); }//this.readDir=new File(d); this.file=d; }
 
     public ReadDir(File dir) { 
-        dir = getCanonical(dir);
-        readDir=dir; this.file=dir.toString();  
+        readDir = getCanonical(dir);
+        this.file=readDir.toString(); 
+        //System.out.println("file:"+file+":");
     }
     
     private File getCanonical(File d) {
@@ -68,9 +69,12 @@ public class ReadDir extends Version{
     public String[] loadDir(boolean dir){
         String[] s = new String[] {};
 
-        if ( this.readDir.lastModified() > modified ) {
+        //System.out.println("readDir.lastModified():"+readDir.lastModified()+":  mod:"+modified+":");
+        if ( this.readDir.lastModified() == 0 ||this.readDir.lastModified() > modified ) {
+             //System.out.println("read directory");
              fileList=""; dirList="";
              if (! this.file.equalsIgnoreCase(java.io.File.separator) ) { dirList=".."; }
+             //System.out.println("readDir:"+readDir);
              for ( String f : readDir.list() ) {
                  if ( f.equals("\\.") || f.equals("\\.\\.") ) { continue; }
                  File io =new File(file+java.io.File.separator+f);

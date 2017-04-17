@@ -18,6 +18,8 @@ import static net.ldap.LdapMain.objList;
 import net.ldap.LdapSearch;
 import net.ssl.TestSSLServer;
 import net.tcp.PortScanner;
+import net.wls.WlsDomain;
+import net.wls.WlsDomainLogRotation;
 import net.wls.WlsToolConfig;
 import net.wls.WlsUserEnv;
 
@@ -124,6 +126,7 @@ public class Mos extends RunnableT{
         for( int i=0; i<args.length; i++ ) {
             if      ( args[i].matches("-testssl") ) { testssl(args[++i],args[++i]); fin=true; }
             else if ( args[i].matches("-debugssl")) { System.setProperty("javax.net.debug","ssl"); }
+            else if ( args[i].matches("-sshcomm") ) { sshCommand(getArgsLower(args,++i));      fin=true; }
             else if ( args[i].matches("-ldap")    ) { ldap( getArgsLower(args,++i) ); i=args.length;  fin=true; }
             else if ( args[i].matches("-testhttp")) { String[] ar = getArgsLower(args,++i);
                                                       printf(func,1,"testhttp - start");
@@ -139,9 +142,10 @@ public class Mos extends RunnableT{
             else if ( args[i].matches("-portscan") ){ portScanner(getArgsLower(args,++i));      fin=true; }
             else if ( args[i].matches("-wlsconfig")){ wlsConfigTools(getArgsLower(args,++i),0); fin=true; }
             else if ( args[i].matches("-wlsinfo")  ){ wlsInfoTools(getArgsLower(args,++i));     fin=true; }
-            else if ( args[i].matches("-crypt")   ) { crypt.runArgs(getArgsLower(args,++i));    fin=true; }//  fin=runs("io.crypt.Crypt",getArgsLower(args,i++)); } 
-            else if ( args[i].matches("-d")       ) { debug++; }
-            else if ( args[i].matches("-version") ) { version(); }
+            else if ( args[i].matches("-wlsrota")  ){ wlsRotate(getArgsLower(args,++i)); fin=true;}
+            else if ( args[i].matches("-crypt")    ){ crypt.runArgs(getArgsLower(args,++i));    fin=true; }//  fin=runs("io.crypt.Crypt",getArgsLower(args,i++)); } 
+            else if ( args[i].matches("-d")        ){ debug++; }
+            else if ( args[i].matches("-version")  ){ version(); }
             else {
                 usage();
             }
@@ -154,6 +158,31 @@ public class Mos extends RunnableT{
         if      ( lr.isCommand("VERSION") ) {  System.out.println("LogRotation v"+lr.getVersion()+" of "+lr.getFullInfo()); }
         else if ( lr.isCommand("ROTATE")  ) { lr.rotate();    }
         else  {                               lr.usage(true); }
+    }
+    
+    private void wlsRotate(String[] args) {
+        StringBuilder sw = new StringBuilder();
+        final String sepa="__@@__";
+        for ( int i=0; i< args.length; i++ ) {
+            if        ( args[i].matches("-minsize") ){ WlsDomainLogRotation.minsize  = Long.parseLong(args[++i]); 
+            } else if ( args[i].matches("-minold")  ){ WlsDomainLogRotation.minold   = Integer.parseInt(args[++i]);
+            } else if ( args[i].matches("-maxold")  ){ WlsDomainLogRotation.maxold   = Integer.parseInt(args[++i]);
+            } else if ( args[i].matches("-savefile")){ WlsDomainLogRotation.savefile = args[++i];
+            } else {
+                sw.append(sepa).append(args[i]);
+            }        
+        }
+        
+        for ( String s : sw.toString().split(sepa) ) {
+            if ( ! s.isEmpty() ) {
+                ReadDir di = new ReadDir(s);
+                WlsDomain d = new WlsDomain(di.getDirName());
+                          d.setDomainLocation(di.getFQDNDirName());
+                WlsDomainLogRotation wlog = new WlsDomainLogRotation(d);
+                                     wlog.rotate();
+            }
+        }
+        
     }
     
     private void portScanner(String[] args) {
@@ -171,6 +200,10 @@ public class Mos extends RunnableT{
         pc.test();
     }
     
+    private void sshCommand(String[] args) {
+         SSHshell ssh = SSHshell.getInstance(args);
+         System.out.println(ssh.sendSingleCommand());
+    }
     private void wlsInfoTools(String[] args ) {
          WlsUserEnv wue = null;
     
@@ -247,11 +280,13 @@ public class Mos extends RunnableT{
                 + "\t\t-version \t\t-\tprint version information\n\n"
                 + "\t\t-crypt "+crypt.usage(false)+"\n\t\t\t\t\t-\tcrypt or uncrypt a string or file\n\n"
                 + "\t\t-testssl <host> <port>\t-\tTest SSL Connection to the server and port \n"
+                + "\n\t\t-sshcomm "+SSHshell.usage()+"\n\t\t\t\t\t-\tsend a single ssh command\n"
                 + "\t\t-portscan [-host <host>] [-pmin <min port>] [-pmax <max port>]\t-\tport  scanner \n"
-                + "\t\t-testhttp <url> [url1,]\t-\tTest URL Connection to URL\n"
-                + "\t\t-ldap -D <bindDN> -j <Password File> <-h <Host>> <-p <Port>> -filter <filter> -b <baseDN>\n"
+                + "\n\t\t-testhttp <url> [url1,]\t-\tTest URL Connection to URL\n"
+                + "\n\t\t-ldap -D <bindDN> -j <Password File> <-h <Host>> <-p <Port>> -filter <filter> -b <baseDN>\n"
                 + "\n\t\t-wlsconfig [-dest <script dir [.]>] <domaindir <domaindir1...>>\n\t\t\t\t\t-\tConfigure Wls Starting scripts in directory <dest>\n"
-                + "\n\t\t-wlsinfo <domainhome> [<-server <servername>]\t-\n\t\t\t\t\tprint domain use informario\n"
+                + "\n\t\t-wlsinfo <domainhome> [<-server <servername>]\t-\n\t\t\t\t\tprint domain use information\n"
+                + "\n\t\t-wlsrota "+WlsDomainLogRotation.usage()+"\n\t\t\t\t\tweblogic domain logrotation\n"
                 + "\n\t\t-logrotate\t"+(new LogRotation(new String[]{}).usage(false) )
                 + "\n\n"
         );

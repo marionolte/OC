@@ -9,6 +9,9 @@ import com.trilead.ssh2.Connection;
 import com.trilead.ssh2.HTTPProxyData;
 import com.trilead.ssh2.KnownHosts;
 import com.trilead.ssh2.Session;
+import io.crypt.Crypt;
+import io.file.SecFile;
+import io.file.WriteFile;
 
 import io.thread.RunnableT;
 
@@ -69,11 +72,10 @@ public class SSHshell  extends RunnableT {
         idDSAPath    =SSHshell.confDir+File.separator+"id_dsa";
         idRSAPath    =SSHshell.confDir+File.separator+"id_rsa";
         
-        if(debug >0 ) {
-            log(func+" knownHostPath:\t"+knownHostPath+"\nidDSAPath:\t\t"+idDSAPath+"\nidRSAPath:\t\t"+idRSAPath);
-        }
+        printf(func,1," knownHostPath:\t"+knownHostPath+"\nidDSAPath:\t\t"+idDSAPath+"\nidRSAPath:\t\t"+idRSAPath);
         
         init();
+        printf(func,1,"end Constructor");
     }
     
     void setSID(int sid) { if(sid>=0){ this.sid=sid;}}
@@ -86,8 +88,6 @@ public class SSHshell  extends RunnableT {
                 database.addHostkeys(knownHostFile);
             }catch (java.io.IOException e) { }
         }
-        
-        //loginFrame = new JPanel();
         
         start();
     }
@@ -139,16 +139,18 @@ public class SSHshell  extends RunnableT {
         if ( pass == null || pass.isEmpty() ) { log("ERROR: password are not set or empty"); return false; }
         
         try {
-            if( debug > 0 ) {log(func+"create ssh connection to "+getHost());}
+            printf(func,1,"create ssh connection to "+user+":"+pass+"@"+getHost());
             conn = new Connection(host,port);
-            if ( proxy != null ) { conn.setProxyData(proxy); }
+            //if ( proxy != null ) { conn.setProxyData(proxy); }
             conn.connect();
             setUnClosed();
+            
+            printf(func,1,"ssh connection open to "+getHost()+":"+port);
             
             boolean isAuthenticated = conn.authenticateWithPassword(user, pass);
 
             if (!isAuthenticated)  { 
-                if( debug > 0 ) {log(func+"ssh authentication fails to "+getHost()+" user:"+user+":  pass:"+pass+":");}
+                printf(func,1,"ssh authentication fails to "+getHost()+" user:"+user+":  pass:"+pass+":");
                 throw new java.io.IOException("Authentication fails");
             }
             
@@ -163,12 +165,12 @@ public class SSHshell  extends RunnableT {
                  throw new java.io.IOException("shell could not started");
             }
             
-            if( debug > 0 ) {log(func+"ssh login completed "+getHost());}
+            printf(func,2,"ssh login completed "+getHost());
             login=true;
             sleep(2000);
             String[] sr =this.stdoutReceived().toString().split("\n");
             lastLine=sr[ sr.length-1 ];
-            System.out.println(">|"+lastLine+"|<");
+            printf(func,2,">|"+lastLine+"|<");
         } catch(java.io.IOException io) {
              if ( debug > 0 ) {  log("ERROR: "+io.getMessage()); }
              setClosed();
@@ -258,6 +260,7 @@ public class SSHshell  extends RunnableT {
             p=System.getProperty("http.proxyPassword");
         }
         if ( ho != null && !ho.isEmpty()) { setProxy(ho,po,u,p); }
+        
     }
     
     private HTTPProxyData proxy=null;
@@ -304,15 +307,42 @@ public class SSHshell  extends RunnableT {
         setRunning();
     }
     
+    private StringBuilder singleCommand=null;
+    public StringBuilder sendSingleCommand(){ return sendSingleCommand(singleCommand.toString()); } 
     public static void main(String[] args) {
-           String ho = "localhost";  int po = 22; 
-           String u="";  String p=""; StringBuilder comm = new StringBuilder();
+           SSHshell ssh = getInstance(args);       
+           System.out.println(ssh.sendSingleCommand(ssh.singleCommand.toString()));
+    }
+    
+    public static SSHshell getInstance(String[] args) {
+        Crypt crypt=new Crypt();
+           String ho = "localhost";  int po = 22;  int debug=0;
+           String u=System.getProperty("user.name");  String p=""; StringBuilder comm = new StringBuilder();
            if ( args.length > 0 ) {
                     for(int i=0; i<args.length; i++) {
                         if      ( args[i].startsWith("host=")) { ho=args[i].substring("host=".length());}
+                        else if ( args[i].matches("-d"))       { debug++; }
                         else if ( args[i].startsWith("user=")) { u=args[i].substring("user=".length());}
                         else if ( args[i].startsWith("pass=")) { p=args[i].substring("pass=".length());}
                         else if ( args[i].startsWith("port=")) { po= Integer.parseInt( args[i].substring("port=".length()) ); }
+                        else if ( args[i].matches("-j") ) { 
+                                    /*SecFile f=new SecFile(args[++i]); 
+                                    p = f.readOut().toString();
+                                    if ( f.isReadableFile() ) {
+                                        if ( ! f.isCrypted() ) {
+                                            f.delete(); f.append(p);
+                                        }
+                                    }*/
+                                        WriteFile f = new WriteFile(args[++i]); 
+                                        String line = f.readOut().toString();
+                                        if ( line.endsWith("=") ) {  
+                                             line =  crypt.getUnCrypted(line);  }
+                                          else {
+                                             f.delete(); f.append( crypt.getCrypted(line) );
+                                         }
+                                         p=line; 
+                                       
+                                }    
                         else { 
                             if ( comm.length() > 0 ) { comm.append(" "); }
                             comm.append(args[i]);
@@ -320,14 +350,20 @@ public class SSHshell  extends RunnableT {
                     }
             }
            
-           
            SSHshell.confDir=System.getProperty("user.dir")+File.separator+"config";
-           SSHshell.debug=1;
+           SSHshell.debug=debug;
            SSHshell ssh = new SSHshell(ho,po,u,p,false);
                     ssh.setProxy();
-           System.out.println(ssh.sendSingleCommand(comm.toString()));
+                    ssh.singleCommand=comm;
+           return ssh;
     }
     
+    public static String usage() {
+        StringBuilder sw = new StringBuilder();
+        sw.append(" [host=<host[localhost]>] [port=<port[22]>] [user=<User [account name]>]")
+          .append(" [-j <password file>] <command>");
+        return sw.toString();
+    }
     
     @Override
     public String toString() {

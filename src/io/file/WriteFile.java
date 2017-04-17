@@ -5,6 +5,7 @@
  */
 package io.file;
 
+import com.jcraft.jzlib.GZIPInputStream;
 import com.jcraft.jzlib.GZIPOutputStream;
 import static general.Version.printf;
 import java.io.BufferedReader;
@@ -15,6 +16,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
 import java.util.Calendar;
 
 /**
@@ -86,7 +88,8 @@ public class WriteFile extends ReadFile{
     public boolean rotate(String fn, boolean gzip, long minSize, long old, boolean truncate) {
         final String func="rotate(String fn, boolean gzip, long minSize, long old, boolean truncate)";
         boolean b=false;
-        ReadFile toFn = new ReadFile(fn); 
+        System.out.println("fn:"+fn+":");
+        WriteFile toFn = new WriteFile(fn); 
         if ( ((minSize > 0 && this.getSize() > minSize) || ( old > 0 && this.getLastModified() > old ))  && isWriteableFile() ) {
             try {
                 GZIPOutputStream _gzip=null;
@@ -129,17 +132,136 @@ public class WriteFile extends ReadFile{
     }
     
     public boolean truncate() {
+        final String func=getFunc("truncate()");
         boolean b=false;
         try { 
             FileChannel outChan = new FileOutputStream(filer, true).getChannel();
             outChan.truncate(0L);
             outChan.close();
-            System.out.println("file "+this.getFQDNFileName()+" is truncated now");
+            printf(func,2,"file "+this.getFQDNFileName()+" is truncated now");
             b=true;
         } catch(IOException io ) {
             System.out.println("file "+this.getFQDNFileName()+" error in truncation - "+io.getMessage());
         }
         return b;
+    }
+    
+    synchronized  public boolean gzip() {
+        final String func=getFunc("gzip()");
+        boolean b=false;
+        WriteFile fn = new WriteFile(this.getFQDNFileName()+".gz");
+        try {
+                if ( isMatching("\\.gz")) { return b; } 
+                b=gzip(fn.getOutStream(), new java.io.FileInputStream(filer) );
+                if ( b ) {
+                    fn.setLastModified(getLastModified());
+                    b=delete();
+                    if ( b ) {
+                       this.filer=fn.filer;
+                    }
+                } 
+                    
+        } catch(IOException io ) {
+            printf(func,1,"file "+this.getFileName()+" gzip error "+io.getMessage());
+            fn.delete();
+        }    
+        return b;
+    }
+    
+    synchronized public boolean gzip(java.io.OutputStream out, java.io.InputStream in) {
+        final String func=getFunc("gzip(java.io.OutputStream out, java.io.InputStream in)");
+        boolean b=false;
+        try {
+            GZIPOutputStream gzip=new GZIPOutputStream(out);;
+                byte[] buf = new byte[ 64*1024 ];
+                
+                int len;
+                while ((len = in.read(buf)) > 0){ 
+                     gzip.write(buf, 0, len);
+                     dsize=+buf.length; 
+                }
+
+                in.close(); gzip.flush(); gzip.close(); 
+                b=true;                    
+        } catch(IOException io ) {
+            printf(func,1,"gzip error "+io.getMessage());
+            
+        } 
+        return b;
+    }    
+    
+    synchronized public void gunzipUntilTxt(String fn) {
+        final String func=getFunc("gunzipUntilTxt(String fn)");
+        boolean ascii=false;
+        ArrayList<GZIPInputStream> ar = new ArrayList<GZIPInputStream>();
+        WriteFile f = new WriteFile(fn);
+        OutputStream out = f.getOutStream();
+        try {
+                GZIPInputStream gin = new GZIPInputStream( getInputStream() );
+                while ( ! ascii ) {
+                        gin.mark(0);
+                        byte[] buf = new byte[ 1024 ];
+                        int len =gin.read(buf);
+                        ascii=checkAscii(buf,len);
+                        gin.reset();
+                        if( ! ascii ) {
+                            ar.add(gin);
+                            gin = new GZIPInputStream( gin );
+                        }
+                }
+                
+                byte[] buf = new byte[ 64*1024 ];
+                int len;
+                while ((len = gin.read(buf)) > 0){ 
+                     out.write(buf, 0, len);
+                     dsize=+buf.length; 
+                }
+                gin.close(); 
+                if ( ar.size() > 0 ) {
+                     while ( ar.size() > 0 ) { (ar.remove(ar.size()-1)).close(); }
+                }
+                out.flush();
+                out.close();
+        }catch(java.io.IOException io) {
+            printf(func,0,"ERROR:"+io.getMessage());
+        }
+            
+        f.setLastModified(getLastModified());
+    }
+    
+    
+    synchronized public boolean gunzip() {
+        final String func=getFunc("gunzip()");
+        boolean b=false;
+        WriteFile fn = new WriteFile(this.getFQDNFileName().replaceAll("\\.gz$", ""));
+            b=gunzip( fn.getOutStream() , getInputStream());
+        if ( b ) {
+            fn.setLastModified(getLastModified());
+            delete();
+            this.filer=fn.filer;
+        } else {
+            fn.delete();
+        }
+        return b;
+    } 
+    
+    synchronized public boolean gunzip(java.io.OutputStream out, java.io.InputStream in) {
+        try {
+            GZIPInputStream gin = new GZIPInputStream( in );
+            byte[] buf = new byte[ 64*1024 ];
+                
+                int len;
+                while ((len = gin.read(buf)) > 0){ 
+                     out.write(buf, 0, len);
+                     dsize=+buf.length; 
+                }
+
+                out.flush(); gin.close(); 
+            
+                return true;
+        }catch(java.io.IOException io ) {
+        }
+        return false;
     }
     
     public boolean Execute() { return Execute(null); }
@@ -196,9 +318,13 @@ public class WriteFile extends ReadFile{
     }
     
     
-     public static void main(String[] args) {
-        WriteFile f = new WriteFile(args[0]);
+    public static void main(String[] args) {
         WriteFile.__GZIP=true;
-        System.out.println("rotate  file:"+f.getFQDNFileName()+" "+f.rotate()+":");
+        WriteFile f = new WriteFile(args[0]);
+       
+        // System.out.println("rotate  file:"+f.getFQDNFileName()+" "+f.rotate()+":");
+        f.gunzipUntilTxt(args[1]);
     }
+     
+    
 }
