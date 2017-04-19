@@ -1,0 +1,4 @@
+#!/bin/bash
+dir=`dirname $0`
+if [[ "$dir" == "" ]]; then dir="." ; fi
+java -jar ${dir}/lib/OC.jar -sshcomm $@
