@@ -207,10 +207,7 @@ public class WlsDomain extends MainTask{
         SecFile nf = new SecFile(te); 
         printf(func,2,"INFO:  like to read pwfile:"+nf.getFQDNFileName()+" is readable:"+nf.isReadableFile() );
         if ( nf.isReadableFile() ) {
-             if ( ! nf.isCrypted() ) { 
-                 printf(func,0,"INFO:  update pwfile:"+nf.getFQDNFileName()+" - crypt it" );       
-                 nf.crypt(); 
-             }
+             
              String a = nf.readOut().toString();
              String dec= (a.endsWith("="))? crypt.getUnCrypted(a):a ;
              String u=""; String p=""; String nmu=""; String nmp="";
