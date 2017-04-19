@@ -287,7 +287,8 @@ public class Mos extends RunnableT{
                 + "\n\t\t-wlsconfig [-dest <script dir [.]>] <domaindir <domaindir1...>>\n\t\t\t\t\t-\tConfigure Wls Starting scripts in directory <dest>\n"
                 + "\n\t\t-wlsinfo <domainhome> [<-server <servername>]\t-\n\t\t\t\t\tprint domain use information\n"
                 + "\n\t\t-wlsrota "+WlsDomainLogRotation.usage()+"\n\t\t\t\t\tweblogic domain logrotation\n"
-                + "\n\t\t-logrotate\t"+(new LogRotation(new String[]{}).usage(false) )
+                + "\n\t\t-logrota "+net.apache.LogRotation.usage()+"\n\t\t\t\t\tapache|ohs logrotation\n"
+                //+ "\n\t\t-logrotate\t"+(new LogRotation(new String[]{}).usage(false) )
                 + "\n\n"
         );
         System.exit(-1);

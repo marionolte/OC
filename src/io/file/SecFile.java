@@ -7,10 +7,11 @@ package io.file;
 
 import io.crypt.Base64;
 import io.crypt.Crypt;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,18 +19,21 @@ import java.util.regex.Pattern;
  *
  * @author SuMario
  */
-public class SecFile extends ReadFile {
+public class SecFile {//extends ReadFile {
 
     private final WriteFile rFile;
     private final Crypt     crypt;
     
-    public SecFile(String fn) { this(new File(fn)); }
-    public SecFile(File   fn) { 
-        super(fn);
+    public SecFile(String fn,int level) { this(new File(fn),level); }
+    public SecFile(String fn) { this(new File(fn),1); }
+    public SecFile(File   fn,int level) { 
+        //super(fn);
         this.rFile = new WriteFile(fn);
         this.crypt = new Crypt();
         this.crypt.setCustomKey(rFile.getFQDNFileName());
-        setCryptLevel(1);
+        setCryptLevel(level);
+        
+        if ( ! isCrypted() ) { crypt(); }
     }
     
     public void setCryptLevel(int level) {
@@ -49,13 +53,13 @@ public class SecFile extends ReadFile {
         return (sw!=null && sw.length()>0 && sw.toString().endsWith("=") );
     }
     
-    public boolean crypt() {
+    private boolean crypt() {
         if ( ! rFile.isBinaryFile() )  {
               String s= rFile.readOut().toString();
                      s= crypt.getCrypted(s.replaceAll("==$", "="));
               rFile.replace( s+((s.endsWith("="))?"":"=") );
         } else {
-            InputStream in = getInputStream();
+            InputStream in = rFile.getInputStream();
             StringBuilder sw = new StringBuilder("<BINARY>\n");
             
             byte[] b = new byte[1000];
@@ -105,19 +109,16 @@ public class SecFile extends ReadFile {
         return isCrypted();
     }
     
-    @Override
     public StringBuilder readOut() {
-        StringBuilder sw = new StringBuilder(crypt.getUnCrypted(super.readOut().toString()));
+        StringBuilder sw = new StringBuilder(crypt.getUnCrypted(rFile.readOut().toString()));
         return sw;
     }
     
-    @Override
     public StringBuilder readOut(String begin, String end) {
-        StringBuilder sw = new StringBuilder( crypt.getUnCrypted(super.readOut(begin, end).toString()));
+        StringBuilder sw = new StringBuilder( crypt.getUnCrypted(rFile.readOut(begin, end).toString()));
         return sw;
     }
     
-    @Override
     public Pattern readPattern() {
        StringBuilder sw=readOut();
        StringBuilder sb=new StringBuilder();
@@ -132,7 +133,6 @@ public class SecFile extends ReadFile {
        return Pattern.compile(sb.toString());
     }
 
-    @Override
     public String findInFile(String pat) {
         
         StringBuilder sw=new StringBuilder();
@@ -140,9 +140,9 @@ public class SecFile extends ReadFile {
         Pattern pa  = Pattern.compile(pat, Pattern.CASE_INSENSITIVE);
         Matcher ma  = pa.matcher("");
         try {
-            
          String line;
-         BufferedReader rb = new java.io.BufferedReader( new java.io.FileReader(filer) );
+         //BufferedReader rb = new java.io.BufferedReader( new java.io.FileReader(filer) );
+         java.io.BufferedReader rb = new java.io.BufferedReader( new StringReader( readOut().toString() ) );
          do {
             line=rb.readLine();
             if ( line != null && ! line.isEmpty() ) {
@@ -156,18 +156,37 @@ public class SecFile extends ReadFile {
         
         return sw.toString();
     }
+    
+    public boolean isReadableFile()  { return rFile.isReadableFile();  }
+    public boolean isWriteableFile() { return rFile.isWriteableFile(); }
+    public boolean isExecutableFile(){ return rFile.isExecutableFile(); }
 
-    @Override
-    public StringBuilder getStringBuilderRef ( ) { return readOut(); }
-
-    @Override
-    public String getString() { return readOut().toString(); }
-
+    public String getFQDNFileName()  { return rFile.getFQDNFileName(); }
+    public String getFileName()      { return rFile.getFileName(); }
+    
     
     public static void main(String[] args) {
+        int level=1;
+        ArrayList<String> ar = new ArrayList();
         for (String arg : args) {
-            SecFile f = new SecFile(arg);
-            System.out.println("OUT:"+f.readOut().toString()+":");
+            ReadFile f = new ReadFile(arg);
+            if ( f.isReadableFile() ) {
+                 ar.add(f.getFQDNFileName());
+            } else {
+                try {
+                    level = Integer.parseInt(arg);
+                }catch(Exception e) {
+                    System.out.println("ERROR: "+arg+" is not a file or int");
+                    System.exit(-1);
+                }
+            }
         }
+        
+        for(String arg : ar) {
+            SecFile f = new SecFile(arg,level);
+            System.out.println(f.readOut().toString());
+        }    
     }
+
+
 }
