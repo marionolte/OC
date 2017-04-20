@@ -111,9 +111,9 @@ public class LogRotation extends Version {
         return sw.toString();
     }    
     
-    static final String sepa="__@@__";
+    static public final String sepa="__@@__";
     
-    static String dirs="";
+    static public String dirs="";
     static public void parseArgs(String[] args) {
         
         StringBuilder sw = new StringBuilder();

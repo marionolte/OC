@@ -18,7 +18,7 @@ import org.eclipselabs.garbagecat.util.jdk.Jvm;
 
 public class Main extends MainTask {
     
-    private Main(String[] args) {
+    public Main(String[] args) {
         super();
         parseArgs(args);
     }

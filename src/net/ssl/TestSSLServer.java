@@ -92,6 +92,8 @@ public class TestSSLServer {
         static boolean vulnPOODLE = false;
         static boolean compress = false;
         
+        static boolean _success=false;
+        
         static HashMap<String, HashMap<String,String>> map;
         
         public TestSSLServer(String ho, int po) {
@@ -99,6 +101,8 @@ public class TestSSLServer {
                this.port=po;
                this.map=new HashMap();
         }
+        
+        static public boolean isValid() { return _success; }
                 
         public static void test() {
                vulnBEAST  = false;
@@ -197,6 +201,7 @@ public class TestSSLServer {
                         }*/
 		}
                 
+                boolean certOK=true;
 		System.out.println("----------------------");
 		if (certID.size() == 0) {
 			System.out.println("No server certificate !");
@@ -210,14 +215,14 @@ public class TestSSLServer {
                                 sw.append("\n  " + cc);
                                 if ( imap != null ) {
                                     sw.append("\n\t Serial:\t").append(imap.get("serial"));
-                                    long d = getCalendar(imap.get("notbefore"));
+                                    long d = getCalendar(imap.get("notbefore"));  certOK = ( certOK && now > d );
                                     sw.append("\n\t NotBefore:\t").append(imap.get("notbefore"))
                                             .append(" (").append( ((now>d)?"OK":"FAILED") ).append(")"); 
-                                         d = getCalendar(imap.get("notafter"));
+                                         d = getCalendar(imap.get("notafter")); certOK = ( certOK && now < d );
                                     sw.append("\n\t NotAfter:\t").append(imap.get("notafter"))
                                             .append(" (").append( ((now<d)?"OK":"FAILED") ).append(")");
                                 } else {
-                                    System.out.println("imap is null for :"+cc);
+                                    System.out.println("ERORR: no certificates for :"+cc);  certOK=false;
                                 }
                                 
                                 
@@ -231,6 +236,9 @@ public class TestSSLServer {
                 System.out.println("POODLE status: " + (vulnPOODLE ? "vulnerable" : "protected"));
 		System.out.println("BEAST  status: " + (vulnBEAST ? "vulnerable" : "protected"));
 		System.out.println("CRIME  status: " + (compress ? "vulnerable" : "protected"));
+                
+                
+                _success = ( ! vulnPOODLE && ! vulnBEAST && ! compress && ! certOK ) ;
                 
         }
         
