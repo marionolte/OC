@@ -1,8 +1,5 @@
 #!/bin/bash
-dir=`dirname $0`
-if [[ "$dir" == "" ]]; then dir="." ; fi
-if [ ! -s $dir/prog ]; then dir=""; fi
-command="prog"
-if [[ "$dir" != "" ]]; then command="${dir}/prog" ; fi
-"${command}" net.tcp.PortScanner "$@"
+#!/usr/bin/env bash
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+java -jar $dir/../lib/OC.jar -portscan "$@"
 exit $?

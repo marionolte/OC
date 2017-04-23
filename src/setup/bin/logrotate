@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+COMM="-logrota"
+LOGA=">${dir}/../logs/logrota.$HOSTNAME.$USER.log"
+if [[ "$#" -eq 0 ]]; then
+	COMM=""
+	LOGA=""
+	echo "ERROR: missing domain directory to run"
+fi
+java -jar ${dir}/../lib/OC.jar ${COMM} "$@" ${LOGA} 2>/dev/null
+exit $?
