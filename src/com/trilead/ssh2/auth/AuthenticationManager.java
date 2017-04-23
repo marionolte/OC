@@ -9,6 +9,7 @@ import com.trilead.ssh2.transport.MessageHandler;
 import com.trilead.ssh2.transport.GenericTransportManager;
 import com.trilead.ssh2.signature.DSAPublicKey;
 import com.trilead.ssh2.signature.RSAPublicKey;
+import general.Version;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -22,7 +23,7 @@ import java.util.Vector;
  * @author Christian Plattner, plattner@trilead.com
  * @version $Id: AuthenticationManager.java,v 1.1 2007/10/15 12:49:57 cplattne Exp $
  */
-public class AuthenticationManager implements MessageHandler
+public class AuthenticationManager extends Version implements MessageHandler
 {
 	protected GenericTransportManager tm;
 
@@ -328,6 +329,7 @@ public class AuthenticationManager implements MessageHandler
 
 	public boolean authenticatePassword(String user, String pass) throws IOException
 	{
+            final String func=getFunc("authenticatePassword(String user, String pass)");
 		try
 		{
 			initialize(user);
@@ -362,6 +364,7 @@ public class AuthenticationManager implements MessageHandler
 		}
 		catch (IOException e)
 		{
+                        printf(func,1,"Password authentication failed - reason:"+e.getMessage());
 			tm.close(e, false);
 			throw (IOException) new IOException("Password authentication failed.").initCause(e);
 		}

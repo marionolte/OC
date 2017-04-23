@@ -7,12 +7,12 @@ package main;
 
 import com.trilead.ssh2.Connection;
 import com.trilead.ssh2.HTTPProxyData;
+import com.trilead.ssh2.InteractiveCallback;
 import com.trilead.ssh2.KnownHosts;
 import com.trilead.ssh2.Session;
-import io.crypt.Crypt;
+import comm.ssh.InteractiveLogic;
 import io.file.ReadDir;
 import io.file.SecFile;
-import io.file.WriteFile;
 
 import io.thread.RunnableT;
 
@@ -22,6 +22,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -138,28 +141,37 @@ public class SSHshell  extends RunnableT {
     
     
     public boolean login(){
-        final String func="login()";
+        final String func=getFunc("login()");
         if ( host == null || host.isEmpty() ) { log("ERROR: hostname are not set");          _success=false; return _success; }
         if ( user == null || user.isEmpty() ) { log("ERROR: user are not set");              _success=false; return _success;  }
         if ( pass == null || pass.isEmpty() ) { log("ERROR: password are not set or empty"); _success=false; return _success;  }
         
         try {
-            printf(func,1,"create ssh connection to "+user+":"+pass+"@"+getHost());
+            printf(func,2,"create ssh connection to "+user+":"+pass+"@"+getHost());
             conn = new Connection(host,port);
-            //if ( proxy != null ) { conn.setProxyData(proxy); }
+            if ( proxy != null ) { conn.setProxyData(proxy); }
             conn.connect();
-            setUnClosed();
+            //setUnClosed();
             
-            printf(func,1,"ssh connection open to "+getHost()+":"+port);
+            printf(func,3,"ssh connection open to "+getHost()+":"+port);
             
-            boolean isAuthenticated = conn.authenticateWithPassword(user, pass);
-
+            //Set<String> availableMethods = new HashSet<String>(Arrays.asList(conn.getRemainingAuthMethods(user)));
+            
+            boolean isAuthenticated = false; 
+            if (conn.isAuthMethodAvailable(user, "password")) {
+                    isAuthenticated = conn.authenticateWithPassword(user, pass);
+            } else if (conn.isAuthMethodAvailable(user, "keyboard-interactive") ) {
+                    System.out.println("ERROR: authentication only in interacttive Mode possible - change sshd_conf with PasswordAuthentication yes");
+                    _success=false;
+                    return _success;
+            }       
+            
             if (!isAuthenticated)  { 
-                printf(func,1,"ssh authentication fails to "+getHost()+" user:"+user+":  pass:"+pass+":");
+                printf(func,0,"ssh authentication fails to "+getHost()+" user:"+user+":  pass:"+pass+":");
                 throw new java.io.IOException("Authentication fails");
             }
             
-            printf(func,2,"user "+user+" is authenticated");
+            printf(func,0,"user "+user+" is authenticated");
             
             sess = conn.openSession();
             err  = sess.getStderr();
@@ -170,14 +182,15 @@ public class SSHshell  extends RunnableT {
                  throw new java.io.IOException("shell could not started");
             }
             
-            printf(func,2,"ssh login completed "+user+"@"+getHost());
+            printf(func,0,"ssh login completed "+user+"@"+getHost());
             login=true;
             sleep(2000);
             String[] sr =this.stdoutReceived().toString().split("\n");
             lastLine=sr[ sr.length-1 ];
             printf(func,2,">|"+lastLine+"|<");
         } catch(java.io.IOException io) {
-             if ( debug > 0 ) {  log("ERROR: "+io.getMessage()); }
+             if ( debug > 0 ) {  printf(func,1,"ERROR: "+io.getMessage()); }
+             System.out.println("error:"+io.getMessage());
              setClosed();
              _success=false;
              return _success; 
@@ -201,21 +214,26 @@ public class SSHshell  extends RunnableT {
     public boolean isLogin() { return login; }
     
     public StringBuilder sendSingleCommand(String comm) {
+        final String func=getFunc("sendSingleCommand(String comm)");
         login();
         StringBuilder sw=new StringBuilder();
         if ( isLogin() ) {
+            printf(func,2,"user "+ user + " is logged in");
             if ( send(comm+"\n") ) {
                sw.append(getFullResponse().toString());
                _success=true;
             } else { 
+                printf(func,2,"ERROR - sending command :"+comm+":");
                 sw.append("ERROR: Could not send command:").append(comm); 
                 _success=false;
             }
             setClosed();
             return sw;
         } else { 
+            printf(func,2,"ERROR - login failed:");
+            setClosed();
             _success=false;
-            return new StringBuilder("ERROR: Authentication not successful"); 
+            return new StringBuilder("ERROR: Authentication not successfully"); 
         }
         
     }
@@ -374,7 +392,7 @@ public class SSHshell  extends RunnableT {
            SSHshell.confDir=conf;
            SSHshell.debug=debug;
            if ( debug > 0 ) {
-                System.out.println("DEBUG[1/"+debug+"] "+func+"ssh to "+u+"@"+ho+":"+po+"  with p>|"+p+"|<");
+                System.out.println("DEBUG[1/"+debug+"] "+func+"ssh to "+u+"@"+ho+":"+po+"  with p>|"+p+"|<  command:"+comm.toString()+":");
            }
            SSHshell ssh = new SSHshell(ho,po,u,p,false);
                     //ssh.setProxy();

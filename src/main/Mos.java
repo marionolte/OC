@@ -135,7 +135,7 @@ public class Mos extends RunnableT{
         for( int i=0; i<args.length; i++ ) {
             if      ( args[i].matches("-testssl") ) { _exit = ( testssl(args[++i],args[++i])     )?0:1;   fin=true; }
             else if ( args[i].matches("-debugssl")) { System.setProperty("javax.net.debug","ssl"); }
-            else if ( args[i].matches("-sshcomm") ) { _exit = (sshCommand(getArgsLower(args,++i)))?0:1;   fin=true; }
+            else if ( args[i].matches("-sshcomm") ) { _exit = (sshCommand(getArgsLower(args,++i)))?0:1;   fin=true; printf(func,3, "INFO: sshComm parseArgs closed"); }
             else if ( args[i].matches("-ldap")    ) { _exit = (ldap( getArgsLower(args,++i) )    )?0:1;   fin=true; }
             else if ( args[i].matches("-testhttp")) { String[] ar = getArgsLower(args,++i);
                                                       printf(func,1,"testhttp - start");
@@ -164,6 +164,7 @@ public class Mos extends RunnableT{
             else {
                 usage(); _exit=1;
             }
+            printf(func,0,"parse closed");
             if ( fin ) { setClosed(); return; }
         } 
     }
@@ -230,9 +231,19 @@ public class Mos extends RunnableT{
     }
     
     private boolean sshCommand(String[] args) {
+         final String func=getFunc("sshCommand(String[] args)");
+         printf(func,0,"sshCommand start");
+         
          SSHshell.debug=debug;
          SSHshell ssh = SSHshell.getInstance(args);
-         System.out.println(ssh.sendSingleCommand());
+         printf(func,0,"send command :"+ssh.sendSingleCommand().toString());
+         try { 
+             System.out.println(ssh.sendSingleCommand().toString()); 
+         } catch(Exception e) { 
+             printf(func,0,"send command error :"+e.getMessage());
+             return false; 
+         }
+         printf(func,0,"send command return :"+ssh.isValid());
          return ssh.isValid();
     }
     private void wlsInfoTools(String[] args ) {
@@ -281,11 +292,18 @@ public class Mos extends RunnableT{
     @Override
     public void run() {
         setRunning();
+        final String func=getFunc("run()");
+        printf(func,4, "INFO: start");
         boolean fail=false;
         if (args != null && args.length > 0 ) {
-           try{ parseArgs(); 
-                fail=true;
-           }catch(Exception e) {}
+           try{ 
+               printf(func,3, "INFO: parseArgs start ");
+               parseArgs(); 
+               fail=true;
+               printf(func,3, "INFO: parseArgs return");
+           }catch(Exception e) {
+               printf(func,1, "ERROR:"+e.getMessage());
+           }
         } else {
             usage();
         }
@@ -293,6 +311,7 @@ public class Mos extends RunnableT{
             // do someting else
         }
         setClosed();
+        printf(func,4, "INFO: closed");
             
     }
     
@@ -300,7 +319,7 @@ public class Mos extends RunnableT{
     public static void main(String[] args) {
            Mos m = new Mos(args); m.silent=true;
                m.start();
-               while( m.isRunning() || ! m.fin ) { sleep(300); }
+               while( m.isRunning() && ! m.fin ) { sleep(300); }
                System.out.println("done."); 
                System.exit(m._exit);
     }
