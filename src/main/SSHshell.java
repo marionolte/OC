@@ -166,11 +166,11 @@ public class SSHshell  extends RunnableT {
             }       
             
             if (!isAuthenticated)  { 
-                printf(func,0,"ssh authentication fails to "+getHost()+" user:"+user+":  pass:"+pass+":");
+                printf(func,1,"ssh authentication fails to "+getHost()+" user:"+user+":  pass:"+pass+":");
                 throw new java.io.IOException("Authentication fails");
             }
             
-            printf(func,0,"user "+user+" is authenticated");
+            printf(func,2,"user "+user+" is authenticated");
             
             sess = conn.openSession();
             err  = sess.getStderr();
@@ -181,15 +181,14 @@ public class SSHshell  extends RunnableT {
                  throw new java.io.IOException("shell could not started");
             }
             
-            printf(func,0,"ssh login completed "+user+"@"+getHost());
+            printf(func,3,"ssh login completed "+user+"@"+getHost());
             login=true;
             sleep(2000);
             String[] sr =this.stdoutReceived().toString().split("\n");
             lastLine=sr[ sr.length-1 ];
             printf(func,2,">|"+lastLine+"|<");
         } catch(java.io.IOException io) {
-             if ( debug > 0 ) {  printf(func,1,"ERROR: "+io.getMessage()); }
-             System.out.println("error:"+io.getMessage());
+              printf(func,1,"ERROR: "+io.getMessage()); 
              setClosed();
              _success=false;
              return _success; 

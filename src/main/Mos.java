@@ -164,7 +164,7 @@ public class Mos extends RunnableT{
             else {
                 usage(); _exit=1;
             }
-            printf(func,0,"parse closed");
+            printf(func,4,"parse closed");
             if ( fin ) { setClosed(); return; }
         } 
     }
