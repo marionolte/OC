@@ -7,11 +7,10 @@ package main;
 
 import com.trilead.ssh2.Connection;
 import com.trilead.ssh2.HTTPProxyData;
-import com.trilead.ssh2.InteractiveCallback;
 import com.trilead.ssh2.KnownHosts;
 import com.trilead.ssh2.Session;
-import comm.ssh.InteractiveLogic;
 import io.file.ReadDir;
+import io.file.ReadFile;
 import io.file.SecFile;
 
 import io.thread.RunnableT;
@@ -22,9 +21,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -47,13 +43,14 @@ public class SSHshell  extends RunnableT {
     private OutputStream out;
     private InputStream in;
     private InputStream err;
+    private File keyFile=null;
     
     public KnownHosts database = new KnownHosts();
     
     final public String knownHostPath ;
     final public String idDSAPath ;
     final public String idRSAPath ;
-   static public String confDir="~"+File.separator+".ssh";
+   static public String confDir=System.getProperty("user.home")+File.separator+".ssh";
    
     private boolean _success = false;  
     
@@ -141,9 +138,11 @@ public class SSHshell  extends RunnableT {
     
     public boolean login(){
         final String func=getFunc("login()");
-        if ( host == null || host.isEmpty() ) { log("ERROR: hostname are not set");          _success=false; return _success; }
-        if ( user == null || user.isEmpty() ) { log("ERROR: user are not set");              _success=false; return _success;  }
-        if ( pass == null || pass.isEmpty() ) { log("ERROR: password are not set or empty"); _success=false; return _success;  }
+             if ( host == null || host.isEmpty() ) { log("ERROR: hostname are not set");          _success=false; return _success; }
+             if ( user == null || user.isEmpty() ) { log("ERROR: user are not set");              _success=false; return _success;  }
+        if ( keyFile == null ) {
+             if ( pass == null || pass.isEmpty() ) { log("ERROR: password are not set or empty"); _success=false; return _success;  }
+        } 
         
         try {
             printf(func,2,"create ssh connection to "+user+":"+pass+"@"+getHost());
@@ -159,8 +158,10 @@ public class SSHshell  extends RunnableT {
             boolean isAuthenticated = false; 
             if (conn.isAuthMethodAvailable(user, "password")) {
                     isAuthenticated = conn.authenticateWithPassword(user, pass);
+            } else if ( keyFile != null && conn.isAuthMethodAvailable(user, "publickey") ) {
+                    isAuthenticated = conn.authenticateWithPublicKey(user, keyFile, pass);
             } else if (conn.isAuthMethodAvailable(user, "keyboard-interactive") ) {
-                    System.out.println("ERROR: authentication only in interacttive Mode possible - change sshd_conf with PasswordAuthentication yes");
+                    System.out.println("ERROR: authentication only in interacttive Mode possible - change sshd_conf with PasswordAuthentication yes or use public key");
                     _success=false;
                     return _success;
             }       
@@ -349,7 +350,7 @@ public class SSHshell  extends RunnableT {
     public static SSHshell getInstance(String[] args) {
            final String func="SSHshell::getInstance(String[] args) - ";
            //Crypt crypt=new Crypt();
-           String ho = "localhost";  int po = 22;  int debug=0;
+           String ho = "localhost";  int po = 22;  int debug=0;  File kFile=null;
            String u=System.getProperty("user.name");  String p=""; StringBuilder comm = new StringBuilder();
            String conf=System.getProperty("user.dir")+File.separator+"config";
            if ( args.length > 0 ) {
@@ -371,16 +372,9 @@ public class SSHshell  extends RunnableT {
                                             f.delete(); f.append(p);
                                         }
                                     }
-                                    /*    WriteFile f = new WriteFile(args[++i]); 
-                                        String line = f.readOut().toString();
-                                        if ( line.endsWith("=") ) {  
-                                             line =  crypt.getUnCrypted(line);  }
-                                          else {
-                                             f.delete(); f.append( crypt.getCrypted(line) );
-                                         }
-                                         p=line; 
-                                     */ 
-                                }    
+                                    
+                                } 
+                        else if (args[i].matches("-key") ) { ReadFile rf = new ReadFile(args[++i]); kFile=new File(rf.getFQDNFileName()); }
                         else { 
                             if ( comm.length() > 0 ) { comm.append(" "); }
                             comm.append(args[i]);
@@ -395,13 +389,14 @@ public class SSHshell  extends RunnableT {
            SSHshell ssh = new SSHshell(ho,po,u,p,false);
                     //ssh.setProxy();
                     ssh.singleCommand=comm;
+                    ssh.keyFile=kFile;
            return ssh;
     }
     
     public static String usage() {
         StringBuilder sw = new StringBuilder();
         sw.append(" [host=<host[localhost]>] [port=<port[22]>] [user=<User [account name]>]")
-          .append(" [-j <password file>] <command>");
+          .append(" [-j <password file>] [-key <key file>] <command>");
         return sw.toString();
     }
     
