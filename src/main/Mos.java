@@ -232,20 +232,21 @@ public class Mos extends RunnableT{
     
     private boolean sshCommand(String[] args) {
          final String func=getFunc("sshCommand(String[] args)");
-         printf(func,0,"sshCommand start");
+         printf(func,2,"sshCommand start");
          
          SSHshell.debug=debug;
          SSHshell ssh = SSHshell.getInstance(args);
-         printf(func,0,"send command :"+ssh.sendSingleCommand().toString());
+         printf(func,3,"send command :"+ssh.sendSingleCommand().toString());
          try { 
              System.out.println(ssh.sendSingleCommand().toString()); 
          } catch(Exception e) { 
-             printf(func,0,"send command error :"+e.getMessage());
+             printf(func,1,"send command error :"+e.getMessage());
              return false; 
          }
-         printf(func,0,"send command return :"+ssh.isValid());
+         printf(func,2,"send command return :"+ssh.isValid());
          return ssh.isValid();
     }
+    
     private void wlsInfoTools(String[] args ) {
          WlsUserEnv wue = null;
     

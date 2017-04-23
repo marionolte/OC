@@ -66,7 +66,6 @@ public class SSHshell  extends RunnableT {
     public SSHshell(String host, int port, String user, String pass,boolean gui) {
         final String func="SSHshell::";
         this.debug=SSHshell.debug;
-        debug=4;
         this.host=host;
         this.port=(port >0 && port < 64*1024-1)?port:22;
         this.user=user;
