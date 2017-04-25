@@ -5,6 +5,7 @@
  */
 package main;
 
+import com.trilead.ssh2.SCPClient;
 import io.Console;
 import io.crypt.Crypt;
 import io.file.ReadDir;
@@ -236,14 +237,24 @@ public class Mos extends RunnableT{
          
          SSHshell.debug=debug;
          SSHshell ssh = SSHshell.getInstance(args);
-         printf(func,3,"send command :"+ssh.sendSingleCommand().toString());
-         try { 
-             System.out.println(ssh.sendSingleCommand().toString()); 
-         } catch(Exception e) { 
-             printf(func,1,"send command error :"+e.getMessage());
-             return false; 
-         }
-         printf(func,2,"send command return :"+ssh.isValid());
+         if ( ssh.isSSHShell() ) {
+            try { 
+                printf(func,3,"send command :"+ssh.sendSingleCommand().toString());
+                System.out.println(ssh.sendSingleCommand().toString()); 
+            } catch(Exception e) { 
+                printf(func,1,"send command error :"+e.getMessage());
+                return false; 
+            }
+            printf(func,2,"send command return :"+ssh.isValid());
+         } else {
+           try {  
+             SCPClient scp = new SCPClient(ssh.getConnection());
+           } catch (IOException io ) {
+               printf(func,1,"scp command error :"+io.getMessage());
+               return false; 
+           }  
+             
+         }   
          return ssh.isValid();
     }
     
