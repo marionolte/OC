@@ -15,6 +15,7 @@ import io.thread.RunnableT;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import javax.naming.NamingException;
 import static net.ldap.LdapMain.objList;
 import net.ldap.LdapSearch;
@@ -130,7 +131,7 @@ public class Mos extends RunnableT{
         }
         return ar;
     }
-    boolean fin=false;
+    boolean fin=false;  private boolean donemsg=false;
     private void parseArgs() throws Exception{
         final String func="parseArgs()";
         
@@ -155,17 +156,17 @@ public class Mos extends RunnableT{
             else if ( args[i].matches("-logrotate")){ logRotate(getArgsLower(args,++i));        fin=true; }
             else if ( args[i].matches("-portscan") ){ portScanner(getArgsLower(args,++i));      fin=true; }
             else if ( args[i].matches("-wlsconfig")){ wlsConfigTools(getArgsLower(args,++i),0); fin=true; }
-            else if ( args[i].matches("-wlsinfo")  ){ wlsInfoTools(getArgsLower(args,++i));     fin=true; }
-            else if ( args[i].matches("-wlsrota")  ){ wlsRotate(getArgsLower(args,++i));        fin=true; }
-            else if ( args[i].matches("-logrota")  ){ logApacheRotate(getArgsLower(args,++i));  fin=true; }
+            else if ( args[i].matches("-wlsinfo")  ){ wlsInfoTools(getArgsLower(args,++i));     fin=true; donemsg=true; }
+            else if ( args[i].matches("-wlsrota")  ){ wlsRotate(getArgsLower(args,++i));        fin=true; donemsg=true; }
+            else if ( args[i].matches("-logrota")  ){ logApacheRotate(getArgsLower(args,++i));  fin=true; donemsg=true; }
             else if ( args[i].matches("-crypt")    ||
                       args[i].matches("-uncrypt")  ){ crypt.runArgs(getArgsLower(args,i));      fin=true; }  
             else if ( args[i].matches("-rota")     ){ logRotate(getArgsLower(args,++i));        fin=true; }
             else if ( args[i].matches("-gclog")    ){ gcLog(getArgsLower(args,++i));            fin=true; }
             else if ( args[i].matches("-d")        ){ debug++; }
-            else if ( args[i].matches("-version")  ){ version(); _exit=0; }
+            else if ( args[i].matches("-version")  ){ version(); _exit=0;                       fin=true; donemsg=true;}
             else {
-                usage(); _exit=1;
+                usage(); _exit=1; fin=true; 
             }
             printf(func,4,"parse closed");
             if ( fin ) { setClosed(); return; }
@@ -249,8 +250,28 @@ public class Mos extends RunnableT{
             }
             printf(func,2,"send command return :"+ssh.isValid());
          } else {
-           try {  
-             SCPClient scp = new SCPClient(ssh.getConnection());
+           try {
+               
+               ArrayList<String> fr = new ArrayList();
+               ArrayList<String> fl = new ArrayList();  
+               int way=-1;
+               for ( int i=0; i< args.length; i++) {
+                   if ( args[i].matches("scp") ) {}
+                   else if ( args[i].startsWith(":") ) { fr.add( args[i].substring(1) );  if(way==-1){ way=1; } }
+                   else {                                fl.add( args[i].substring(1) );  if(way==-1){ way=2; }  }
+               }
+               String[] rfiles = new String[ fr.size() ]; for( int j=0; j<fr.size(); j++ ) { rfiles[j]=fr.get(j); }
+               String[] lfiles = new String[ fr.size() ]; for( int j=0; j<fl.size(); j++ ) { lfiles[j]=fl.get(j); }
+               
+               if ( rfiles.length == 0 || lfiles.length == 0) { throw new IOException("missing properties"); }
+               if ( way == 1 ) {
+                    ReadDir d = new ReadDir(lfiles[0]);
+                    if ( ! d.isDirectory() ) { throw new IOException(lfiles[0]+" is not a local directory"); }
+                    ssh.scpFrom(rfiles, lfiles[0]);
+               } else {
+                   
+                    ssh.scpTo(lfiles, rfiles[0]);
+               }     
            } catch (IOException io ) {
                printf(func,1,"scp command error :"+io.getMessage());
                return false; 
@@ -334,7 +355,7 @@ public class Mos extends RunnableT{
            Mos m = new Mos(args); m.silent=true;
                m.start();
                while( m.isRunning() && ! m.fin ) { sleep(300); }
-               System.out.println("done."); 
+               if ( ! m.donemsg ) System.out.println("done."); 
                System.exit(m._exit);
     }
     
