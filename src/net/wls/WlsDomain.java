@@ -34,6 +34,7 @@ public class WlsDomain extends MainTask{
     private String _adminserver="AdminServer";
     private String _nodeMUser="";
     private String _nodeMPass="";
+            boolean _domainkeyLoaded =false;
     
     public WlsDomain(String[] args) {
        super(args,"WlsDomain");
@@ -200,17 +201,18 @@ public class WlsDomain extends MainTask{
             printf(func,2,"WARNING: initfile not defined");
         }
        
+        ReadFile tef = new ReadFile(confdir.getFQDNDirName()+File.separator+"domainkeys"); 
+        this._domainkeyLoaded=tef.isReadableFile();
+        printf(func,3,"domainkeys loaded:"+this._domainkeyLoaded+" from:"+tef.getFQDNFileName());
         te = getProperty("pwfile");
         if (te == null || te.isEmpty() ) {
-            te = confdir.getFQDNDirName()+File.separator+"domainkeys"; 
+            //te = confdir.getFQDNDirName()+File.separator+"domainkeys";
+            te=tef.getFQDNFileName();
         }
         SecFile nf = new SecFile(te); 
         printf(func,2,"INFO:  like to read pwfile:"+nf.getFQDNFileName()+" is readable:"+nf.isReadableFile() );
         if ( nf.isReadableFile() ) {
-             if ( ! nf.isCrypted() ) { 
-                 printf(func,0,"INFO:  update pwfile:"+nf.getFQDNFileName()+" - crypt it" );       
-                 nf.crypt(); 
-             }
+             
              String a = nf.readOut().toString();
              String dec= (a.endsWith("="))? crypt.getUnCrypted(a):a ;
              String u=""; String p=""; String nmu=""; String nmp="";

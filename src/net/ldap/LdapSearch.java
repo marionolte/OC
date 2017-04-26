@@ -98,10 +98,11 @@ public class LdapSearch  extends LdapMain{
     }
     
     
-    public void printResults(NamingEnumeration namEnum ) throws NamingException {
+    public boolean printResults(NamingEnumeration namEnum ) throws NamingException {
+        boolean b=false;
         while (namEnum != null && namEnum.hasMore()) {
                SearchResult entry = (SearchResult) namEnum.next();
-               System.out.println("dn: "+entry.getNameInNamespace() );
+               System.out.println("dn: "+entry.getNameInNamespace() ); b=true;
                
                Attributes attr = entry.getAttributes();
                NamingEnumeration en = attr.getAll();
@@ -119,6 +120,7 @@ public class LdapSearch  extends LdapMain{
                //}
                
         }
+        return b;
     }
     
     public static void main(String[] args) throws Exception{

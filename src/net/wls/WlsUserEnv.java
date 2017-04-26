@@ -5,6 +5,7 @@
  */
 package net.wls;
 
+import general.Version;
 import io.crypt.Crypt;
 import io.file.ReadDir;
 import io.file.WriteFile;
@@ -17,11 +18,12 @@ import java.util.Iterator;
  *
  * @author SuMario
  */
-public class WlsUserEnv {
+public class WlsUserEnv extends Version {
     private static Crypt crypt=null;
     private static final String sepa="__@__";
     
     public static String updateEnv(String fname, String key) {
+        final String func="WlsUserEnv::updateEnv(String fname, String key)";
         StringBuilder ret = new StringBuilder();
         WriteFile fn = new WriteFile(fname);
         final Hashtable<String,String> map = new Hashtable<String,String>();
@@ -29,19 +31,27 @@ public class WlsUserEnv {
         map.put("DOMAINHOME", fn.getParent().getAbsolutePath().replaceAll(File.separator, sepa) );
         map.put("ADMINURL", "http://localhost:7001/");
         map.put("ADMINSTOPURL", "t3://localhost:7001/");
+        map.put("DOMKEYSFOUND", "false");
+        printf(func,2,"fn"+fn.getFQDNFileName()+" are readable:"+fn.isReadableFile());
         if ( fn.isReadableFile() ) {
              WlsDomain wsd = new WlsDomain(fn.getParent().getName());
              if ( key.isEmpty() ) {
-                try { wsd.setDomainLocation(fn.getParent().getCanonicalPath()); } catch(java.io.IOException io){}
+                try { wsd.setDomainLocation(fn.getParent().getCanonicalPath()); } catch(java.io.IOException io){
+                    printf(func,1,"setlocation fail:"+io.getMessage());
+                }
                 map.put("ADMINURL",     wsd.getAdminUrl()       );
                 map.put("ADMINSTOPURL", wsd.getAdminStopUrl()   ); 
                 map.put("ADMINSERVER",  wsd.getAdminServerName());
                 map.put("ADMINRUNNING", wsd.getAdminOnline()    );
                 map.put("MWHOME",       wsd.getMWHome()         );
                 map.put("WLHOME",       wsd.getWeblogicHome()   );
+                map.put("wlsUserId",    wsd.getAdminUser()      );
+                map.put("wlsPassword",  wsd.getAdminPassword()  );
              }
              ArrayList<WlsNodeManager> nmap = wsd.getNodeManagers();
+             printf(func,3,"NodeManagers :"+nmap.toString()+":");
              ArrayList<WlsServer> lmap = wsd.getNoneAdminServers();
+             printf(func,3,"ManagedServers :"+lmap.toString()+":");
              StringBuilder sm=new StringBuilder();
              while(lmap.size() >0 ) {
                  WlsServer ws = lmap.remove(0);
@@ -62,6 +72,8 @@ public class WlsUserEnv {
                 } 
              }
              map.put("SERVERS",sm.toString());
+             map.put("DOMKEYSFOUND", ""+wsd._domainkeyLoaded);
+             
              
              sm=new StringBuilder();
              while(nmap.size() >0 ) {

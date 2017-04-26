@@ -130,10 +130,11 @@ public class WlsDomainLogRotation extends Version{
         return sw.toString();
     }    
     
-    public static void main(String[] args) throws Exception {
-        
+    
+    public static final String sepa="__@@__";
+    public static       String dirs="";    
+    public static void parseArgs(String[] args) {
         StringBuilder sw = new StringBuilder();
-        final String sepa="__@@__";
         
         for ( int i=0; i< args.length; i++ ) {
             if        ( args[i].matches("-minsize") ){ WlsDomainLogRotation.minsize  = Long.parseLong(args[++i]); 
@@ -146,8 +147,13 @@ public class WlsDomainLogRotation extends Version{
                 sw.append(sepa).append(args[i]);
             }        
         }
+        dirs=sw.toString();
+    }
+    
+    public static void main(String[] args) throws Exception {
+        parseArgs(args);
         
-        for ( String s : sw.toString().split(sepa) ) {
+        for ( String s : dirs.split(sepa) ) {
             if ( ! s.isEmpty() ) {
                 ReadDir di = new ReadDir(s);
                 WlsDomain d = new WlsDomain(di.getDirName());
