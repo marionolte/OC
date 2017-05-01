@@ -341,16 +341,15 @@ public class SSHshell  extends RunnableT {
         printf(func,1,"set session - in - if outw==null : "+(outw==null));
             
         if ( ! isLogin() ) { return false; }
-        System.out.println("send now ");
+        printf(func,3,"send now ");
         try {
             printf(func,1,"set session if outw==null : "+(outw==null));
             if (outw == null) { 
-                System.out.println("set Session now");
+                printf(func,3,"set Session now");
                 setSession();
-                System.out.println("set Session after");
+                printf(func,3,"set Session after");
             }
-            System.out.println("send now - sesssion");
-            printf(func,1,"set session - after - if outw==null : "+(outw==null));
+            printf(func,2,"set session - after - if outw==null : "+(outw==null));
             
             outw.write(s);
             outw.flush();
