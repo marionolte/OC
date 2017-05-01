@@ -242,7 +242,7 @@ public class Mos extends RunnableT{
          SSHshell ssh = SSHshell.getInstance(args);
          if ( ssh.isSSHShell() ) {
             try { 
-                printf(func,3,"send command :"+ssh.sendSingleCommand().toString());
+                printf(func,3,"send command :"+ssh.sCommand.toString());
                 System.out.println(ssh.sendSingleCommand().toString()); 
             } catch(Exception e) { 
                 printf(func,1,"send command error :"+e.getMessage());
@@ -269,7 +269,6 @@ public class Mos extends RunnableT{
                     if ( ! d.isDirectory() ) { throw new IOException(lfiles[0]+" is not a local directory"); }
                     ssh.scpFrom(rfiles, lfiles[0]);
                } else {
-                   
                     ssh.scpTo(lfiles, rfiles[0]);
                }     
            } catch (IOException io ) {
