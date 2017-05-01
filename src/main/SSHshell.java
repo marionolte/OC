@@ -138,7 +138,7 @@ public class SSHshell  extends RunnableT {
     
     public boolean isLoggedIn() { return login; }
     
-    public void setConnection() throws IOException {
+    public void setConnection() {
         final String func=getFunc("setConnection()");
         
             printf(func,2,"create ssh connection to "+user+":"+pass+"@"+getHost());
@@ -150,7 +150,10 @@ public class SSHshell  extends RunnableT {
                 printf(func,3,"set proxy complete");
             }
             printf(func,3,"call connect");
-            conn.connect();
+            try { conn.connect(); } 
+            catch(java.io.IOException io) {
+                printf(func,1,"call connect error:"+io.getMessage());
+            }
             //setUnClosed();
             printf(func,2,"call connect return");
     }
@@ -173,32 +176,39 @@ public class SSHshell  extends RunnableT {
                 lastLine=sr[ sr.length-1 ];
                 printf(func,2,">|"+lastLine+"|<");
         } else {
-                printf(func,3,"scp login completed "+user+"@"+getHost());
+                printf(func,3,scom+" login completed "+user+"@"+getHost());
         }
     }
     
     public boolean login(){
         if( isLogin() ) { return isLogin(); }
+        
         final String func=getFunc("login()");
-        printf(func,3,"host:"+host+":"+port+" u="+user+": p:"+pass+": keyfile:"+keyFile.toString());
-             if ( host == null || host.isEmpty() ) { log("ERROR: hostname are not set");          _success=false; return _success; }
-             if ( user == null || user.isEmpty() ) { log("ERROR: user are not set");              _success=false; return _success;  }
-             if ( pass == null || pass.isEmpty() ) { log("ERROR: password are not set or empty"); _success=false; return _success;  }
-         
+        printf(func,3,"host:"+host+":"+port+" u="+user+": p:"+pass+": keyfile:"+keyFile);
+             if ( host == null || host.isEmpty() ) { printf(func,1,"ERROR: hostname are not set");          _success=false; return _success; }
+             if ( user == null || user.isEmpty() ) { printf(func,1,"ERROR: user are not set");              _success=false; return _success;  }
+             if ( pass == null || pass.isEmpty() ) { printf(func,1,"ERROR: password are not set or empty"); _success=false; return _success;  }
         
         try {
             printf(func,3,"set Connection");
             setConnection();
             
-            printf(func,3,"ssh connection open to "+getHost()+":"+port+"  conn:"+conn);
+            printf(func,3,"ssh connection open to "+getHost()+"  conn:"+conn);
             
-            Set<String> availableMethods = new HashSet<String>(Arrays.asList(conn.getRemainingAuthMethods(user)));
-            printf(func,2,"user auth:"+availableMethods+":   keyfile:"+((keyFile==null)?"NULL":keyFile.getCanonicalFile()));
-            
+            try {
+                Set<String> availableMethods = new HashSet<String>(Arrays.asList(conn.getRemainingAuthMethods(user)));
+                printf(func,2,"user auth:"+availableMethods+":   keyfile:"+((keyFile==null)?"NULL":keyFile.getCanonicalFile()));
+            } catch(Exception e) {
+                printf(func,1,"ERROR: call methods fails with:"+e.getMessage());
+            }    
             boolean isAuthenticated = false; 
-            if      ( ! pass.isEmpty() && conn.isAuthMethodAvailable(user, "password")) {
+            if      ( keyFile == null && conn.isAuthMethodAvailable(user, "password")) {
                     printf(func,3,"user/pass auth");
-                    isAuthenticated = conn.authenticateWithPassword(user, pass);
+                    try {
+                        isAuthenticated = conn.authenticateWithPassword(user, pass);
+                    } catch(Exception e) {
+                        printf(func,1,"ERROR: user/password authentication fails with:"+e.getMessage());
+                    }    
             } else if ( conn.isAuthMethodAvailable(user, "publickey") ) {
                 try {
                     printf(func,3,"public key auth:"+user+":"+((pass.isEmpty())?"empty":"KeyPASS SET")+":  keyFile:"+keyFile);
@@ -223,7 +233,7 @@ public class SSHshell  extends RunnableT {
             
             login=true;
             
-        } catch(java.io.IOException io) {
+        } catch(Exception io) {
              printf(func,1,"ERROR: "+io.getMessage()); 
              setClosed();
              _success=false;
@@ -269,20 +279,25 @@ public class SSHshell  extends RunnableT {
     boolean login = false;
     public boolean isLogin() { return login; }
     
-    public StringBuilder sendSingleCommand(String comm) throws IOException {
+    public StringBuilder sendSingleCommand(String comm) {
         final String func=getFunc("sendSingleCommand(String comm)"); //debug=3;
-        System.out.println("ask for user "+ user + " login ("+debug+")");
         printf(func,2,"ask for user "+ user + " login ("+debug+")");
         if ( ! isLogin()  || conn==null || ( conn != null && ! conn.isAuthenticationComplete()) ) { 
             printf(func,3,"call login");
-            this.login(); 
+            login();
             printf(func,3,"login return:"+isLogin());
         }
+        printf(func,2,"auth return user  "+ user + " login ("+isLogin()+")");
         
         StringBuilder sw=new StringBuilder();
         if ( isLogin() ) {
-            setSession();
-            printf(func,2,"user "+ user + " is logged in");
+            printf(func,3,"login completed - set session login:"+isLogin()+":  for command:"+comm+":");
+            /*try { 
+                setSession(); 
+            } catch(Exception io) { 
+                printf(func,1,"user "+ user + " session creation fails with:"+io.getMessage());
+            }
+            printf(func,2,"user "+ user + " is logged in - send "+comm);*/
             if ( send(comm+"\n") ) {
                sw.append(getFullResponse().toString());
                _success=true;
@@ -291,7 +306,8 @@ public class SSHshell  extends RunnableT {
                 sw.append("ERROR: Could not send command:").append(comm); 
                 _success=false;
             }
-            setClosed();
+            setClosed(); 
+            try { conn.close(); } catch(Exception e){ } finally{ conn=null; }
             return sw;
         } else { 
             printf(func,2,"ERROR - login failed:");
@@ -304,12 +320,20 @@ public class SSHshell  extends RunnableT {
     
     public boolean isValid() { return _success; }
     public boolean send(String s) {
-        if (! isLogin()) { return false; }
+        final String func=getFunc("send(String s)");
+        printf(func,1,"set session - in - if outw==null : "+(outw==null));
+            
+        if ( ! isLogin() ) { return false; }
         try {
+            printf(func,1,"set session if outw==null : "+(outw==null));
+            if (outw == null) { setSession();}
+            printf(func,1,"set session - after - if outw==null : "+(outw==null));
+            
             outw.write(s);
             outw.flush();
             return true;
         } catch(Exception ex) {
+            printf(func,1,"ERROR - send fails with:"+ex.getMessage());
             return false;
         }
     }
@@ -345,7 +369,9 @@ public class SSHshell  extends RunnableT {
     }
     
     public void setProxy() {
-        String ho=""; int po=3180; String u=null; String p=null;
+        this.proxy=null;
+        return;
+        /*String ho=""; int po=3180; String u=null; String p=null;
         if ( System.getProperty("https.proxyHost") != null ) {
             ho=System.getProperty("https.proxyHost");
             try { po=Integer.parseInt( System.getProperty("https.proxyPort") ); }catch(Exception e) { po=3180; }
@@ -358,7 +384,7 @@ public class SSHshell  extends RunnableT {
             p=System.getProperty("http.proxyPassword");
         }
         if ( ho != null && !ho.isEmpty()) { setProxy(ho,po,u,p); }
-        
+        */
     }
     
     private HTTPProxyData proxy=null;
