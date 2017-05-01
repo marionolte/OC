@@ -140,7 +140,8 @@ public class SSHshell  extends RunnableT {
     
     public void setConnection() {
         final String func=getFunc("setConnection()");
-        
+            _initSession=false;
+            
             printf(func,2,"create ssh connection to "+user+":"+pass+"@"+getHost());
             conn = new Connection(host,port);
             printf(func,3,"conn defined");
@@ -156,28 +157,44 @@ public class SSHshell  extends RunnableT {
             }
             //setUnClosed();
             printf(func,2,"call connect return");
+            
     }
+    
+    private boolean _initSession=false;
     
     public void setSession() throws IOException {
         final String func=getFunc("setSession()");
+        if ( ! isLogin()  ) { login(); }
+        if ( _initSession ) { return; }
         if ( this.isSSHShell() ) {
+            if ( sess == null ) {
+                printf(func,3,"take session");
                 sess = conn.openSession();
+                printf(func,3,"take err");
                 err  = sess.getStderr();
+                printf(func,3,"take in");
                 in   = sess.getStdout();
+                printf(func,3,"take out");
                 out  = sess.getStdin();
+                printf(func,3,"take utf8 out");
                 outw = new OutputStreamWriter(out, "utf-8");
                 if ( ! setShell("bash") ) {
+                     printf(func,1,"shell not set");
+                     _initSession=false;
                      throw new java.io.IOException("shell could not started");
                 }
-
+                _initSession=true;
                 printf(func,3,"ssh login completed "+user+"@"+getHost());
                 sleep(2000);
                 String[] sr =this.stdoutReceived().toString().split("\n");
                 lastLine=sr[ sr.length-1 ];
                 printf(func,2,">|"+lastLine+"|<");
+            }    
         } else {
                 printf(func,3,scom+" login completed "+user+"@"+getHost());
+                _initSession=true;
         }
+        printf(func,4,"setSession return");
     }
     
     public boolean login(){
@@ -324,9 +341,15 @@ public class SSHshell  extends RunnableT {
         printf(func,1,"set session - in - if outw==null : "+(outw==null));
             
         if ( ! isLogin() ) { return false; }
+        System.out.println("send now ");
         try {
             printf(func,1,"set session if outw==null : "+(outw==null));
-            if (outw == null) { setSession();}
+            if (outw == null) { 
+                System.out.println("set Session now");
+                setSession();
+                System.out.println("set Session after");
+            }
+            System.out.println("send now - sesssion");
             printf(func,1,"set session - after - if outw==null : "+(outw==null));
             
             outw.write(s);
@@ -503,7 +526,7 @@ public class SSHshell  extends RunnableT {
     public static String usage() {
         StringBuilder sw = new StringBuilder();
         sw.append(" [host=<host[localhost]>] [port=<port[22]>] [user=<User [account name]>]")
-          .append(" [-j <password file>] [-key <key file>] [<-send|-rcv>] <command>");
+          .append(" [-j <password file>] [-key <key file>] <command>");
         return sw.toString();
     }
     
