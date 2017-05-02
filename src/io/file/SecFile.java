@@ -7,6 +7,7 @@ package io.file;
 
 import io.crypt.Base64;
 import io.crypt.Crypt;
+import io.thread.RunnableT;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStream;
@@ -30,6 +31,8 @@ public class SecFile extends ReadFile {
         this.crypt = new Crypt();
         this.crypt.setCustomKey(rFile.getFQDNFileName());
         setCryptLevel(1);
+        
+        (new SecTest()).start(); //check isCrypted()
     }
     
     public void setCryptLevel(int level) {
@@ -169,5 +172,20 @@ public class SecFile extends ReadFile {
             SecFile f = new SecFile(arg);
             System.out.println("OUT:"+f.readOut().toString()+":");
         }
+    }
+    
+    private class SecTest extends RunnableT{
+        
+
+        @Override
+        public void run() {
+            setRunning();
+            if ( isReadableFile() && ! isCrypted() ) {
+                 crypt();
+            }
+            setClosed();
+        }
+         
+        
     }
 }

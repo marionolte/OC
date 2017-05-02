@@ -65,20 +65,21 @@ class CryptLow extends Version {
     private Cipher cipher=null;
     private Field field=null;
     private void init() { 
+        final String func=getFunc("init()");
         try {
             field = Class.forName("javax.crypto.JceSecurity").getDeclaredField("isRestricted");
             field.setAccessible(true);
             field.set(null, java.lang.Boolean.FALSE);
         } catch (Exception ex) {
-            log("init()",1,"strength isRestricted set error : "+ex.getMessage());
-            if ( debug > 0 ) ex.printStackTrace();
+            printf(func,1,"strength isRestricted set error : "+ex.getMessage(),ex);
         }
         try { 
                 cipher= Cipher.getInstance("DES/CBC/PKCS5Padding");
             }
             catch(NoSuchAlgorithmException nsa) { cipher=null;}
             catch(NoSuchPaddingException   nse) { cipher=null;}
-        log("init()",1,"cipher are:"+cipher);
+        
+        printf(func,2,"cipher are:"+cipher);
         
         
         DESKeySpec dkey;

@@ -9,6 +9,7 @@ import com.trilead.ssh2.transport.MessageHandler;
 import com.trilead.ssh2.transport.GenericTransportManager;
 import com.trilead.ssh2.signature.DSAPublicKey;
 import com.trilead.ssh2.signature.RSAPublicKey;
+import general.Version;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -22,7 +23,7 @@ import java.util.Vector;
  * @author Christian Plattner, plattner@trilead.com
  * @version $Id: AuthenticationManager.java,v 1.1 2007/10/15 12:49:57 cplattne Exp $
  */
-public class AuthenticationManager implements MessageHandler
+public class AuthenticationManager extends Version implements MessageHandler
 {
 	protected GenericTransportManager tm;
 
@@ -146,20 +147,23 @@ public class AuthenticationManager implements MessageHandler
 		return authenticated;
 	}
 
-	public boolean authenticatePublicKey(String user, char[] PEMPrivateKey, String password, SecureRandom rnd)
-			throws IOException
+	public boolean authenticatePublicKey(String user, char[] PEMPrivateKey, String password, SecureRandom rnd) throws IOException
 	{
+            final String func=getFunc("authenticatePublicKey(String user, char[] PEMPrivateKey, String password, SecureRandom rnd)");
 		try
 		{
 			initialize(user);
 
-			if (methodPossible("publickey") == false)
-				throw new IOException("Authentication method publickey not supported by the server at this stage.");
+			if (methodPossible("publickey") == false) {
+                            printf(func,1,"Authentication method publickey not supported by the server at this stage");
+                            throw new IOException("Authentication method publickey not supported by the server at this stage.");
+                        }
 
 			Object key = PEMDecoder.decode(PEMPrivateKey, password);
 
 			if (key instanceof DSAPrivateKey)
 			{
+                            printf(func,3,"DSA private key auth");
 				DSAPrivateKey pk = (DSAPrivateKey) key;
 
 				byte[] pk_enc = DSASHA1Verify.encodeSSHDSAPublicKey(pk.getPublicKey());
@@ -183,12 +187,12 @@ public class AuthenticationManager implements MessageHandler
 
 				byte[] ds_enc = DSASHA1Verify.encodeSSHDSASignature(ds);
 
-				PacketUserauthRequestPublicKey ua = new PacketUserauthRequestPublicKey("ssh-connection", user,
-						"ssh-dss", pk_enc, ds_enc);
+				PacketUserauthRequestPublicKey ua = new PacketUserauthRequestPublicKey("ssh-connection", user, "ssh-dss", pk_enc, ds_enc);
 				tm.sendMessage(ua.getPayload());
 			}
 			else if (key instanceof RSAPrivateKey)
 			{
+                            printf(func,3,"RSA private key auth");
 				RSAPrivateKey pk = (RSAPrivateKey) key;
 
 				byte[] pk_enc = RSASHA1Verify.encodeSSHRSAPublicKey(pk.getPublicKey());

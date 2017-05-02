@@ -14,6 +14,7 @@ import com.trilead.ssh2.transport.TransportManager;
 import com.trilead.ssh2.util.TimeoutService;
 import com.trilead.ssh2.util.TimeoutService.TimeoutToken;
 import com.trilead.ssh2.transport.GenericTransportManager;
+import general.Version;
 
 import java.io.CharArrayWriter;
 import java.io.File;
@@ -46,12 +47,12 @@ import java.io.InputStream;
  * @version $Id: Connection.java,v 1.3 2008/04/01 12:38:09 cplattne Exp $
  */
 
-public class Connection
+public class Connection extends Version
 {
 	/**
 	 * The identifier presented to the SSH-2 server.
 	 */
-	public final static String identification = "TrileadSSH2Java_213";
+	public final static String identification = "MHServiceSSH2Java";
 
 	/**
 	 * Will be used to generate all random data needed for the current
@@ -468,30 +469,40 @@ public class Connection
 	 * @return whether the connection is now authenticated.
 	 * @throws IOException
 	 */
-	public synchronized boolean authenticateWithPublicKey(String user, char[] pemPrivateKey, String password)
-			throws IOException
+	public synchronized boolean authenticateWithPublicKey(String user, char[] pemPrivateKey, String password) throws IOException
 	{
-		if (tm == null)
-			throw new IllegalStateException("Connection is not established!");
+            final String func=getFunc("authenticateWithPublicKey(String user, char[] pemPrivateKey, String password)");
+		if (tm == null) {
+                    throw new IllegalStateException("Connection is not established!");
+                }
 
-		if (authenticated)
-			throw new IllegalStateException("Connection is already authenticated!");
+		if (authenticated) {
+                    throw new IllegalStateException("Connection is already authenticated!");
+                }
 
-		if (am == null)
-			am = new AuthenticationManager(tm);
+		if (am == null) {
+                    am = new AuthenticationManager(tm);
+                }
 
-		if (cm == null)
-			cm = new ChannelManager(tm);
+		if (cm == null) {
+                    cm = new ChannelManager(tm);
+                }
 
-		if (user == null)
-			throw new IllegalArgumentException("user argument is null");
+		if (user == null) {
+                    throw new IllegalArgumentException("user argument is null");
+                }
 
-		if (pemPrivateKey == null)
-			throw new IllegalArgumentException("pemPrivateKey argument is null");
+		if (pemPrivateKey == null) {
+                    printf(func,1,"pemPrivateKey argument is null");            
+                    throw new IllegalArgumentException("pemPrivateKey argument is null");
+                }
 
+            printf(func,2,"sebd authentication request");            
+                        
 		authenticated = am.authenticatePublicKey(user, pemPrivateKey, password, getOrCreateSecureRND());
 
-		return authenticated;
+            printf(func,3,"return authenticated:"+authenticated);
+            return authenticated;
 	}
 
 	/**

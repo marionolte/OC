@@ -232,6 +232,7 @@ public class SSHshell  extends RunnableT {
                     isAuthenticated = conn.authenticateWithPublicKey(user, keyFile, pass);
                     printf(func,3,"public key auth for user:"+user+": end with"+isAuthenticated);
                 } catch(Exception e) {
+                    System.out.println("key error "+e.getMessage());
                     printf(func,1,"ERROR: public key authentication:"+e.getMessage());
                 }    
                 printf(func,2,"Public Key Auth successfully:"+isAuthenticated);    
@@ -487,12 +488,6 @@ public class SSHshell  extends RunnableT {
                         else if ( args[i].matches("-j") ) { 
                                     SecFile f=new SecFile(args[++i]); 
                                     p = f.readOut().toString();
-                                    /*if ( f.isReadableFile() ) {
-                                        if ( ! f.isCrypted() ) {
-                                            f.delete(); f.append(p);
-                                        }
-                                    }*/
-                                    
                                 } 
                         else if (args[i].matches("-key") ) { ReadFile rf = new ReadFile(args[++i]); if ( rf.isReadableFile()) { kFile=new File(rf.getFQDNFileName()); } }
                         else { 

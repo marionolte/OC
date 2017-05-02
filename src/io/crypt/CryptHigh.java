@@ -70,8 +70,7 @@ class CryptHigh extends Version {
             field.setAccessible(true);
             field.set(null, java.lang.Boolean.FALSE);
         } catch (Exception ex) {
-            log("init()",1,"strength isRestricted set error : "+ex.getMessage());
-            if ( debug > 0 ) ex.printStackTrace();
+            printf(func,1,"strength isRestricted set error : "+ex.getMessage(),ex);
         }
         try { 
                 cipher= Cipher.getInstance("AES/CBC/NoPadding", "SunJCE");
