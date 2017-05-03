@@ -190,14 +190,17 @@ public class InflaterInputStream extends FilterInputStream {
   }
 
   public boolean markSupported() {
-    return false;
+    //return false;
+    return true;
   }
 
   public synchronized void mark(int readlimit) {
+      super.mark(readlimit);
   }
 
   public synchronized void reset() throws IOException {
-    throw new IOException("mark/reset not supported");
+    //throw new IOException("mark/reset not supported");
+    super.reset();
   }
 
   public long getTotalIn() {

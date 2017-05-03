@@ -32,6 +32,7 @@ public class Console extends RunnableT {
     }
     
     public Console() {
+        // System.console();
         InputStreamReader isr = new InputStreamReader(System.in);
         reader = new BufferedReader(isr);
         this.mos=null;
@@ -57,6 +58,9 @@ public class Console extends RunnableT {
     }
     
     
+    public String getConsolePassword(){
+            return new String( System.console().readPassword() );
+    }
     
     @Override
     public void run() {
