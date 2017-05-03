@@ -244,9 +244,9 @@ public class WlsDomain extends MainTask{
              printf(func,2,"ERROR: Couldn't read pwfile:"+nf.getFQDNFileName() );
         }
         
-        nf = new SecFile(confdir.getFQDNDirName()+File.separator+"bin"+File.separator+"setDomainEnv."+( (isWindows())?"cmd":"sh") );
-        if ( nf.isReadableFile() ) {
-             for(String s : nf.readOut().toString().split("\n") ) {
+        ReadFile nw = new ReadFile(confdir.getFQDNDirName()+File.separator+"bin"+File.separator+"setDomainEnv."+( (isWindows())?"cmd":"sh") );
+        if ( nw.isReadableFile() ) {
+             for(String s : nw.readOut().toString().split("\n") ) {
                  
                 if ( s.startsWith("WL_HOME")) {
                     s= s.trim();

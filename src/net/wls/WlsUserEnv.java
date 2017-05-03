@@ -79,13 +79,16 @@ public class WlsUserEnv extends Version {
              while(nmap.size() >0 ) {
                  WlsNodeManager s = nmap.remove(0);
                  sm.append(s.getName()).append(",");
-                        map.put("NODE"+s.getName()+"URL",       s.getURIString());
+                 final String   nname="NODE"+s.getName();
+                        map.put(nname+"URL",       s.getURIString());
+                        map.put(nname+"HOST",      s.getURIHost()  );
+                        map.put(nname+"PORT",      s.getURIPort()  );
                     if ( server.isEmpty() || s.isManagingServer(server) ) {
-                        map.put("NODE"+s.getName()+"RUNNING",   s.getOnline()   );
-                        map.put("NODE"+s.getName()+"NODEUSER",  s.getNodeManagerUser());
-                        map.put("NODE"+s.getName()+"NODEPASS",  s.getNodeManagerPass());
+                        map.put(nname+"RUNNING",   s.getOnline()   );
+                        map.put(nname+"NODEUSER",  s.getNodeManagerUser());
+                        map.put(nname+"NODEPASS",  s.getNodeManagerPass());
                     } else {
-                        map.put("NODE"+s.getName()+"RUNNING","2");
+                        map.put(nname+"RUNNING","2");
                     }
              }
              map.put("NODES",sm.toString());

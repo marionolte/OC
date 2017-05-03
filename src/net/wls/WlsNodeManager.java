@@ -97,6 +97,18 @@ public class WlsNodeManager extends MainTask {
         return sw.toString(); 
         
     }
+    
+    public String getURIPort(){ 
+          String        s = this.map.get("sslenabled");
+          boolean bs = ( s !=  null && s.matches("true") );
+          return (bs)?this.map.get("ssllistenport"):this.map.get("listenport");
+    }
+    
+    public String getURIHost(){ 
+          String        s = this.map.get("sslenabled");
+          boolean bs = ( s !=  null && s.matches("true") );
+          return (bs)?this.map.get("ssllistenaddress"):this.map.get("listenaddress");
+    }
 
     public String getHost(){ 
         String        s = this.map.get("sslenabled");
