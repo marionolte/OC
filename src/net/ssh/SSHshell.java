@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package main;
+package net.ssh;
 
 import com.trilead.ssh2.Connection;
 import com.trilead.ssh2.HTTPProxyData;
@@ -458,7 +458,8 @@ public class SSHshell  extends RunnableT {
     private String scom="ssh";
     public boolean isSSHShell() { return (scom.matches("ssh")); }
     
-    StringBuilder sCommand=null;
+    private StringBuilder sCommand=null;
+    public String getCommand() {  return (sCommand == null)?"":sCommand.toString() ; }
     public StringBuilder sendSingleCommand(           ) throws IOException{ return sendSingleCommand( sCommand.toString() ); } 
     public StringBuilder sendSingleCommand(byte[] send) throws IOException{ return sendSingleCommand( new String(send)         ); } 
     

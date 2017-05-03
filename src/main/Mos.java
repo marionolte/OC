@@ -5,6 +5,7 @@
  */
 package main;
 
+import net.ssh.SSHshell;
 import com.trilead.ssh2.SCPClient;
 import io.Console;
 import io.crypt.Crypt;
@@ -242,7 +243,7 @@ public class Mos extends RunnableT{
          SSHshell ssh = SSHshell.getInstance(args);
          if ( ssh.isSSHShell() ) {
             try { 
-                printf(func,3,"send command :"+ssh.sCommand.toString());
+                printf(func,3,"send command :"+ssh.getCommand().toString());
                 System.out.println(ssh.sendSingleCommand().toString()); 
             } catch(Exception e) { 
                 printf(func,1,"send command error :"+e.getMessage());
