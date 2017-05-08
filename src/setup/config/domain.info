@@ -1,0 +1,14 @@
+export SERVER="$2"
+export DOM="$1"
+export NODEMANAGER=""
+export DOMAINHOME=""
+
+### begin domain
+### end   domain
+
+if [[ "$DOMAINHOME" == "" ]]; then
+    echo "ERROR: domain $DOM is not configured"
+    exit 1
+fi
+
+

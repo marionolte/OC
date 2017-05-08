@@ -10,8 +10,16 @@ if [[  "$USER" != "oracle" ]] && [[  "$USER" != "SuMario" ]]; then
         exit -1
 fi
 
+if [[ "$JAVA_HOME" == "" ]]; then JAVA_HOME="/usr/java"; fi
+
+$JAVA_HOME/bin/java -version 2>&1| egrep "1.[7-9].0_" >/dev/null 2>&1
+if [[ "$?" -ne 0 ]]; then
+	echo "ERROR: unsupport java version - minimum java 1.7 required"
+	exit -1
+fi
+
 function usage() {
-        echo "$prog <start|stop> <instance> <domain>"
+        echo "$prog <start|stop> <domain> <instance> "
         exit -1
 }
 
@@ -23,10 +31,14 @@ function startingNM() {
 	us=${!us1}
 	pa1="NODE${m}NODEPASS"
 	pa=${!pa1}
+	ho1="NODE${m}HOST"
+	ho=$(!ho1)
+	po1="NODE${m}PORT"
+        po=$(!ho1)
 
 	#echo "us = java.lang.System.getenv('NODE${m}NODEUSER');"                               	  	  >"${dir}/start-${SERVER}.py"
         #echo "pa = java.lang.System.getenv('NODE${m}NODEPASS');"                              		 >>"${dir}/start-${SERVER}.py"
-        echo "nmConnect('${us}','${pa}',domainName='$dom',domainDir='${DOMAINHOME}');"      >"${dir}/start-${SERVER}.py"
+        echo "nmConnect('${us}','${pa}','${ho}','${po}',domainName='$dom',domainDir='${DOMAINHOME}');"      >"${dir}/start-${SERVER}.py"
         echo "nmStart('${SERVER}');"									 >>"${dir}/start-${SERVER}.py"
         echo "exit();"											 >>"${dir}/start-${SERVER}.py"
         ( cd $DOMAINHOME && . ./bin/setDomainEnv.sh && ${JAVA_HOME}/bin/java -classpath ${FMWCONFIG_CLASSPATH} ${MEM_ARGS} ${JVM_D64} ${JAVA_OPTIONS} weblogic.WLST  "${dir}/start-${SERVER}.py" )
@@ -196,7 +208,7 @@ function stopping() {
 	   echo "shutdown('${SERVER}','Server', ignoreSessions='true',force='true')" 				>>"${dir}/shutdown-${SERVER}.py" 
 	   echo "exit()" 											>>"${dir}/shutdown-${SERVER}.py" 
 
-	   ( cd $DOMAINHOME && . ./bin/setDomainEnv.sh && ${JAVA_HOME}/bin/java -classpath ${FMWCONFIG_CLASSPATH} ${MEM_ARGS} ${JVM_D64} ${JAVA_OPTIONS} weblogic.WLST ${dir}/shutdown-${SERVER}.py  2>&1 >$STOPFILE )
+	   ( cd $DOMAINHOME && . ./bin/setDomainEnv.sh 2>/dev/null && ${JAVA_HOME}/bin/java -classpath ${FMWCONFIG_CLASSPATH} ${MEM_ARGS} ${JVM_D64} ${JAVA_OPTIONS} weblogic.WLST ${dir}/shutdown-${SERVER}.py  2>&1 >$STOPFILE )
 	   WLSUP=$?
        
 	   if [[ "$ADMINSERVER" == "$SERVER" ]]; then
@@ -269,7 +281,7 @@ function init() {
 
    srv="";
    if [[ "$inst" != "" ]]; then srv="-server $inst"; fi
-   eval "$(java -jar ${dir}/lib/OC.jar -wlsinfo $DOMAINHOME  2>/dev/null )" 2>/dev/null
+   eval "$(${JAVA_HOME}/bin/java -jar ${dir}/lib/OC.jar -wlsinfo $DOMAINHOME  2>/dev/null )" 2>/dev/null
 
    if [[ "$DOMKEYSFOUND" != "true" ]]; then
 	echo "ERROR: no domainkeys file found in $DOMAINHOME"
