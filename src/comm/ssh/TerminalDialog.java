@@ -18,7 +18,7 @@ import java.io.OutputStream;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
-import main.SSHshell;
+import net.ssh.SSHshell;
 
 /**
  *
