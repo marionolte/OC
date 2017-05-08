@@ -7,9 +7,11 @@ package main;
 
 import net.ssh.SSHshell;
 import com.trilead.ssh2.SCPClient;
+import general.Updater;
 import io.Console;
 import io.crypt.Crypt;
 import io.file.ReadDir;
+import io.file.ReadFile;
 import io.file.SecFile;
 import io.file.WriteFile;
 import io.thread.RunnableT;
@@ -31,7 +33,7 @@ import net.wls.WlsUserEnv;
  *
  * @author SuMario
  */
-public class Mos extends RunnableT{
+public class Mos extends Updater{
 
     public boolean stopProgress=false;
     public boolean silent=false;
@@ -132,7 +134,7 @@ public class Mos extends RunnableT{
         }
         return ar;
     }
-    boolean fin=false;  private boolean donemsg=false;
+    boolean fin=false;  private boolean donemsg=true;
     private void parseArgs() throws Exception{
         final String func="parseArgs()";
         
@@ -156,22 +158,63 @@ public class Mos extends RunnableT{
                                                     }
             else if ( args[i].matches("-logrotate")){ logRotate(getArgsLower(args,++i));        fin=true; }
             else if ( args[i].matches("-portscan") ){ portScanner(getArgsLower(args,++i));      fin=true; }
-            else if ( args[i].matches("-wlsconfig")){ wlsConfigTools(getArgsLower(args,++i),0); fin=true; }
-            else if ( args[i].matches("-wlsinfo")  ){ wlsInfoTools(getArgsLower(args,++i));     fin=true; donemsg=true; }
-            else if ( args[i].matches("-wlsrota")  ){ wlsRotate(getArgsLower(args,++i));        fin=true; donemsg=true; }
-            else if ( args[i].matches("-logrota")  ){ logApacheRotate(getArgsLower(args,++i));  fin=true; donemsg=true; }
+            else if ( args[i].matches("-wlsconfig")){ wlsConfigTools(getArgsLower(args,++i));   fin=true; }
+            else if ( args[i].matches("-wlsinfo")  ){ wlsInfoTools(getArgsLower(args,++i));     fin=true; donemsg=false; }
+            else if ( args[i].matches("-wlsrota")  ){ wlsRotate(getArgsLower(args,++i));        fin=true; donemsg=false; }
+            else if ( args[i].matches("-logrota")  ){ logApacheRotate(getArgsLower(args,++i));  fin=true; donemsg=false; }
             else if ( args[i].matches("-crypt")    ||
                       args[i].matches("-uncrypt")  ){ crypt.runArgs(getArgsLower(args,i));      fin=true; }  
             else if ( args[i].matches("-rota")     ){ logRotate(getArgsLower(args,++i));        fin=true; }
             else if ( args[i].matches("-gclog")    ){ gcLog(getArgsLower(args,++i));            fin=true; }
+            else if ( args[i].matches("-update")   ){ updateJar();                              fin=true; }
             else if ( args[i].matches("-d")        ){ debug++; }
-            else if ( args[i].matches("-version")  ){ version(); _exit=0;                       fin=true; donemsg=true;}
+            else if ( args[i].matches("-version")  ){ version(); _exit=0;                       fin=true; donemsg=false; }
             else {
                 usage(); _exit=1; fin=true; 
             }
             printf(func,4,"parse closed");
             if ( fin ) { setClosed(); return; }
         } 
+    }
+    
+    private void updateJar(){
+        final String func=getFunc("updateJar()");
+        String info="unknown";
+        try {
+            this._exit=1;
+            
+            Http.debug=debug; 
+            
+            Http ht = new Http(new URL(updateUrl+updateScript));  
+            String[] sp = ht.getResponse().toString().trim().split("\\|");
+            if ( debug >3)
+                for ( int i=0; i<sp.length;i++) {
+                    printf(func,4,"sp["+i+"]= |>"+sp[i]+"<|");
+            }
+            info=sp[0];
+            
+            printf(func,1, "Jar file "+jarfile+" in version "+getFullVersion()+" will replace with server version "+info);
+            info=ht.connect(new URL(updateUrl+"OC-"+info+".jar"), jarfile+".1");
+            if ( info.matches(sp[1])) {
+                ReadFile f=new ReadFile(jarfile+".1"); 
+                if ( f.isReadableFile() ) {
+                //         f.move(new File(jarfile));
+                    println("INFO: new application jar file "+jarfile+".1 with md5 checksum : "+info+" are ready");
+                    println("INFO: replace existing jar file "+jarfile+"  with the new "+jarfile+".1");
+                    this._exit=0;
+                } else {
+                    println("ERROR: jar file "+jarfile+".1 are not ready as file");
+                }
+                
+            } else {
+                println("ERROR: broken download to get new jar file from "+updateUrl+"OC-"+sp[0]+".jar");
+                println("       Please update manually!");
+            }    
+        } catch(Exception e){
+                println("ERROR: local version "+getFullVersion()+" could not updated to server version "+info); 
+                this.donemsg=false;
+        }  
+    
     }
     
     private void logRotate(String[] args) {
@@ -308,20 +351,31 @@ public class Mos extends RunnableT{
              
          }
     }
-    private void wlsConfigTools(String[] args, int j) {
-          if ( args.length <= j+1 ) { return; }
+    private void wlsConfigTools(String[] args) {
+          final String func=getFunc("wlsConfigTools(String[] args)");
+          //if ( args.length <= j+1 ) { return; }
           String dest=System.getProperty("user.home")+File.separator+"bin";
-          WlsToolConfig w = new WlsToolConfig();
-          for( int i=j+1; i <args.length; i++ ) {
+          WlsToolConfig w = new WlsToolConfig(); w.debug=debug;
+          for( int i=0; i <args.length; i++ ) {
               ReadDir d = new ReadDir(args[i]);
-              if ( d.isDirectory() && d.isReadable() ) {
-                w.updateConfig(args[i]);
+              if ( d.isDirectory() ) {
+                  printf(func,2,"call updateConfig for "+args[i]);
+                  w.updateConfig(args[i]);
               } else {
-                  if ( args[i].matches("-dest") ) { dest=args[++i]; }
+                  if ( args[i].matches("-dest") ) { 
+                      dest=args[++i]; 
+                      printf(func,2,"update destination to :"+dest);
+                  }
               }  
           }
+          printf(func,2,"check configuration on dest:"+dest);
           w.checkConfig(dest);
-          if ( w.isUpdateNeeded() ) { w.updateDestination(); }
+          if ( w.isUpdateNeeded() ) { 
+              printf(func,2,"call destionation update - needed");
+              w.updateDestination(dest); 
+          } else {
+              printf(func,3,"call destionation updated not needed");
+          }
     }
     
     @Override
@@ -351,11 +405,16 @@ public class Mos extends RunnableT{
     }
     
     
+    private boolean compareJarFileMD5(String md5) {
+        ReadFile fa = new ReadFile(jarfile);
+        return ( fa.getMD5().matches(md5));
+    }
+    
     public static void main(String[] args) {
            Mos m = new Mos(args); m.silent=true;
                m.start();
                while( m.isRunning() && ! m.fin ) { sleep(300); }
-               if ( ! m.donemsg ) System.out.println("done."); 
+               if ( m.donemsg ) System.out.println("done."); 
                System.exit(m._exit);
     }
     

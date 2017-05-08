@@ -278,19 +278,36 @@ public class SSHshell  extends RunnableT {
         return conn;
     }
     
-    public SCPClient getSCPClient() throws IOException { return new SCPClient(getConnection()); }
+    public SCPClient getSCPClient() throws IOException { 
+        Connection con = getConnection();
+        if ( con.isAuthenticationComplete() ) {
+             return new SCPClient(con); 
+        } else {
+             return null;
+        }
+    }
     public void scpTo( String    localFile                  ) throws IOException { scpTo(new String[]{localFile},System.getProperty("user.dir")); }
     public void scpTo( String[] localFiles                  ) throws IOException { scpTo(localFiles             ,System.getProperty("user.dir")); }
     public void scpTo( String    localFile, String remoteDir) throws IOException { scpTo(new String[]{localFile},remoteDir); }
     public void scpTo( String[] localFiles, String remoteDir) throws IOException {
-        getSCPClient().put(localFiles, remoteDir);
+        SCPClient scp = getSCPClient();
+        if ( scp != null ) {
+             scp.put(localFiles, remoteDir);
+        } else {
+            throw new IOException("no scp channel to send "+localFiles.length+" file[s]");
+        }     
     }
     
     public void scpFrom( String[] remoteFiles                 ) throws IOException { scpFrom( remoteFiles,              System.getProperty("user.dir")); }
     public void scpFrom( String   remoteFile                  ) throws IOException { scpFrom( new String[]{remoteFile}, System.getProperty("user.dir")); }
     public void scpFrom( String   remoteFile,  String localDir) throws IOException { scpFrom( new String[]{remoteFile}, localDir); }
     public void scpFrom( String[] remoteFiles, String localDir) throws IOException {
-        getSCPClient().get(remoteFiles, localDir);
+        SCPClient scp = getSCPClient();
+        if ( scp != null ) {
+            scp.get(remoteFiles, localDir);
+        } else {
+            throw new IOException("no scp channel to receive "+remoteFiles.length+" file[s]");
+        }
     }
     
     public String getHost(){ return host+((port==22)?"":":"+port); }
@@ -528,6 +545,27 @@ public class SSHshell  extends RunnableT {
     @Override
     public String toString() {
         return "SSHshell to "+this.user+"@"+this.host+":"+this.port;
+    }
+    
+    
+    private class ScpChannel extends RunnableT {
+
+        private final InputStream in;
+        private final OutputStream out;
+
+        ScpChannel(InputStream in, OutputStream out) {
+            this.in=in; this.out=out;
+        }
+                
+        @Override
+        public void run() {
+            setRunning();
+            
+            
+            
+            setClosed();
+        }
+        
     }
     
 }

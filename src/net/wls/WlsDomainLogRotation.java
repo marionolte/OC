@@ -42,10 +42,16 @@ public class WlsDomainLogRotation extends Version{
         for(String f : di.getFiles("hprof$")) {
             if ( ! f.isEmpty() ) {
                 WriteFile fn = new WriteFile(dir+File.separator+f);
-                 // System.out.println("file:"+f+":");
                           fn.gzip();
             }
         }
+        for(String f : di.getFiles("gc*log$")) {
+            if ( ! f.isEmpty() ) {
+                WriteFile fn = new WriteFile(dir+File.separator+f);
+                          fn.rotate(f+"-"+fn.getTime()+".gz", true, true);
+            }
+        }
+        
     }
     
     private void rotateDir(ReadDir dir) {
@@ -69,19 +75,14 @@ public class WlsDomainLogRotation extends Version{
         
         if ( ! wf.isMatching(savefile) ) {
           if ( wf.isOlderThanXDays(maxold)) {
-               System.out.println("INFO: file "+wf.getFQDNFileName()+" are deleted "+wf.delete());
+               System.out.println("INFO: file "+wf.getFQDNFileName()+" are deleted  now:"+wf.delete());
           } else {
               if ( ! wf.isCompresssed() ){  
                 if ( wf.isOlderThanXDays(minold) || wf.isBiggerThan(minsize) ) {
                    boolean trunc = wf.isMatching("log$|out$");
                    System.out.println("INFO: file "+wf.getFQDNFileName()+" rotate (truncate:"+trunc+")");
                    //WriteFile::public boolean rotate(String fn, boolean gzip, long minSize, long old, boolean truncate)
-                   wf.rotate(wf.getFQDNFileName()+"."+getTime()+".gz", 
-                             true, 
-                             minsize, 
-                             minold, 
-                             trunc
-                   );
+                   wf.rotate(wf.getFQDNFileName()+"."+getTime()+".gz", true, trunc );
                 }   
               } else {
                   printf(func,3, wf.getFQDNFileName()+" are compressed");
