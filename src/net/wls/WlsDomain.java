@@ -104,7 +104,7 @@ public class WlsDomain extends MainTask{
        final String func=getFunc("init()");
        HashMap<String, HashMap<String, String>> nmh = new HashMap<String, HashMap<String, String>>();
        int savedebug=debug;
-// debug=4;
+debug=4;
        confdir = new ReadDir(".");
        String te = getProperty("conf");
        printf(func,3,"tmpconf:"+te+":");
@@ -115,15 +115,16 @@ public class WlsDomain extends MainTask{
             conf.debug=debug;
             if ( ! conf.isReadableFile() ) {
                 te = getProperty("initfile");
-                if ( te == null || te.isEmpty() )
+                if ( te == null || te.isEmpty() ) {
                     throw new RuntimeException("ERROR: "+((conf!=null)?conf.getFQDNFileName():"NULL-FILE")+" not domain directory found with "+conf.getFQDNFileName());
+                }
             } else {
                 NodeList nl = conf.getNodeList("domain");
                 HashMap<String, String> domh = conf.getAttributes(nl.item(0));
                 if ( domh.get("name") == null ) {
                     conf.nodeReadout(nl,domh);
                 }
-                this._domainname = domh.get("name");
+                if(_domainname == null || _domainname.isEmpty() ) { this._domainname = domh.get("name"); }
                 
                 nl = conf.getNodeList("admin-server-name");
                 this._adminserver=nl.item(0).getTextContent();

@@ -275,7 +275,7 @@ public class ReadFile extends Version {
         return  Pattern.compile(req).matcher(filer.getName()).find();
     }
     synchronized public boolean isCompresssed() {        
-        return isMatching("\\.bz2$|\\.gz$|\\.zip$|\\.7z");
+        return isMatching("\\.bz2$|\\.gz$|\\.zip$|\\.7z|\\.Z$");
     }
     
     public File getParent() { return filer.getParentFile(); }

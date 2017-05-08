@@ -57,8 +57,9 @@ public class WriteFile extends ReadFile{
         return sw;
     }
     
-    private String getTime(){
+    public String getTime(){
         Calendar now = Calendar.getInstance();
+                 now.setTimeInMillis(this.getLastModified());
         StringBuilder sw=new StringBuilder(); 
         sw.append( now.get(Calendar.YEAR) );
         int d = now.get(Calendar.MONTH)+1;
@@ -74,7 +75,7 @@ public class WriteFile extends ReadFile{
     public boolean rotate() {
         StringBuilder sw=new StringBuilder(getTime());           
         if ( WriteFile.__GZIP ) { sw.append(".gz"); }
-        return rotate(filer.getAbsoluteFile().toString()+"."+sw.toString(), WriteFile.__GZIP, 500*1024L, -1L, true);
+        return rotate(filer.getAbsoluteFile().toString()+"."+sw.toString(), WriteFile.__GZIP, 50*1024L, -1L, true);
     }
     
     public boolean backup(Long size) { return backup(size, false); }
@@ -88,10 +89,22 @@ public class WriteFile extends ReadFile{
     public boolean rotate(String fn, boolean gzip, long minSize, long old, boolean truncate) {
         final String func="rotate(String fn, boolean gzip, long minSize, long old, boolean truncate)";
         boolean b=false;
-        System.out.println("fn:"+fn+":");
-        WriteFile toFn = new WriteFile(fn); 
+        printf(func,3,"fn:"+fn+":");
         if ( ((minSize > 0 && this.getSize() > minSize) || ( old > 0 && this.getLastModified() > old ))  && isWriteableFile() ) {
-            try {
+            return rotate(fn,gzip,truncate);
+        } else {
+            System.out.println("skip rotation for file "+this.getFileName()
+                              +" reason for skipping "
+                              +" isWritable:"+isWriteableFile()                    
+                              +" minSize:"+(this.getSize() > minSize)+"("+(getSize()-minSize)+")"
+                              +" file modification delta:"+(this.getLastModified() > old)+" ("+this.getLastModified()+">"+old+"="+(this.getLastModified()-old)+")");
+        }   
+        return b;
+    }
+    public boolean rotate(String fn, boolean gzip, boolean truncate){
+        final String func=getFunc("rotate(String fn, boolean gzip, boolean truncate)");
+        WriteFile toFn = new WriteFile(fn); 
+        try {
                 GZIPOutputStream _gzip=null;
                     OutputStream  _out=toFn.getOutStream();
                 if ( gzip ) { _gzip = new GZIPOutputStream(_out); } 
@@ -118,17 +131,10 @@ public class WriteFile extends ReadFile{
                 } else {
                     return delete();
                 }    
-            } catch(IOException io ) {
+        } catch(IOException io ) {
                 printf(func,1,"file "+this.getFileName()+" rotation error "+io.getMessage());
-            }    
-        } else {
-            System.out.println("skip rotation for file "+this.getFileName()
-                              +" reason for skipping "
-                              +" isWritable:"+isWriteableFile()                    
-                              +" minSize:"+(this.getSize() > minSize)+"("+(getSize()-minSize)+")"
-                              +" file modification delta:"+(this.getLastModified() > old)+" ("+this.getLastModified()+">"+old+"="+(this.getLastModified()-old)+")");
-        }   
-        return b;
+        }
+        return false;
     }
     
     public boolean truncate() {
