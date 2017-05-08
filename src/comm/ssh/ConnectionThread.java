@@ -11,7 +11,7 @@ import com.trilead.ssh2.Session;
 import java.io.File;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
-import main.SSHshell;
+import net.ssh.SSHshell;
 
 /**
  *
