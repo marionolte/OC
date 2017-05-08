@@ -373,6 +373,7 @@ public class Mos extends Updater{
           if ( w.isUpdateNeeded() ) { 
               printf(func,2,"call destionation update - needed");
               w.updateDestination(dest); 
+              
           } else {
               printf(func,3,"call destionation updated not needed");
           }

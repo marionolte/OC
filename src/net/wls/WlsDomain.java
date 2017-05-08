@@ -104,7 +104,7 @@ public class WlsDomain extends MainTask{
        final String func=getFunc("init()");
        HashMap<String, HashMap<String, String>> nmh = new HashMap<String, HashMap<String, String>>();
        int savedebug=debug;
-debug=4;
+//debug=4;
        confdir = new ReadDir(".");
        String te = getProperty("conf");
        printf(func,3,"tmpconf:"+te+":");
@@ -226,14 +226,8 @@ debug=4;
              }
              this.wu = new WlsUser(new URL("http://localhost:7001"),u,p);
              printf(func,2,"INFO: wu user:"+crypt.getUnCrypted(wu.getUsername())+"|"+u+"|<|  p:"+(p.matches(crypt.getUnCrypted(wu.getPassword()))) );
-        
-             if ( ! nmsrv.isEmpty() ) {
-                Iterator<String> itter = nmsrv.keySet().iterator();
-                while(itter.hasNext()) {
-                      WlsNodeManager w = nmsrv.get( itter.next() );
-                      if ( w != null ) { w.setNodeManagerUser(nmu); w.setNodeManagerPass(nmp); }
-                }
-             }
+             updateNodeManagers();
+             
              if ( ! servers.isEmpty() ) {
                 Iterator<String> itter = servers.keySet().iterator();
                 while(itter.hasNext()) {
@@ -272,6 +266,24 @@ debug=4;
     public String getNodeUser()     { return this._nodeMUser; }
     public String getNodePassword() { return this._nodeMPass; }
     
+    public void setNodeUser(     String u) { if (u!=null && ! u.isEmpty() ) {
+        this._nodeMUser=u;  updateNodeManagers();
+    } }
+    public void setNodePassword( String p) { if (p!=null && ! p.isEmpty() ) {
+        this._nodeMPass=p;  updateNodeManagers();
+    } }
+    public void setAdminUser(    String u) { if (u!=null && ! u.isEmpty() ) this.wu.setUsername(u); }
+    public void setAdminPassword(String p) { if (p!=null && ! p.isEmpty() ) this.wu.setPassword(p); }
+    
+    private void updateNodeManagers(){
+        if ( ! nmsrv.isEmpty() ) {
+                Iterator<String> itter = nmsrv.keySet().iterator();
+                while(itter.hasNext()) {
+                      WlsNodeManager w = nmsrv.get( itter.next() );
+                      if ( w != null ) { w.setNodeManagerUser(this._nodeMUser); w.setNodeManagerPass(this._nodeMPass); }
+                }
+        }
+    }
     
     public HashMap<String, WlsServer> getServers() { return servers; }
     
