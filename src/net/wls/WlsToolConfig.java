@@ -11,10 +11,18 @@ import io.file.ReadFile;
 import io.file.SecFile;
 import io.file.WriteFile;
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 /**
  *
@@ -78,28 +86,41 @@ public class WlsToolConfig extends Version{
     
     java.io.Console console = System.console();
     public void ask4User(WlsDomain wd) {
+        final String func=getFunc("ask4User(WlsDomain wd)");
         System.out.println("INFO: check domain "+wd.getDomainName()+" from location "+wd.getDomainLocation());
         String u =  wd.getAdminUser(); 
         if ( u == null || u.isEmpty() ) {
              System.out.println("Domain Admin User [weblogic] : "); 
              String readLine = console.readLine().trim();
              if ( readLine.isEmpty() ) { u="weblogic"; } else { u=readLine; }
+             if ( u != null && ! u.isEmpty() ) { wd.setAdminUser(u); }
+        } else {
+             printf(func,2,"admin user already configured");
         }
         String p= wd.getAdminPassword();
         if ( p == null || p.isEmpty() ) {
             char[] pass = console.readPassword("Admin User "+u+" Password : ", (Object[]) new String[]{});
             p=new String(pass);
+            if ( p != null && ! p.isEmpty() ) { wd.setAdminPassword(p); }
+        } else {
+             printf(func,2,"admin password already configured");
         }
         String un =  wd.getNodeUser(); 
         if ( un == null || un.isEmpty() ) {
              System.out.println("Domain NodeManager User [] : "); 
              String readLine = console.readLine().trim();
              if ( readLine.isEmpty() ) { u="weblogic"; } else { u=readLine; }
+             if ( un != null && ! un.isEmpty() ) { wd.setNodeUser(un); }
+        } else {
+             printf(func,2,"NodeManager admin user already configured");
         }
         String pn= wd.getNodePassword();
         if ( pn == null || pn.isEmpty() ) {
             char[] pass = console.readPassword("Admin NodeUserUser "+pn+" Password : ", (Object[]) new String[]{});
             pn=new String(pass);
+            if ( pn != null && ! pn.isEmpty() ) { wd.setNodePassword(pn); }
+        } else {
+            printf(func,2,"NodeManager password already configured");
         }
         
     }
@@ -142,42 +163,127 @@ public class WlsToolConfig extends Version{
     public boolean isUpdateNeeded() { return _needUpdate; }
 
     public void updateDestination(String dest) {
-        
+        final String func=getFunc("updateDestination(String dest)");
         if ( isUpdateNeeded() ) {
+           System.out.println("INFO: update create destination "+dest+" if needed"); 
            ReadDir dn= new ReadDir(dest+File.separator+"lib");
            if ( ! dn.isDirectory() ) { dn.mkdirs(); }
            
+           System.out.print("INFO: update OC.jar .. ");
            ReadFile df = new ReadFile(dest+File.separator+"lib"+File.separator+"OC.jar");
            if ( ! df.isReadableFile() || ! df.getFQDNFileName().replaceAll(File.separator, sepa).matches(jarfile.replaceAll(File.separator, sepa))) {
                 WriteFile dfr=new WriteFile(jarfile);
                           dfr.copy(new File(dn.getFQDNDirName()+File.separator+"OC.jar"));
            }
+           System.out.println("done");
+           System.out.print("INFO: update domain.info  .. ");
            WriteFile wt = new WriteFile(dest+File.separator+"domain.info");
            StringBuilder wta = new StringBuilder();
            StringBuilder sw = wt.readOut();
            String temp = getOutString( new BufferedInputStream( WlsToolConfig.class.getResourceAsStream("/setup/config/domain.info") ) );
+           printf(func,4,"read from resource domain.info:"+temp);
            if ( temp != null && ! temp.isEmpty() ) {
+                printf(func,3,"domain.info:"+temp);
                 for( String sp : temp.split("\n") ) {
                     wta.append(sp.trim()).append("\n");
+                    //System.out.println("sp:"+sp.trim());
                     if ( sp.trim().matches("### begin domain") ) {
+                         //System.out.println("check exsting\n"+sw.toString());
                          boolean begin=false;
                          for( String s : sw.toString().split("\n") ) {
                              if      ( s.trim().startsWith("### begin domain") ) { begin=true; }
                              else if ( s.trim().startsWith("### end   domain") ) { begin=false; }
                              if ( begin && ! s.startsWith("#") && s.contains("DOMAINHOME") ) {
-                                    String[] tp = s.split("\"");  String[] mp = tp[2].split(File.separator);
-                                    System.out.println("DOMAIN:"+mp[ mp.length-1]+": PATH:"+tp[2]+":");
-                                         
-                             }
+                                    String[] tp = s.trim().split("\"");  
+                                    String[] mp = tp[tp.length-1].replaceAll(File.separator+"$", "").split(File.separator);
+                                    
+                                    if ( ar.get(mp[ mp.length-1]) == null ) {
+                                        //System.out.println("DOMAIN:"+mp[ mp.length-1]+": PATH:"+tp[tp.length-1]+":");
+                                        //this.updateConfig(tp[tp.length-1]);
+                                        WlsDomain d = new WlsDomain(mp[ mp.length-1]);
+                                                  d.setDomainLocation(tp[tp.length-1]);
+                                                  ar.put(d.getDomainName(), d);
+                                    }                             
+                             } 
                          }
+                         
+                         Iterator<String> itter = ar.keySet().iterator();
+                         while( itter.hasNext() ) {
+                                WlsDomain d = ar.get(itter.next());
+                                //System.out.println("domain.info:"+d.getDomainName());
+                                wta.append("if [[ \"$DOM\" == \"").append(d.getDomainName()).append("\" ]]; then \n");
+                                wta.append("\texport DOMAINHOME=\"").append(d.getDomainLocation()).append("\"\n");
+                                wta.append("fi\n");
+                         }   
+                         //System.out.println("existing check completed");
                         
                     }
                 } 
+                
            }
+           if (wta.capacity() > 0 ) { 
+               wt.append(wta, false); 
+           }
+           System.out.println("done");
            
-           //System.out.println(txt);
+           System.out.print("INFO: update base runscripts .. ");
+           saveResourceFiles(jarfile, "/setup/bin", dest);
+           System.out.println("done");
+           
+           System.out.print("INFO: update domain runscripts .. ");  
+           String log   = getOutString( new BufferedInputStream( WlsToolConfig.class.getResourceAsStream("/setup/config/dom.logrota") ) );
+           String state = getOutString( new BufferedInputStream( WlsToolConfig.class.getResourceAsStream("/setup/config/dom.status") ) );
+           String serv  = getOutString( new BufferedInputStream( WlsToolConfig.class.getResourceAsStream("/setup/config/dom.server") ) );
+           String node  = getOutString( new BufferedInputStream( WlsToolConfig.class.getResourceAsStream("/setup/config/dom.node") ) );
+           
+           Iterator<String> itter = ar.keySet().iterator();
+           while( itter.hasNext() ) {
+                 WlsDomain d = ar.get(itter.next());
+                 final String dom=d.getDomainName();
+                 printf(func,2,"update domain:"+dom);
+                 WriteFile wf = new WriteFile(dest+File.separator+d.getDomainName()+"status"); 
+                           printf(func,3,"update "+wf.getFQDNFileName());
+                           wf.append( state.replaceAll("@@DOMAIN@@", dom).getBytes(), false);
+                           wf.setExecutable(true);
+                           
+                           wf = new WriteFile(dest+File.separator+d.getDomainName()+"WlsRota"); 
+                           printf(func,3,"update "+wf.getFQDNFileName());
+                           wf.append( log.replaceAll("@@DOMAIN@@", dom).getBytes(), false );
+                           wf.setExecutable(true);   
+                           
+                    /*String na = d.getAdminServer().getAdminServerName();
+                           wf = new WriteFile(dest+File.separator+d.getDomainName()+"Admin");
+                           printf(func,3,"update "+wf.getFQDNFileName());
+                           wf.append(serv.replaceAll("@@DOMAIN@@", dom).replaceAll("@@SERVER@@", na).getBytes(), false);  
+                           wf.setExecutable(true);*/
+                 
+                 HashMap<String, WlsServer> m = d.getServers();
+                 Iterator<String> its = m.keySet().iterator();
+                 while( its.hasNext() ) {
+                        String n=its.next();
+                        if ( ! n.isEmpty() ) {
+                           wf = new WriteFile(dest+File.separator+d.getDomainName()+n); wf.append( serv.replaceAll("@@DOMAIN@@", dom)
+                                                                                                       .replaceAll("@@SERVER@@", n).getBytes(), false);  
+                           printf(func,3,"update "+wf.getFQDNFileName());
+                           wf.setExecutable(true);
+                        }
+                 }
+                 
+                 ArrayList<WlsNodeManager> ma = d.getNodeManagers();
+                 while( ma.size() > 0 ) {
+                        WlsNodeManager nm = ma.remove(0);
+                        String n=nm.getMachineName();
+                        if ( ! n.isEmpty() ) {
+                           wf = new WriteFile(dest+File.separator+d.getDomainName()+n+"Node"); 
+                           printf(func,3,"update "+wf.getFQDNFileName());
+                           wf.append(  node.replaceAll("@@DOMAIN@@", dom).replaceAll("@@SERVER@@", n).replaceAll("@@MACHIN@@", n).getBytes(), false);  
+                           wf.setExecutable(true);
+                        }
+                 }
+           } 
+           System.out.println("done");
         } else {
-            System.out.println("no update needed");
+           System.out.println("INFO: no update needed");
         }
     }
 
@@ -199,5 +305,33 @@ public class WlsToolConfig extends Version{
         return st.toString();
     }
     
-    
+    private void saveResourceFiles(String file, String path, String dest ) {
+       final String func=getFunc("saveResourceFiles(String file, String path, String dest )"); 
+       try { 
+            ReadDir d = new ReadDir(dest); String dim=path.replaceAll("^/", "");
+            ZipInputStream zis = new ZipInputStream(new FileInputStream(file));
+            ZipEntry ze;  byte[] buf = new byte[1024];
+                while( (ze=zis.getNextEntry()) != null){
+                    String fn = ze.getName();
+                    printf(func,4," get entry :"+fn+":");
+                    if ( fn.startsWith(dim)  && fn.length() > dim.length()+1 ) {
+                         printf(func,1,"found entry from "+path+" with :"+fn+": length:"+fn.length() ); 
+                         String[] sp = fn.split("/");
+                         File nFile = new File(d.getFQDNDirName() + File.separator + sp[sp.length-1]);
+                         FileOutputStream fos = new FileOutputStream(nFile);
+                         int len;
+                         while ((len = zis.read(buf)) > 0) { fos.write(buf, 0, len); }
+                         fos.close();
+                         //close this ZipEntry
+                         zis.closeEntry();
+                         
+                         nFile.setExecutable(true); 
+                    }
+
+                }    
+       } catch(Exception e) {
+             printf(func,1,"get zip Error :"+e.getMessage()+":");
+       } 
+     
+    }  
 }

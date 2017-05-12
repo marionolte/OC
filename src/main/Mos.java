@@ -226,16 +226,17 @@ public class Mos extends Updater{
     
     private void wlsRotate(String[] args) {
         net.wls.WlsDomainLogRotation.parseArgs(args);
-        StringBuilder sw = new StringBuilder();
-        
-        for ( String s : sw.toString().split(net.wls.WlsDomainLogRotation.sepa) ) {
+        final String func=getFunc("wlsRotate(String[] args)");
+        for ( String s : net.wls.WlsDomainLogRotation.dirs.split(net.wls.WlsDomainLogRotation.sepa) ) {
             if ( ! s.isEmpty() ) {
                 ReadDir di = new ReadDir(s);
                 if ( di.isDirectory() ) {
-                    WlsDomain d = new WlsDomain(di.getDirName());
+                    printf(func,2,"rotate domain ->"+di.getDirName());
+                    WlsDomain d = new WlsDomain(di.getDirName()); d.debug=debug;
                               d.setDomainLocation(di.getFQDNDirName());
-                    WlsDomainLogRotation wlog = new WlsDomainLogRotation(d);
+                    WlsDomainLogRotation wlog = new WlsDomainLogRotation(d); wlog.debug=debug;
                                          wlog.rotate();
+                                         
                 }                         
             }
         }

@@ -31,23 +31,28 @@ public class WlsDomainLogRotation extends Version{
     public void rotate() {
         ReadDir di = new ReadDir(this.dom.getDomainLocation()+File.separator+"servers");
         for ( String srv : di.getDirectories() ) {
-            if ( ! srv.matches("domain_bak") && ! srv.matches("\\.\\.") ) {
+            if ( ! srv.matches("domain_bak") && ! srv.matches("\\.\\.") && ! srv.matches("\\.") ) {
                 //System.out.println("srv:"+srv+":");
                 ReadDir dir = new ReadDir( di.getFQDNDirName()+File.separator+srv+File.separator+"logs");
-                if ( dir.isDirectory() ) { rotateDir(dir); }
+                if ( dir.isDirectory() ) { 
+                    System.out.println("INFO: rotate "+dir.getFQDNDirName());
+                    rotateDir(dir); 
+                }
             }
         }
-        String dir=this.dom.getDomainLocation();
-        di = new ReadDir(dir);
+       
+        di = new ReadDir(this.dom.getDomainLocation());
         for(String f : di.getFiles("hprof$")) {
             if ( ! f.isEmpty() ) {
-                WriteFile fn = new WriteFile(dir+File.separator+f);
+                System.out.println("INFO: gzip file "+f);
+                WriteFile fn = new WriteFile(this.dom.getDomainLocation()+File.separator+f);
                           fn.gzip();
             }
         }
         for(String f : di.getFiles("gc*log$")) {
             if ( ! f.isEmpty() ) {
-                WriteFile fn = new WriteFile(dir+File.separator+f);
+                System.out.println("INFO: truncate + gzip file "+f);
+                WriteFile fn = new WriteFile(this.dom.getDomainLocation()+File.separator+f);
                           fn.rotate(f+"-"+fn.getTime()+".gz", true, true);
             }
         }

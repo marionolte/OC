@@ -323,6 +323,11 @@ public class WriteFile extends ReadFile{
         
     }
     
+    public boolean setExecutable(boolean b) {  filer.setExecutable(b); return filer.canExecute(); }
+    public boolean setWritable(  boolean b) {  filer.setWritable(b);   return filer.canWrite();   }
+    public boolean setReadable(  boolean b) {  filer.setReadable(b);   return filer.canRead();    }
+    
+    
     
     public static void main(String[] args) {
         WriteFile.__GZIP=true;
