@@ -59,6 +59,11 @@ public abstract class RunnableT extends Version implements Runnable {
         }
     }
     
+    final public void join() {
+        setClosed();
+        join();
+    }
+    
     final public void thwakeup() {
         synchronized(lock) {
             try { th.interrupt(); th.notify(); }  catch (Exception e) { }
