@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-java -jar $dir/../lib/OC.jar -crypt "$@"
+java -jar $dir/lib/OC.jar -crypt "$@"
 exit $?

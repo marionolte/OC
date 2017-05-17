@@ -88,40 +88,26 @@ public class WlsNodeManager extends MainTask {
         boolean bs = ( s !=  null && s.matches("true") );
         StringBuilder sw=new StringBuilder( (bs)?"https://":"http://" );
         
-               s = (bs)?this.map.get("ssllistenaddress"):this.map.get("listenaddress");
-              sw.append( (s==null||s.isEmpty())?"localhost":s  );
-              
-              s = (bs)?this.map.get("ssllistenport"):this.map.get("listenport");
-              sw.append( ( (s==null || s.isEmpty())?"/":":"+s+"/")   );
-              
+        sw.append(getHost()).append(getPort()).append("/");
         return sw.toString(); 
         
     }
     
-    public String getURIPort(){ 
-          String        s = this.map.get("sslenabled");
-          boolean bs = ( s !=  null && s.matches("true") );
-          return (bs)?this.map.get("ssllistenport"):this.map.get("listenport");
-    }
-    
-    public String getURIHost(){ 
-          String        s = this.map.get("sslenabled");
-          boolean bs = ( s !=  null && s.matches("true") );
-          return (bs)?this.map.get("ssllistenaddress"):this.map.get("listenaddress");
-    }
+    public String getURIPort(){ return ""+getPort(); }
+    public String getURIHost(){ return ""+getHost(); }    
 
     public String getHost(){ 
         String        s = this.map.get("sslenabled");
         boolean bs = ( s !=  null && s.matches("true") );
         s = (bs)?this.map.get("ssllistenaddress"):this.map.get("listenaddress");
-        return (s!=null)?s:"localhost";
+        return (s!=null && ! s.isEmpty() )?s:"localhost";
     }
     
     public int getPort() {
         String        s = this.map.get("sslenabled");
         boolean bs = ( s !=  null && s.matches("true") );
         String po = (bs)?this.map.get("ssllistenport"):this.map.get("listenport") ;
-        return  Integer.parseInt( (po==null)?"5556":po ) ;
+        return  Integer.parseInt( (po==null || po.isEmpty() )?"5556":po ) ;
     }
     
     public String getOnline() {

@@ -224,6 +224,8 @@ public class WlsDomain extends MainTask{
                  else if ( sp[0].toLowerCase().matches("nmuser")  ) { nmu=s.substring(sp[0].length()+1).trim(); }
                  else if ( sp[0].toLowerCase().matches("nmpass")  ) { nmp=s.substring(sp[0].length()+1).trim(); }
              }
+             if ( nmu != null && ! nmu.isEmpty() ) this._nodeMUser=nmu;
+             if ( nmp != null && ! nmp.isEmpty() ) this._nodeMPass=nmp;
              this.wu = new WlsUser(new URL("http://localhost:7001"),u,p);
              printf(func,2,"INFO: wu user:"+crypt.getUnCrypted(wu.getUsername())+"|"+u+"|<|  p:"+(p.matches(crypt.getUnCrypted(wu.getPassword()))) );
              updateNodeManagers();

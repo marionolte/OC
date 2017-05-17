@@ -27,36 +27,61 @@ function startingNM() {
 	m1="SERVER${SERVER}NODE"
 	m=${!m1}
 	echo "Starting instance $SERVER over NodeManager $m"
+	r1="NODE${m}RUNNING" 
+	if [[ ${!r1} -eq 0 ]]; then
+		echo "ERROR: NodeManager $m not running"
+		exit 2
+	fi
 	us1="NODE${m}NODEUSER"
 	us=${!us1}
 	pa1="NODE${m}NODEPASS"
 	pa=${!pa1}
 	ho1="NODE${m}HOST"
-	ho=$(!ho1)
+	ho=${!ho1}
 	po1="NODE${m}PORT"
-        po=$(!ho1)
+        po=${!po1}
 
-	#echo "us = java.lang.System.getenv('NODE${m}NODEUSER');"                               	  	  >"${dir}/start-${SERVER}.py"
-        #echo "pa = java.lang.System.getenv('NODE${m}NODEPASS');"                              		 >>"${dir}/start-${SERVER}.py"
-        echo "nmConnect('${us}','${pa}','${ho}','${po}',domainName='$dom',domainDir='${DOMAINHOME}');"      >"${dir}/start-${SERVER}.py"
+        echo "nmConnect('${us}','${pa}','${ho}',${po},domainName='$dom',domainDir='${DOMAINHOME}');"      >"${dir}/start-${SERVER}.py"
         echo "nmStart('${SERVER}');"									 >>"${dir}/start-${SERVER}.py"
         echo "exit();"											 >>"${dir}/start-${SERVER}.py"
-        ( cd $DOMAINHOME && . ./bin/setDomainEnv.sh && ${JAVA_HOME}/bin/java -classpath ${FMWCONFIG_CLASSPATH} ${MEM_ARGS} ${JVM_D64} ${JAVA_OPTIONS} weblogic.WLST  "${dir}/start-${SERVER}.py" )
+        RES=`( cd $DOMAINHOME 2>&1 && . ./bin/setDomainEnv.sh 2>&1 && ${JAVA_HOME}/bin/java -classpath ${FMWCONFIG_CLASSPATH} ${MEM_ARGS} ${JVM_D64} ${JAVA_OPTIONS} weblogic.WLST  "${dir}/start-${SERVER}.py" 2>&1 ) `
+	
+	echo "$RES" | grep "denied" >/dev/null 2>&1
+ 	if [ "$?" -eq 0 ]; then
+		echo "ERROR:  nodemanager user wrong - update nmuser/nmpass in $DOMAINHOME/domainkeys with correct credentials"
+		#rm "${dir}/start-${SERVER}.py" 2>/dev/null
+		exit 2
+	fi	
+	echo $RES
 }
 
 function stoppingNM() {
 	m1="SERVER${SERVER}NODE"
         m=${!m1}
         echo "Stopping instance $SERVER over NodeManager $m ($NODEHOST/$NODEPORT)"
+        r1="NODE${m}RUNNING"
+        if [[ ${!r1} -eq 0 ]]; then
+                echo "ERROR: NodeManager $m not running"
+                exit 2
+        fi
+        us1="NODE${m}NODEUSER"
+        us=${!us1}
+        pa1="NODE${m}NODEPASS"
+        pa=${!pa1}
+        ho1="NODE${m}HOST"
+        ho=${!ho1}
+        po1="NODE${m}PORT"
+        po=${!po1}
 
-        echo "nmuser = java.lang.System.getenv('nmuser')"  	 				 >"${dir}/shutdown-${SERVER}.py"
-        echo "nmpass = java.lang.System.getenv('nmpass')"     					>>"${dir}/shutdown-${SERVER}.py"
-        echo "NMHOST = java.lang.System.getenv('NODEHOST')"                                       >>"${dir}/shutdown-${SERVER}.py"
-        echo "NMPORT = java.lang.System.getenv('NODEPORT')"                                       >>"${dir}/shutdown-${SERVER}.py"
-	echo "nmConnect('${nmuser}','${nmpass}','${NMHOST}','${NMPORT}',domainName='$dom',domainDir='${DOMAINHOME}');"      >>"${dir}/shutdown-${SERVER}.py"
+        #echo "nmuser = java.lang.System.getenv('nmuser')"  	 				 >"${dir}/shutdown-${SERVER}.py"
+        #echo "nmpass = java.lang.System.getenv('nmpass')"     					>>"${dir}/shutdown-${SERVER}.py"
+        #echo "NMHOST = java.lang.System.getenv('NODEHOST')"                                       >>"${dir}/shutdown-${SERVER}.py"
+        #echo "NMPORT = java.lang.System.getenv('NODEPORT')"                                       >>"${dir}/shutdown-${SERVER}.py"
+	#echo "nmConnect('${nmuser}','${nmpass}','${NMHOST}','${NMPORT}',domainName='$dom',domainDir='${DOMAINHOME}');"      >>"${dir}/shutdown-${SERVER}.py"
+        echo "nmConnect('${us}','${pa}','${ho}',${po},domainName='$dom',domainDir='${DOMAINHOME}');"     >"${dir}/shutdown-${SERVER}.py"
 	echo "nmKill('${SERVER}');"									>>"${dir}/shutdown-${SERVER}.py"
 	echo "exit()" 											>>"${dir}/shutdown-${SERVER}.py"
-	( cd $DOMAINHOME && . ./bin/setDomainEnv.sh && ${JAVA_HOME}/bin/java -classpath ${FMWCONFIG_CLASSPATH} ${MEM_ARGS} ${JVM_D64} ${JAVA_OPTIONS} weblogic.WLST "${dir}/shutdown-${SERVER}.py" )
+	RES=`( cd $DOMAINHOME 2>&1 && . ./bin/setDomainEnv.sh 2>&1 && ${JAVA_HOME}/bin/java -classpath ${FMWCONFIG_CLASSPATH} ${MEM_ARGS} ${JVM_D64} ${JAVA_OPTIONS} weblogic.WLST "${dir}/shutdown-${SERVER}.py" 2>&1 )`
 }
 
 function starting() {

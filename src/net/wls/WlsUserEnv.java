@@ -81,8 +81,8 @@ public class WlsUserEnv extends Version {
                  sm.append(s.getName()).append(",");
                  final String   nname="NODE"+s.getName();
                         map.put(nname+"URL",       s.getURIString());
-                        map.put(nname+"HOST",      s.getURIHost()  );
-                        map.put(nname+"PORT",      s.getURIPort()  );
+                        map.put(nname+"HOST",      s.getHost()  );
+                        map.put(nname+"PORT",   ""+s.getPort()  );
                     if ( server.isEmpty() || s.isManagingServer(server) ) {
                         map.put(nname+"RUNNING",   s.getOnline()   );
                         map.put(nname+"NODEUSER",  s.getNodeManagerUser());

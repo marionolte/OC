@@ -7,5 +7,5 @@ if [[ "$#" -eq 0 ]]; then
 	LOGA=""
 	echo "ERROR: missing domain directory to run"
 fi
-java ${SSLDEBUG} -jar ${dir}/../lib/OC.jar ${COMM} "$@" ${LOGA} 2>/dev/null
+java ${SSLDEBUG} -jar ${dir}/lib/OC.jar ${COMM} "$@" ${LOGA} 2>/dev/null
 exit $?
