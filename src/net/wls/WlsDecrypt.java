@@ -23,11 +23,11 @@ public class WlsDecrypt extends Version {
 
     private  WlsDomain wls=null;
 
-    private WlsDecrypt(WlsDomain wls) {
+    public WlsDecrypt(WlsDomain wls) {
         this.wls=wls;
     }
     
-    private void decrypt() throws IOException {
+    public void decrypt() throws IOException {
         
         if ( wls != null ) {
              String script = getOutString( new BufferedInputStream( WlsDecrypt.class.getResourceAsStream("/net/wls/scripts/decrypthash.py") ) )
@@ -36,10 +36,10 @@ public class WlsDecrypt extends Version {
                                  .replace("@@NMUS@@", wls._nodeMUser)
                                  .replace("@@NMPA@@", wls._nodeMPass); 
              
-            WriteFile wt = new WriteFile(wls.getDomainLocation()+File.separator+"info.py"); wt.replace(script);
+            WriteFile wt = new WriteFile(wls.getDomainLocation()+File.separator+"info.py"); wt.append(script,false);
             Process p = null;
-            ProcessBuilder pb = new ProcessBuilder(". ./bin/setDomainEnv.sh && java weblogic.WLST info.py");
-            pb.directory(new File (wls.getDomainLocation() ) );
+            ProcessBuilder pb = new ProcessBuilder("bash", "-c","( cd "+wls.getDomainLocation()+" &&  . ./bin/setDomainEnv.sh && java weblogic.WLST info.py 2>&1 )");
+            //pb.directory(new File (wls.getDomainLocation() ) );
             p = pb.start(); 
             
             
@@ -49,6 +49,7 @@ public class WlsDecrypt extends Version {
             while ((line = br.readLine()) != null) {
                 System.out.println(line);
             }
+            //wt.delete();
         }
     }    
     
