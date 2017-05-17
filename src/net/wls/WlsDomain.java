@@ -32,8 +32,8 @@ public class WlsDomain extends MainTask{
     private String _mwhome="";
     private String _wlhome="";
     private String _adminserver="AdminServer";
-    private String _nodeMUser="";
-    private String _nodeMPass="";
+    String _nodeMUser="";
+    String _nodeMPass="";
             boolean _domainkeyLoaded =false;
     
     public WlsDomain(String[] args) {
