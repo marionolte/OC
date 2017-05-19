@@ -6,7 +6,6 @@
 package main;
 
 import net.ssh.SSHshell;
-import com.trilead.ssh2.SCPClient;
 import general.Updater;
 import io.Console;
 import io.crypt.Crypt;
@@ -14,7 +13,6 @@ import io.file.ReadDir;
 import io.file.ReadFile;
 import io.file.SecFile;
 import io.file.WriteFile;
-import io.thread.RunnableT;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -167,6 +165,8 @@ public class Mos extends Updater{
             else if ( args[i].matches("-rota")     ){ logRotate(getArgsLower(args,++i));        fin=true; }
             else if ( args[i].matches("-gclog")    ){ gcLog(getArgsLower(args,++i));            fin=true; }
             else if ( args[i].matches("-update")   ){ updateJar();                              fin=true; }
+            else if ( args[i].matches("-unsecure") ){ unsecureFile(getArgsLower(args,++i));        fin=true; }
+            else if ( args[i].matches("-secure")   ){ secureFile(getArgsLower(args,++i));        fin=true; }
             else if ( args[i].matches("-d")        ){ debug++; }
             else if ( args[i].matches("-version")  ){ version(); _exit=0;                       fin=true; donemsg=false; }
             else {
@@ -177,6 +177,31 @@ public class Mos extends Updater{
         } 
     }
     
+    private void secureFile(String[] ar) {
+        if ( ar.length > 0 ) {
+            for (int i=0; i<ar.length; i++ ) {
+                ReadFile rf = new ReadFile(ar[i]);
+                if ( rf.isReadableFile() ) {
+                    SecFile wf = new SecFile(ar[i]);
+                } else {
+                    System.out.println("WARNING: "+ar[i]+" is not a readable file - skipping");
+                }
+            }
+        }
+    }
+    private void unsecureFile(String[] ar) {
+        if ( ar.length > 0 ) {
+            for (int i=0; i<ar.length; i++ ) {
+                SecFile sec = new SecFile(ar[i]);
+                if ( sec.isReadableFile() ) {
+                    WriteFile wf = new WriteFile(ar[i]);
+                              wf.replace(sec.readOut().toString());
+                } else {
+                    System.out.println("WARNING: "+ar[i]+" is not a readable file - skipping");
+                }
+            }
+        }
+    }
     private void updateJar(){
         final String func=getFunc("updateJar()");
         String info="unknown";

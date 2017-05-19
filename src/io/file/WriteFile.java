@@ -47,7 +47,7 @@ public class WriteFile extends ReadFile{
     }
 
     public boolean replace(StringBuilder sw) { return replace(sw.toString()); }
-    public boolean replace(String s        ) { return (delete())?append(s):false; }
+    public boolean replace(String s        ) { truncate(); return append(s); }
     
     public boolean delete() { return super.filer.delete(); }
     

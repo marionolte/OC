@@ -45,7 +45,8 @@ public class SecFile extends ReadFile {
     
     
     public boolean delete() { return rFile.delete(); }
-    public boolean append(String line) { return rFile.append( crypt.getCrypted(line) ); }
+    public boolean  append(String line) { return rFile.append( crypt.getCrypted(line) ); }
+    public boolean replace(String line) { rFile.truncate(); return append(line); }
     
     public boolean isCrypted() {
         StringBuilder sw=rFile.readOut();

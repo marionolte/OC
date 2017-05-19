@@ -28,7 +28,7 @@ public class WlsDecrypt extends Version {
     }
     
     public void decrypt() throws IOException {
-        
+        final String f="info.py";
         if ( wls != null ) {
              String script = getOutString( new BufferedInputStream( WlsDecrypt.class.getResourceAsStream("/net/wls/scripts/decrypthash.py") ) )
                                  .replace("@@USER@@", wls.getAdminUser())
@@ -36,9 +36,9 @@ public class WlsDecrypt extends Version {
                                  .replace("@@NMUS@@", wls._nodeMUser)
                                  .replace("@@NMPA@@", wls._nodeMPass); 
              
-            WriteFile wt = new WriteFile(wls.getDomainLocation()+File.separator+"info.py"); wt.append(script,false);
+            WriteFile wt = new WriteFile(wls.getDomainLocation()+File.separator+f); wt.replace(script);
             Process p = null;
-            ProcessBuilder pb = new ProcessBuilder("bash", "-c","( cd "+wls.getDomainLocation()+" &&  . ./bin/setDomainEnv.sh && java weblogic.WLST info.py 2>&1 )");
+            ProcessBuilder pb = new ProcessBuilder("bash", "-c","( cd "+wls.getDomainLocation()+" &&  . ./bin/setDomainEnv.sh && java weblogic.WLST "+f+" 2>&1 )");
             //pb.directory(new File (wls.getDomainLocation() ) );
             p = pb.start(); 
             
@@ -47,11 +47,36 @@ public class WlsDecrypt extends Version {
             BufferedReader br = new BufferedReader(isr);
             String line;
             while ((line = br.readLine()) != null) {
-                System.out.println(line);
+                //System.out.println("=>"+line+"<=");
+                if      ( line.startsWith("User:")   )  { String v = splitout(line);   _user=v;} 
+                else if ( line.startsWith("Pass:")   )  { String v = splitout(line);   _pass=v;} 
+                else if ( line.startsWith("NMUser:") )  { String v = splitout(line);  _nuser=v;} 
+                else if ( line.startsWith("NMPass:") )  { String v = splitout(line);  _npass=v;} 
+                
             }
-            //wt.delete();
+            wt.delete();
+            
+            //System.out.println("User \t->"+getUser()+"<-\nPass \t->"+getPass()+"<-\nNMUser \t->"+getNMUser()+"<-\nNMPass \t->"+getNMPass()+"<-");
+            
         }
-    }    
+    }
+
+    private String _user="";
+    private String _pass="";
+    private String _nuser="";
+    private String _npass="";
+    
+    public String getUser()   { return  _user; }
+    public String getNMUser() { return _nuser; }
+    public String getPass()   { return  _pass; }
+    public String getNMPass() { return _npass; }
+    
+    
+    private String splitout(String s) {
+        String[] sp = s.split(":");
+        if ( s.length() > sp[0].length()+1 ) { return s.trim().substring(sp[0].length()+1);}
+        return "";
+    }
     
     public static void main(String[] args) throws Exception {
         for ( int i=0; i< args.length; i++){

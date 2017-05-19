@@ -210,14 +210,15 @@ public class WlsDomain extends MainTask{
             //te = confdir.getFQDNDirName()+File.separator+"domainkeys";
             te=tef.getFQDNFileName();
         }
+        
         SecFile nf = new SecFile(te); 
         printf(func,2,"INFO:  like to read pwfile:"+nf.getFQDNFileName()+" is readable:"+nf.isReadableFile() );
         if ( nf.isReadableFile() ) {
              
-             String a = nf.readOut().toString();
-             String dec= (a.endsWith("="))? crypt.getUnCrypted(a):a ;
+             //String a = nf.readOut().toString();
+             //String dec= (a.endsWith("="))? crypt.getUnCrypted(a):a ;
              String u=""; String p=""; String nmu=""; String nmp="";
-             for(String s: dec.split("\n")) {
+             for(String s: nf.readOut().toString().split("\n") ) {// a.split("\n")) {
                  String[] sp = s.trim().split("=");
                  if      ( sp[0].toLowerCase().matches("username")) {   u=s.substring(sp[0].length()+1).trim(); }
                  else if ( sp[0].toLowerCase().matches("password")) {   p=s.substring(sp[0].length()+1).trim(); }
@@ -274,8 +275,18 @@ public class WlsDomain extends MainTask{
     public void setNodePassword( String p) { if (p!=null && ! p.isEmpty() ) {
         this._nodeMPass=p;  updateNodeManagers();
     } }
-    public void setAdminUser(    String u) { if (u!=null && ! u.isEmpty() ) this.wu.setUsername(u); }
+    public void setAdminUser(    String u) { 
+        if (u!=null && ! u.isEmpty() ) this.wu.setUsername(u); 
+    }
     public void setAdminPassword(String p) { if (p!=null && ! p.isEmpty() ) this.wu.setPassword(p); }
+    
+    void updateAccounts(String user, String pass, String nmUser, String nmPass ) {
+         this.wu = new WlsUser(wu.getUrl(),user,pass); 
+         this._nodeMUser=nmUser;
+         this._nodeMPass=nmPass;
+        //System.out.println("update nodemanaager"); 
+         updateNodeManagers();
+    }
     
     private void updateNodeManagers(){
         if ( ! nmsrv.isEmpty() ) {
@@ -409,4 +420,6 @@ public class WlsDomain extends MainTask{
         WlsDomain wl = getInstance(args);
         return wl;          
     }
+
+    
 }

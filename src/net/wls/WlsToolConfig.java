@@ -11,16 +11,13 @@ import io.file.ReadFile;
 import io.file.SecFile;
 import io.file.WriteFile;
 import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -72,13 +69,27 @@ public class WlsToolConfig extends Version{
             printf(func,2,"Dir:"+d.getFQDNDirName()+":  domain:"+d.getDirName()+":");
             WlsDomain wd = new WlsDomain(d.getDirName());
                       wd.setDomainLocation(d.getFQDNDirName());
+            try {
+                //System.out.println("init decrypt");
+                        WlsDecrypt wdc = new WlsDecrypt(wd);
+                //System.out.println("start decrypt");
+                                   wdc.decrypt();
+                //System.out.println("end decrypt");           
+                                   wd.updateAccounts( wdc.getUser(), wdc.getPass(), wdc.getNMUser(), wdc.getNMPass() );
+                                   
+                //System.out.println("update accounts done");        
+            }catch(java.io.IOException io) {
+                                   printf(func,1,"ERROR: check decrypt information with error:"+io.getMessage());
+            }           
+            //System.out.println("ask4User");
                       ask4User(wd);
                       ar.put(wd.getDomainName(),wd);
-                      
+            //System.out.println("domainkeys check");          
                       SecFile fd = new SecFile(d.getFQDNDirName()+File.separator+"domainkeys");
                       if ( ! fd.isReadableFile() ) {
                            this._needUpdate=true;
-                      }
+                      } 
+            System.out.println("done");          
         } else {
             printf(func,2,"not a readable directory :"+dir);
         }
@@ -176,7 +187,7 @@ public class WlsToolConfig extends Version{
                           dfr.copy(new File(dn.getFQDNDirName()+File.separator+"OC.jar"));
            }
            System.out.println("done");
-           System.out.print("INFO: update domain.info  .. ");
+           System.out.print("INFO: update domain.info & domainkeys .. ");
            WriteFile wt = new WriteFile(dest+File.separator+"domain.info");
            StringBuilder wta = new StringBuilder();
            StringBuilder sw = wt.readOut();
@@ -214,6 +225,15 @@ public class WlsToolConfig extends Version{
                                 wta.append("if [[ \"$DOM\" == \"").append(d.getDomainName()).append("\" ]]; then \n");
                                 wta.append("\texport DOMAINHOME=\"").append(d.getDomainLocation()).append("\"\n");
                                 wta.append("fi\n");
+                                
+                                StringBuilder ft = new StringBuilder();
+                                ft.append("username=").append(d.getAdminUser()    ).append("\n")
+                                  .append("password=").append(d.getAdminPassword()).append("\n")
+                                  .append("nmuser="  ).append(d.getNodeUser()     ).append("\n")
+                                  .append("nmpass="  ).append(d.getNodePassword() ).append("\n");      
+                                SecFile fd = new SecFile(d.getDomainLocation()+File.separator+"domainkeys");
+                                        fd.replace(ft.toString());
+                      
                          }   
                          //System.out.println("existing check completed");
                         
@@ -276,7 +296,7 @@ public class WlsToolConfig extends Version{
                         if ( ! n.isEmpty() ) {
                            wf = new WriteFile(dest+File.separator+d.getDomainName()+n+"Node"); 
                            printf(func,3,"update "+wf.getFQDNFileName());
-                           wf.append(  node.replaceAll("@@DOMAIN@@", dom).replaceAll("@@SERVER@@", n).replaceAll("@@MACHIN@@", n).getBytes(), false);  
+                           wf.append(  node.replaceAll("@@DOMAIN@@", dom).replaceAll("@@SERVER@@", n).replaceAll("@@MACHINE@@", n).getBytes(), false);  
                            wf.setExecutable(true);
                         }
                  }
