@@ -74,22 +74,29 @@ public class WlsToolConfig extends Version{
                         WlsDecrypt wdc = new WlsDecrypt(wd);
                 //System.out.println("start decrypt");
                                    wdc.decrypt();
-                //System.out.println("end decrypt");           
+                //System.out.println("end decrypt");   
+                if ( wdc.getUser().isEmpty() || wdc.getPass().isEmpty() || wdc.getNMUser().isEmpty() || wdc.getNMPass().isEmpty() ) { 
+                                   //System.out.println("ask4User");
+                                   ask4User(wd);
+                }
+                if ( wdc.getUser().isEmpty() || wdc.getPass().isEmpty() || wdc.getNMUser().isEmpty() || wdc.getNMPass().isEmpty() ) { 
                                    wd.updateAccounts( wdc.getUser(), wdc.getPass(), wdc.getNMUser(), wdc.getNMPass() );
-                                   
+                } //else { 
+                  //  throw new RuntimeException("ERROR: missing user account information");
+                //}                   
                 //System.out.println("update accounts done");        
             }catch(java.io.IOException io) {
                                    printf(func,1,"ERROR: check decrypt information with error:"+io.getMessage());
             }           
             //System.out.println("ask4User");
-                      ask4User(wd);
+            //          ask4User(wd);
                       ar.put(wd.getDomainName(),wd);
             //System.out.println("domainkeys check");          
                       SecFile fd = new SecFile(d.getFQDNDirName()+File.separator+"domainkeys");
                       if ( ! fd.isReadableFile() ) {
                            this._needUpdate=true;
                       } 
-            System.out.println("done");          
+            //System.out.println("done");          
         } else {
             printf(func,2,"not a readable directory :"+dir);
         }
@@ -99,40 +106,41 @@ public class WlsToolConfig extends Version{
     public void ask4User(WlsDomain wd) {
         final String func=getFunc("ask4User(WlsDomain wd)");
         System.out.println("INFO: check domain "+wd.getDomainName()+" from location "+wd.getDomainLocation());
-        String u =  wd.getAdminUser(); 
-        if ( u == null || u.isEmpty() ) {
-             System.out.println("Domain Admin User [weblogic] : "); 
-             String readLine = console.readLine().trim();
-             if ( readLine.isEmpty() ) { u="weblogic"; } else { u=readLine; }
-             if ( u != null && ! u.isEmpty() ) { wd.setAdminUser(u); }
-        } else {
-             printf(func,2,"admin user already configured");
-        }
-        String p= wd.getAdminPassword();
-        if ( p == null || p.isEmpty() ) {
+        String u  = wd.getAdminUser(); 
+        String p  = wd.getAdminPassword();
+        String un = wd.getNodeUser(); 
+        String pn = wd.getNodePassword();
+        
+        if ( u.isEmpty() || p.isEmpty() ) {
+                  System.out.print("Domain Admin User ["+((u!=null && ! u.isEmpty())?u:"")+"] : "); 
+                  String readLine = console.readLine().trim();
+                  if ( readLine.isEmpty() ) { u=(u.isEmpty())?"weblogic":u; } else { u=readLine; }
+                  wd.setAdminUser(u); 
+               u= wd.getAdminUser();
+                  System.out.println("");
+        }          
+        
+        if ( p.isEmpty() ) {
             char[] pass = console.readPassword("Admin User "+u+" Password : ", (Object[]) new String[]{});
             p=new String(pass);
             if ( p != null && ! p.isEmpty() ) { wd.setAdminPassword(p); }
-        } else {
-             printf(func,2,"admin password already configured");
+            System.out.println("");
         }
-        String un =  wd.getNodeUser(); 
-        if ( un == null || un.isEmpty() ) {
-             System.out.println("Domain NodeManager User [] : "); 
+        if ( un.isEmpty() || pn.isEmpty() ) {
+             System.out.print("Domain NodeManager User ["+un+"] : "); 
              String readLine = console.readLine().trim();
              if ( readLine.isEmpty() ) { u="weblogic"; } else { u=readLine; }
-             if ( un != null && ! un.isEmpty() ) { wd.setNodeUser(un); }
-        } else {
-             printf(func,2,"NodeManager admin user already configured");
-        }
-        String pn= wd.getNodePassword();
-        if ( pn == null || pn.isEmpty() ) {
-            char[] pass = console.readPassword("Admin NodeUserUser "+pn+" Password : ", (Object[]) new String[]{});
-            pn=new String(pass);
-            if ( pn != null && ! pn.isEmpty() ) { wd.setNodePassword(pn); }
-        } else {
-            printf(func,2,"NodeManager password already configured");
-        }
+             if ( un != null && ! un.isEmpty() ) { wd.setNodeUser(un); } else { wd.setNodeUser("weblogic"); } 
+               un =  wd.getNodeUser();
+             System.out.println(""); 
+        }     
+        
+        if ( pn.isEmpty() ) {
+            char[] pass = console.readPassword("Domain NodeUser User ["+un+"] Password : ", (Object[]) new String[]{});
+            pn=(pass.length>0)?new String(pass):pn;
+            wd.setNodePassword(pn); 
+            System.out.println("");
+        }    
         
     }
 

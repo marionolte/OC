@@ -49,12 +49,26 @@ public class ReadFile extends Version {
     }
 
     public ReadFile(File file) {
-         this.filer= getCanonical(file);
-         this.file = file.getName();
-         this.dir  = file.getParent();
+        boolean b = file.isFile();
+         this.filer= ( b )? getCanonical(file):file;
+         this.file = ( b )? file.getName():file.toString();
+         this.dir  = ( b )? file.getParent():getPar(file.toString());
     }
 
-
+    private String getPar(String f) {
+        StringBuilder sw = new StringBuilder();
+        if ( f.indexOf(File.separator) > 0 ) {
+            String[] sp = f.split(File.separator); 
+            for ( int i=0; i<sp.length-1; i++  ) {
+                if ( sw.capacity() > 0 ) { sw.append(File.separator); }
+                if      ( sp[i].matches("~") ) { sw.append(System.getProperty("user.home")); } 
+                else if ( sp[i].matches(".") ) { sw.append(System.getProperty("user.dir"));  }
+                else { sw.append(sp[i]); }
+            }
+            
+        } else { sw.append(System.getProperty("user.dir")); }
+        return sw.toString();
+    }
     private File getCanonical(File d) {
         final String sepa="__@@__";
         final ArrayList<String> ar = new ArrayList();

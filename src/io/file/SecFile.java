@@ -27,12 +27,20 @@ public class SecFile extends ReadFile {
     public SecFile(String fn) { this(new File(fn)); }
     public SecFile(File   fn) { 
         super(fn);
+        final String func="SecFile(File   fn)";
+        printf(func,2,"create writeFile ");
         this.rFile = new WriteFile(fn);
-        this.crypt = new Crypt();
-        this.crypt.setCustomKey(rFile.getFQDNFileName());
-        setCryptLevel(1);
+        printf(func,2,"create crypt ");
         
+        this.crypt = new Crypt();
+        printf(func,2,"add custom key");
+        this.crypt.setCustomKey(rFile.getFQDNFileName());
+        printf(func,2,"set crypt level secFile");
+        setCryptLevel(1);
+        printf(func,2,"test secFile");
         (new SecTest()).start(); //check isCrypted()
+        printf(func,2,"test secFile started -  done");
+        //System.out.println("secfile done");
     }
     
     public void setCryptLevel(int level) {
@@ -48,12 +56,16 @@ public class SecFile extends ReadFile {
     public boolean  append(String line) { return rFile.append( crypt.getCrypted(line) ); }
     public boolean replace(String line) { rFile.truncate(); return append(line); }
     
-    public boolean isCrypted() {
-        StringBuilder sw=rFile.readOut();
-        return (sw!=null && sw.length()>0 && sw.toString().endsWith("=") );
+    synchronized public boolean isCrypted() {
+        if ( rFile.isReadableFile() ) {
+            StringBuilder sw=rFile.readOut();
+            return (sw!=null && sw.length()>0 && sw.toString().endsWith("=") );
+        }
+        return false;
     }
     
-    public boolean crypt() {
+    synchronized public boolean crypt() {
+        final String func=getFunc("crypt()");
         if ( ! rFile.isBinaryFile() )  {
               String s= rFile.readOut().toString();
                      s= crypt.getCrypted(s.replaceAll("==$", "="));
@@ -74,7 +86,7 @@ public class SecFile extends ReadFile {
                   
                 }
             } catch(java.io.IOException io ) {
-                    
+              printf(func,1,"ERROR - crypt exception "+io.getMessage(),io);      
             }  
             sw.append( ((sw.substring(sw.capacity()-1).matches("="))?"":"=") );
             rFile.replace(sw.toString());
@@ -85,6 +97,8 @@ public class SecFile extends ReadFile {
     }
     
     public boolean uncrypt() {
+        final String func=getFunc("uncrypt()");
+        
         if ( isCrypted() ) {
             StringBuilder sw = readOut();
             if ( ! sw.substring(0, ("<BINARY>\n").length()).matches(("<BINARY>\n") ) ) {
@@ -103,7 +117,9 @@ public class SecFile extends ReadFile {
                 }
                 out.flush();
                 out.close();
-              } catch(java.io.IOException io ) {}  
+              } catch(java.io.IOException io ) {
+                 printf(func,1,"ERROR - uncrypt exception - "+io.getMessage(),io); 
+              }  
             }
         }
         return isCrypted();

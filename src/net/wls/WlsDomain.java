@@ -34,15 +34,16 @@ public class WlsDomain extends MainTask{
     private String _adminserver="AdminServer";
     String _nodeMUser="";
     String _nodeMPass="";
+    String _user="";
             boolean _domainkeyLoaded =false;
     
     public WlsDomain(String[] args) {
        super(args,"WlsDomain");
-       final String func="WlsDomain(String[] args)";
+       final String func=getFunc("WlsDomain(String[] args)");
        WlsServer.debug=debug;
        servers = new  HashMap<String, WlsServer>();
        nmsrv   = new  HashMap<String, WlsNodeManager>();
-       printf(getFunc(func),3,"conf:"+getProperty("conf"));
+       printf(func,3,"conf:"+getProperty("conf"));
        if ( getProperty("conf","none").matches("none") ) {
         if ( ! getProperty("domain","none").matches("none") ) {
             this._domainname=getProperty("domain");
@@ -50,7 +51,9 @@ public class WlsDomain extends MainTask{
         }
        }
        
-       try { init(); } catch(Exception e) {}
+       try { init(); } catch(Exception e) {
+           printf(func,1,"init ERROR:"+e.getMessage(),e);
+       }
        
        if ( debug >= 3 ) {
             int i=0;
@@ -67,7 +70,10 @@ public class WlsDomain extends MainTask{
     
     public void setDomainLocation(String dir) { 
         setProperty("conf",dir); 
-        try { init(); } catch(Exception e) {}
+        try { init(); } 
+        catch(Exception e) {
+            printf(getFunc("setDomainLocation(String dir)"),1,"ERROR: "+e.getMessage()+" - when set domainlocation to "+dir,e);
+        }
     }
     
     public String getDomainLocation() {
@@ -75,7 +81,6 @@ public class WlsDomain extends MainTask{
             init(); 
         }catch(Exception e) {
             printf(getFunc("getDomainLocation()"),1,"ERROR:"+e.getMessage(),e);
-            
             return null; 
         }
         return confdir.getFQDNDirName();
@@ -125,6 +130,9 @@ public class WlsDomain extends MainTask{
                     conf.nodeReadout(nl,domh);
                 }
                 if(_domainname == null || _domainname.isEmpty() ) { this._domainname = domh.get("name"); }
+                
+                nl = conf.getNodeList("credential-encrypted");
+                this._user=nl.item(0).getTextContent();
                 
                 nl = conf.getNodeList("admin-server-name");
                 this._adminserver=nl.item(0).getTextContent();
@@ -209,39 +217,43 @@ public class WlsDomain extends MainTask{
         if (te == null || te.isEmpty() ) {
             //te = confdir.getFQDNDirName()+File.separator+"domainkeys";
             te=tef.getFQDNFileName();
+            printf(func,3,"set pwfile to "+te);
         }
-        
+        printf(func,3,"like to open SecFile "+te );
         SecFile nf = new SecFile(te); 
+        //System.out.println("here");
         printf(func,2,"INFO:  like to read pwfile:"+nf.getFQDNFileName()+" is readable:"+nf.isReadableFile() );
+        //System.out.println("here 2");
         if ( nf.isReadableFile() ) {
-             
-             //String a = nf.readOut().toString();
-             //String dec= (a.endsWith("="))? crypt.getUnCrypted(a):a ;
+             printf(func,3,"readout SecFile "+te);
              String u=""; String p=""; String nmu=""; String nmp="";
-             for(String s: nf.readOut().toString().split("\n") ) {// a.split("\n")) {
+             for(String s: nf.readOut().toString().split("\n") ) {
                  String[] sp = s.trim().split("=");
                  if      ( sp[0].toLowerCase().matches("username")) {   u=s.substring(sp[0].length()+1).trim(); }
                  else if ( sp[0].toLowerCase().matches("password")) {   p=s.substring(sp[0].length()+1).trim(); }
                  else if ( sp[0].toLowerCase().matches("nmuser")  ) { nmu=s.substring(sp[0].length()+1).trim(); }
                  else if ( sp[0].toLowerCase().matches("nmpass")  ) { nmp=s.substring(sp[0].length()+1).trim(); }
              }
-             if ( nmu != null && ! nmu.isEmpty() ) this._nodeMUser=nmu;
-             if ( nmp != null && ! nmp.isEmpty() ) this._nodeMPass=nmp;
+             if ( ! nmu.isEmpty() ) this._nodeMUser=nmu;
+             if ( ! nmp.isEmpty() ) this._nodeMPass=nmp;
              this.wu = new WlsUser(new URL("http://localhost:7001"),u,p);
              printf(func,2,"INFO: wu user:"+crypt.getUnCrypted(wu.getUsername())+"|"+u+"|<|  p:"+(p.matches(crypt.getUnCrypted(wu.getPassword()))) );
-             updateNodeManagers();
+             if ( ! nmu.isEmpty() && ! nmp.isEmpty() ) { updateNodeManagers(); }
              
              if ( ! servers.isEmpty() ) {
                 Iterator<String> itter = servers.keySet().iterator();
                 while(itter.hasNext()) {
                       WlsServer w = servers.get( itter.next() );
-                      if ( w != null ) { w.setAdminUser(u); w.setAdminPass(p); }
+                      if ( w != null ) { 
+                          if (! u.isEmpty() ) w.setAdminUser(u); 
+                          if (! p.isEmpty() ) w.setAdminPass(p); 
+                      }
                 }
              }
         } else {
-             printf(func,2,"ERROR: Couldn't read pwfile:"+nf.getFQDNFileName() );
+             printf(func,2,"ERROR: Couldn't read pwfile:"+nf.getString() );
         }
-        
+        //System.out.println("here 3");
         ReadFile nw = new ReadFile(confdir.getFQDNDirName()+File.separator+"bin"+File.separator+"setDomainEnv."+( (isWindows())?"cmd":"sh") );
         if ( nw.isReadableFile() ) {
              for(String s : nw.readOut().toString().split("\n") ) {
@@ -259,13 +271,14 @@ public class WlsDomain extends MainTask{
           
         debug=savedebug; 
         _loaded=true;  
+        //System.out.println("loaded done");
     }
     
     public String getDomainName()   { return this._domainname;   }
     public String getWeblogicHome() { return this._wlhome;       }
     public String getMWHome()       { return this._mwhome;       }
-    public String getAdminUser()    { return this.wu.getUsername(); }
-    public String getAdminPassword(){ return this.wu.getPassword(); }
+    public String getAdminUser()    { return (this.wu != null)?this.wu.getUsername():"weblogic"; }
+    public String getAdminPassword(){ return (this.wu != null)?this.wu.getPassword():""; }
     public String getNodeUser()     { return this._nodeMUser; }
     public String getNodePassword() { return this._nodeMPass; }
     
@@ -276,9 +289,30 @@ public class WlsDomain extends MainTask{
         this._nodeMPass=p;  updateNodeManagers();
     } }
     public void setAdminUser(    String u) { 
-        if (u!=null && ! u.isEmpty() ) this.wu.setUsername(u); 
+        if (u!=null && ! u.isEmpty() ) {
+          try {  
+            if ( this.wu == null ) { 
+                this.wu = new WlsUser("http://localhost:7001","",""); 
+            }
+            this.wu= new WlsUser( this.wu.getUrl() , u, this.wu.getPassword() );
+          }catch(Exception e) {
+              throw new RuntimeException("ERROR: to set AdminUser - "+e.getMessage());
+          }   
+        } 
     }
-    public void setAdminPassword(String p) { if (p!=null && ! p.isEmpty() ) this.wu.setPassword(p); }
+    public void setAdminPassword(String p) { 
+        if (p!=null && ! p.isEmpty() ) {
+            try {  
+            if ( this.wu == null ) { 
+                this.wu = new WlsUser("http://localhost:7001","",""); 
+            }
+            this.wu= new WlsUser( this.wu.getUrl() , this.wu.getUsername(), p );
+          }catch(Exception e) {
+              throw new RuntimeException("ERROR: to set AdminUser - "+e.getMessage());
+          } 
+            //this.wu.setPassword(p); 
+        }    
+    }
     
     void updateAccounts(String user, String pass, String nmUser, String nmPass ) {
          this.wu = new WlsUser(wu.getUrl(),user,pass); 
@@ -301,19 +335,20 @@ public class WlsDomain extends MainTask{
     public HashMap<String, WlsServer> getServers() { return servers; }
     
     public String getAdminUrl() {
-        if ( ! _loaded ) { try { init(); }catch(Exception e){} }
+        if ( ! _loaded ) { try { init(); }catch(Exception e){  printf(getFunc("getAdminUrl()"),1,"init ERROR:"+e.getMessage(),e); } }
         WlsAdminServer w = getAdminServer(); 
         return w.getAdminUrl();
     }
     
     public String getAdminStopUrl() {
-        if ( ! _loaded ) { try { init(); }catch(Exception e){} }
+        if ( ! _loaded ) { try { init(); }catch(Exception e){ printf(getFunc("getAdminStopUrl()"),1,"init ERROR:"+e.getMessage(),e); } 
+        }
         WlsAdminServer w = getAdminServer(); 
         return w.getAdminStopUrl();
     }
     
     public String getAdminServerName() {
-        if ( ! _loaded ) { try { init(); }catch(Exception e){} }
+        if ( ! _loaded ) { try { init(); }catch(Exception e){ printf(getFunc("getAdminServerName()"),1,"init ERROR:"+e.getMessage(),e); } }
         WlsAdminServer w = getAdminServer(); 
         return w.getAdminServerName();
     }

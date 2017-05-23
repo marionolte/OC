@@ -28,14 +28,17 @@ public class WlsDecrypt extends Version {
     }
     
     public void decrypt() throws IOException {
+        final String func=getFunc("decrypt()");
         final String f="info.py";
         if ( wls != null ) {
+             //System.out.println("read base script");
              String script = getOutString( new BufferedInputStream( WlsDecrypt.class.getResourceAsStream("/net/wls/scripts/decrypthash.py") ) )
                                  .replace("@@USER@@", wls.getAdminUser())
                                  .replace("@@PASS@@", wls.getAdminPassword())
                                  .replace("@@NMUS@@", wls._nodeMUser)
                                  .replace("@@NMPA@@", wls._nodeMPass); 
-             
+            //System.out.println("script:"+script+":");
+            //System.out.println("create "+f); 
             WriteFile wt = new WriteFile(wls.getDomainLocation()+File.separator+f); wt.replace(script);
             Process p = null;
             ProcessBuilder pb = new ProcessBuilder("bash", "-c","( cd "+wls.getDomainLocation()+" &&  . ./bin/setDomainEnv.sh && java weblogic.WLST "+f+" 2>&1 )");
@@ -109,6 +112,7 @@ public class WlsDecrypt extends Version {
         } catch(IOException io) {
             printf(func,1,"ERROR: resoucse could not loaded - error "+io.getMessage(), io);
         }  
+        System.out.println("getOutString:"+st.toString()+":");
         return st.toString();
     }
 
