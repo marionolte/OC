@@ -26,6 +26,7 @@ import java.util.zip.ZipInputStream;
  * @author SuMario
  */
 public class WlsToolConfig extends Version{
+    boolean silent=false;
 
     public static void main(String[] args) {
         final String func="WlsToolConfig::main(String[] args)";
@@ -34,8 +35,9 @@ public class WlsToolConfig extends Version{
         if ( args.length > 0 ) {
             ArrayList<String> dirs = new ArrayList();
             for(int i=0; i< args.length; i++) {
-                if ( args[i].matches("-dest")   ) { w.checkConfig(args[++i]); } 
-                else if ( args[i].matches("-d") ) { debug++; }
+                if ( args[i].matches("-dest")        ) { w.checkConfig(args[++i]); } 
+                else if ( args[i].matches("-d")      ) { debug++; }
+                else if ( args[i].matches("-silent") ) { w.silent=true; }
                 else {  dirs.add(args[i]); }    
             }
             for ( String s : dirs ) {
@@ -70,21 +72,20 @@ public class WlsToolConfig extends Version{
             WlsDomain wd = new WlsDomain(d.getDirName());
                       wd.setDomainLocation(d.getFQDNDirName());
             try {
-                //System.out.println("init decrypt");
                         WlsDecrypt wdc = new WlsDecrypt(wd);
-                //System.out.println("start decrypt");
                                    wdc.decrypt();
-                //System.out.println("end decrypt");   
-                if ( wdc.getUser().isEmpty() || wdc.getPass().isEmpty() || wdc.getNMUser().isEmpty() || wdc.getNMPass().isEmpty() ) { 
-                                   //System.out.println("ask4User");
+                        if ( wdc.getUser().isEmpty() || wdc.getPass().isEmpty() || wdc.getNMUser().isEmpty() || wdc.getNMPass().isEmpty() ) { 
+                            if ( silent ) { throw new RuntimeException("ERROR: empty users settings not allowed in silent "); }
                                    ask4User(wd);
-                }
-                if ( wdc.getUser().isEmpty() || wdc.getPass().isEmpty() || wdc.getNMUser().isEmpty() || wdc.getNMPass().isEmpty() ) { 
+                            wdc.setUser(  wd.getAdminUser()     ); 
+                            wdc.setNMUser(wd.getNodeUser()      );
+                            wdc.setPass(  wd.getAdminPassword() );
+                            wdc.setNMPass(wd.getNodePassword()  );
+                        }
+                        if ( wdc.getUser().isEmpty() || wdc.getPass().isEmpty() || wdc.getNMUser().isEmpty() || wdc.getNMPass().isEmpty() ) { 
+                    
                                    wd.updateAccounts( wdc.getUser(), wdc.getPass(), wdc.getNMUser(), wdc.getNMPass() );
-                } //else { 
-                  //  throw new RuntimeException("ERROR: missing user account information");
-                //}                   
-                //System.out.println("update accounts done");        
+                        }        
             }catch(java.io.IOException io) {
                                    printf(func,1,"ERROR: check decrypt information with error:"+io.getMessage());
             }           
@@ -114,9 +115,12 @@ public class WlsToolConfig extends Version{
         if ( u.isEmpty() || p.isEmpty() ) {
                   System.out.print("Domain Admin User ["+((u!=null && ! u.isEmpty())?u:"")+"] : "); 
                   String readLine = console.readLine().trim();
+            //System.out.println("\nreadline:"+readLine+":");      
                   if ( readLine.isEmpty() ) { u=(u.isEmpty())?"weblogic":u; } else { u=readLine; }
+            //System.out.println("u:"+u+":");      
                   wd.setAdminUser(u); 
                u= wd.getAdminUser();
+            //System.out.println("u1:"+u+"");   
                   System.out.println("");
         }          
         

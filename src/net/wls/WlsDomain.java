@@ -34,7 +34,6 @@ public class WlsDomain extends MainTask{
     private String _adminserver="AdminServer";
     String _nodeMUser="";
     String _nodeMPass="";
-    String _user="";
             boolean _domainkeyLoaded =false;
     
     public WlsDomain(String[] args) {
@@ -130,9 +129,6 @@ public class WlsDomain extends MainTask{
                     conf.nodeReadout(nl,domh);
                 }
                 if(_domainname == null || _domainname.isEmpty() ) { this._domainname = domh.get("name"); }
-                
-                nl = conf.getNodeList("credential-encrypted");
-                this._user=nl.item(0).getTextContent();
                 
                 nl = conf.getNodeList("admin-server-name");
                 this._adminserver=nl.item(0).getTextContent();

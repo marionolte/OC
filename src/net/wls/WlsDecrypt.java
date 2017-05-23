@@ -74,6 +74,11 @@ public class WlsDecrypt extends Version {
     public String getPass()   { return  _pass; }
     public String getNMPass() { return _npass; }
     
+    public String setUser(  String u) {  _user=u; return getUser();   }
+    public String setNMUser(String u) { _nuser=u; return getNMUser(); }
+    public String setPass(  String p) {  _pass=p; return getPass();   }
+    public String setNMPass(String p) { _npass=p; return getNMPass(); }
+    
     
     private String splitout(String s) {
         String[] sp = s.split(":");
@@ -112,7 +117,7 @@ public class WlsDecrypt extends Version {
         } catch(IOException io) {
             printf(func,1,"ERROR: resoucse could not loaded - error "+io.getMessage(), io);
         }  
-        System.out.println("getOutString:"+st.toString()+":");
+        //System.out.println("getOutString:"+st.toString()+":");
         return st.toString();
     }
 
