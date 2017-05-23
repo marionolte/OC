@@ -1,4 +1,0 @@
-#!/bin/bash
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-SSLDEBUG=" -Djavax.net.debug=ssl "
-java ${SSLDEBUG} -cp dist/OC.jar main.Http "$@"

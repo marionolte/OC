@@ -53,7 +53,7 @@ public class SecFile extends ReadFile {
     
     
     public boolean delete() { return rFile.delete(); }
-    public boolean  append(String line) { return rFile.append( crypt.getCrypted(line) ); }
+    public boolean  append(String line) { String f=crypt.getCrypted(line); return rFile.append( f+((f.endsWith("="))?"":"=")  ); }
     public boolean replace(String line) { rFile.truncate(); return append(line); }
     
     synchronized public boolean isCrypted() {
