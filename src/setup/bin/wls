@@ -2,10 +2,12 @@
 prog="$0"
 inst="$3"
 dom="$2"
+extraeval="$EVALEXTRA"
+if [[ "$extraeval" == "" ]]; then extraeval=0; fi
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-if [[  "$USER" != "oracle" ]] && [[  "$USER" != "SuMario" ]]; then
+if [[  "$USER" != "oracle" ]]; then
         echo "ERROR: could not execute as user $USER"
         exit -1
 fi
@@ -17,10 +19,71 @@ if [[ "$?" -ne 0 ]]; then
 	echo "ERROR: unsupport java version - minimum java 1.7 required"
 	exit -1
 fi
+MEM_ARGS="-Dweblogic.security.SSL.ignoreHostnameVerification=true -Dweblogic.security.TrustKeyStore=DemoTrust"
 
 function usage() {
         echo "$prog <start|stop> <domain> <instance> "
         exit -1
+}
+
+function rolling(){
+	if [[ "$ADMINRUNNING" -ne 1 ]]; then 
+		echo "ERROR: Server $ADMINSERVER is not running"
+		#exit 2
+	fi 
+	export EVALEXTRA=1
+   	WAITTIME=90
+	if [[ "$inst" != "" ]] && [ "`expr $inst + 1 2>/dev/null` " != "" ]; then WAITTIME=$inst; fi
+
+           echo "from time import sleep"									 >"${dir}/rolling.py"
+	   echo "from interruptingcow import timeout"								>>"${dir}/rolling.py"
+	   echo "def getMSserverStatus(server):"								>>"${dir}/rolling.py"
+           echo "  try:"											>>"${dir}/rolling.py"
+           echo "    cd('/ServerLifeCycleRuntimes/' +server)"							>>"${dir}/rolling.py"
+	   echo "  except:"											>>"${dir}/rolling.py"
+	   echo "     dumpStack();										>>"${dir}/rolling.py"
+	   echo "  return cmo.getState()"									>>"${dir}/rolling.py"
+	   echo " "												>>"${dir}/rolling.py"
+	   echo "def loopUntil(state,server):"									>>"${dir}/rolling.py"
+	   echo "  try:"											>>"${dir}/rolling.py"
+	   echo "    with timeout(60*5, exception=RuntimeError):"						>>"${dir}/rolling.py"
+           echo "	while True:"										>>"${dir}/rolling.py"
+           echo "	   test = getMSserverStatus(server) "							>>"${dir}/rolling.py"
+	   echo "            if test == state:"									>>"${dir}/rolling.py"
+           echo "		     break"									>>"${dir}/rolling.py"
+	   echo "	     except RuntimeError:"								>>"${dir}/rolling.py"
+   	   echo "		      pass"									>>"${dir}/rolling.py"
+
+           echo "wlsUserID = java.lang.System.getenv('wlsUserID')"                                              >>"${dir}/rolling.py"
+           echo "wlsPassword = java.lang.System.getenv('wlsPassword')"                                          >>"${dir}/rolling.py"
+           echo "connect(${userID} ${password} url='${ADMINSTOPURL}', adminServerName='${ADMINSERVER}')"        >>"${dir}/rolling.py"
+
+	echo "$SERVERS" | awk 'BEGIN{FS=","} {for(i=1; i<=NF; i++) { if ( "$i" != "" ){ print $i}} }' | while read pa rest; do
+	     if [[ "$pa" != "" ]]; then
+		a="SERVER${pa}RUNNING"		 
+		#echo $pa $WAITTIME ${!a}
+		if [[ "${!a}" -eq 1 ]]; then 
+			#echo "$pa stopping"		
+			#"${prog}" stop $dom $pa 
+			#sleep $WAITTIME
+			echo "print \"shutdown server $pa\""
+			echo "shutdown('${pa}','Server', ignoreSessions='true',force='true')"                  
+			echo "loopUntil('SHUTDOWN',$pa)"
+			echo "sleep($WAITTIME)"									
+		fi 
+		#echo "$pa starting"
+		#"${prog}" stop $dom $pa
+		#sleep $WAITTIME
+		echo "print \"start server $pa\""
+		echo "start('$pa','Server')"									
+		echo "loopUntil('RUNNING', '$pa')"
+		echo "sleep($WAITTIME)"										
+	     fi
+	done													>>"${dir}/rolling.py"
+        echo "exit()"                                                                                           >>"${dir}/rolling.py"
+
+        ( cd $DOMAINHOME && . ./bin/setDomainEnv.sh 2>/dev/null && ${JAVA_HOME}/bin/java -classpath ${FMWCONFIG_CLASSPATH} ${MEM_ARGS} ${JVM_D64} ${JAVA_OPTIONS} weblogic.WLST ${dir}/rolling.py  2>&1 >$STOPFILE )
+           WLSUP=$?
 }
 
 function startingNM() {
@@ -41,18 +104,29 @@ function startingNM() {
 	po1="NODE${m}PORT"
         po=${!po1}
 
-        echo "nmConnect('${us}','${pa}','${ho}',${po},domainName='$dom',domainDir='${DOMAINHOME}');"      >"${dir}/start-${SERVER}.py"
-        echo "nmStart('${SERVER}');"									 >>"${dir}/start-${SERVER}.py"
-        echo "exit();"											 >>"${dir}/start-${SERVER}.py"
+        prop=",props=prps"
+	if [[ "$SERVER" == "$ADMINSERVER" ]]; then prop=""; fi
+
+	echo "nmConnect('${us}','${pa}','${ho}','${po}','${dom}','${DOMAINHOME}', 'ssl')" 		  	  >"${dir}/start-${SERVER}.py"
+	echo "prps= makePropertiesObject(\"AdminURL=${ADMINURL}\")"                                              >>"${dir}/start-${SERVER}.py"
+        echo "nmStart('${SERVER}'${prop});"									 >>"${dir}/start-${SERVER}.py"
+        echo "exit();"												 >>"${dir}/start-${SERVER}.py"
         RES=`( cd $DOMAINHOME 2>&1 && . ./bin/setDomainEnv.sh 2>&1 && ${JAVA_HOME}/bin/java -classpath ${FMWCONFIG_CLASSPATH} ${MEM_ARGS} ${JVM_D64} ${JAVA_OPTIONS} weblogic.WLST  "${dir}/start-${SERVER}.py" 2>&1 ) `
 	
 	echo "$RES" | grep "denied" >/dev/null 2>&1
  	if [ "$?" -eq 0 ]; then
 		echo "ERROR:  nodemanager user wrong - update nmuser/nmpass in $DOMAINHOME/domainkeys with correct credentials"
-		#rm "${dir}/start-${SERVER}.py" 2>/dev/null
+		rm "${dir}/start-${SERVER}.py" 2>/dev/null
 		exit 2
 	fi	
-	echo $RES
+	echo "$RES" | grep "Successfully started server ${SERVER}"  >/dev/null 2>&1
+	if [[ "$?" -eq 0 ]]; then
+	     echo "successfully started"
+	     rm "${dir}/start-${SERVER}.py" 2>/dev/null
+	     return
+	fi
+	echo "WARNING:  unknown state - please check log files"
+	rm "${dir}/start-${SERVER}.py" 2>/dev/null
 }
 
 function stoppingNM() {
@@ -73,15 +147,11 @@ function stoppingNM() {
         po1="NODE${m}PORT"
         po=${!po1}
 
-        #echo "nmuser = java.lang.System.getenv('nmuser')"  	 				 >"${dir}/shutdown-${SERVER}.py"
-        #echo "nmpass = java.lang.System.getenv('nmpass')"     					>>"${dir}/shutdown-${SERVER}.py"
-        #echo "NMHOST = java.lang.System.getenv('NODEHOST')"                                       >>"${dir}/shutdown-${SERVER}.py"
-        #echo "NMPORT = java.lang.System.getenv('NODEPORT')"                                       >>"${dir}/shutdown-${SERVER}.py"
-	#echo "nmConnect('${nmuser}','${nmpass}','${NMHOST}','${NMPORT}',domainName='$dom',domainDir='${DOMAINHOME}');"      >>"${dir}/shutdown-${SERVER}.py"
-        echo "nmConnect('${us}','${pa}','${ho}',${po},domainName='$dom',domainDir='${DOMAINHOME}');"     >"${dir}/shutdown-${SERVER}.py"
+        echo "nmConnect('${us}','${pa}','${ho}','${po}','${dom}','${DOMAINHOME}', 'ssl');"   	 	 >"${dir}/shutdown-${SERVER}.py"
 	echo "nmKill('${SERVER}');"									>>"${dir}/shutdown-${SERVER}.py"
 	echo "exit()" 											>>"${dir}/shutdown-${SERVER}.py"
 	RES=`( cd $DOMAINHOME 2>&1 && . ./bin/setDomainEnv.sh 2>&1 && ${JAVA_HOME}/bin/java -classpath ${FMWCONFIG_CLASSPATH} ${MEM_ARGS} ${JVM_D64} ${JAVA_OPTIONS} weblogic.WLST "${dir}/shutdown-${SERVER}.py" 2>&1 )`
+	echo $RES
 }
 
 function starting() {
@@ -152,7 +222,7 @@ function startNodeManager() {
      echo "Starting NodeManager $SERVER on $NODEHOME"
      ( cd $NODEMANAGER && nohup $NODEMANAGER/startNodeManager.sh >$STARTFILE 2>&1 </dev/null & )
 
-     # wlst startNodeManager(verbose=’true’, NodeManagerHome=’$NODEHOME’, ListenPort=’5556′, ListenAddress=’localhost’)
+     # wlst startNodeManager(verbose=￢ﾀﾙtrue￢ﾀﾙ, NodeManagerHome=￢ﾀﾙ$NODEHOME￢ﾀﾙ, ListenPort=￢ﾀﾙ5556￢ﾀﾲ, ListenAddress=￢ﾀﾙlocalhost￢ﾀﾙ)
      WLSUP=1
      ENDTIME=$((`date '+%s' ` + 60000 ))
      while  [ $WLSUP -eq 1 ]; do
@@ -306,7 +376,9 @@ function init() {
 
    srv="";
    if [[ "$inst" != "" ]]; then srv="-server $inst"; fi
-   eval "$(${JAVA_HOME}/bin/java -jar ${dir}/lib/OC.jar -wlsinfo $DOMAINHOME  2>/dev/null )" 2>/dev/null
+   if [[ $extraeval -eq 0 ]]; then 
+      eval "$(${JAVA_HOME}/bin/java -jar ${dir}/lib/OC.jar -wlsinfo $DOMAINHOME  2>/dev/null )" 2>/dev/null
+   fi
 
    if [[ "$DOMKEYSFOUND" != "true" ]]; then
 	echo "ERROR: no domainkeys file found in $DOMAINHOME"
@@ -360,8 +432,11 @@ case "$1" in
     'nmStop'|'nmstop'|'NMSTOP' )
                 stoppingNM;
         ;;
-    'Staus'|'status'|'STATUS')
+    'Status'|'status'|'STATUS')
 	status 
+    ;;
+    'RollingRestart'|'rollingrestart'|'ROLLINGRESTART')
+		rolling;
     ;;
         *) usage;;
 esac

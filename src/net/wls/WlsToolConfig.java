@@ -236,6 +236,8 @@ public class WlsToolConfig extends Version{
                                 //System.out.println("domain.info:"+d.getDomainName());
                                 wta.append("if [[ \"$DOM\" == \"").append(d.getDomainName()).append("\" ]]; then \n");
                                 wta.append("\texport DOMAINHOME=\"").append(d.getDomainLocation()).append("\"\n");
+                                wta.append("\texport CTLUSER=\"").append(System.getProperty("user.name")).append("\"\n");
+                                wta.append("\texport CTLPASSFILE=\"").append(dest+File.separator+"ctluserkey.pass").append("\"\n");
                                 wta.append("fi\n");
                                 
                                 StringBuilder ft = new StringBuilder();
@@ -272,6 +274,7 @@ public class WlsToolConfig extends Version{
            while( itter.hasNext() ) {
                  WlsDomain d = ar.get(itter.next());
                  final String dom=d.getDomainName();
+                 
                  printf(func,2,"update domain:"+dom);
                  WriteFile wf = new WriteFile(dest+File.separator+d.getDomainName()+"status"); 
                            printf(func,3,"update "+wf.getFQDNFileName());
@@ -283,12 +286,16 @@ public class WlsToolConfig extends Version{
                            wf.append( log.replaceAll("@@DOMAIN@@", dom).getBytes(), false );
                            wf.setExecutable(true);   
                            
+                           wf = new WriteFile(dest+File.separator+d.getDomainName()+"RollingRestart"); 
+                           printf(func,3,"update "+wf.getFQDNFileName());                
+                           wf.append( state.replaceAll(" status ", " rollingrestart ").replaceAll("@@DOMAIN@@", dom+" \\$\\@").getBytes(), false );
+                           wf.setExecutable(true);   
+                           
                     /*String na = d.getAdminServer().getAdminServerName();
                            wf = new WriteFile(dest+File.separator+d.getDomainName()+"Admin");
                            printf(func,3,"update "+wf.getFQDNFileName());
                            wf.append(serv.replaceAll("@@DOMAIN@@", dom).replaceAll("@@SERVER@@", na).getBytes(), false);  
                            wf.setExecutable(true);*/
-                 
                  HashMap<String, WlsServer> m = d.getServers();
                  Iterator<String> its = m.keySet().iterator();
                  while( its.hasNext() ) {
@@ -300,7 +307,7 @@ public class WlsToolConfig extends Version{
                            wf.setExecutable(true);
                         }
                  }
-                 
+            
                  ArrayList<WlsNodeManager> ma = d.getNodeManagers();
                  while( ma.size() > 0 ) {
                         WlsNodeManager nm = ma.remove(0);
@@ -342,7 +349,7 @@ public class WlsToolConfig extends Version{
        try { 
             ReadDir d = new ReadDir(dest); String dim=path.replaceAll("^/", "");
             ZipInputStream zis = new ZipInputStream(new FileInputStream(file));
-            ZipEntry ze;  byte[] buf = new byte[1024];
+            ZipEntry ze;  byte[] buf = new byte[4*1024];
                 while( (ze=zis.getNextEntry()) != null){
                     String fn = ze.getName();
                     printf(func,4," get entry :"+fn+":");
@@ -352,7 +359,14 @@ public class WlsToolConfig extends Version{
                          File nFile = new File(d.getFQDNDirName() + File.separator + sp[sp.length-1]);
                          FileOutputStream fos = new FileOutputStream(nFile);
                          int len;
-                         while ((len = zis.read(buf)) > 0) { fos.write(buf, 0, len); }
+                         while ((len = zis.read(buf)) > 0) { 
+                             StringBuilder mp = new StringBuilder();
+                             for ( int i=0; i<len; i++ ) {
+                                    mp.append( (char) buf[i] );
+                             }
+                             //fos.write(buf, 0, len); 
+                             fos.write( mp.toString().replaceAll(" \"oracle\" ", " \""+System.getProperty("user.name")+"\" ").getBytes() );
+                         }
                          fos.close();
                          //close this ZipEntry
                          zis.closeEntry();

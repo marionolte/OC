@@ -111,14 +111,14 @@ public class Mos extends Updater{
     private String getPassword(String fn) {
         SecFile f = new SecFile(fn);
         String s = f.readOut().toString();
-        /*if ( s == null || s.isEmpty() ) { return (String) null;}
-        if( s.endsWith("=") ) {
-            s=crypt.getUnCrypted(s);
-        } else {
-            String m=crypt.getCrypted(s);
-            f.append(m);
-        }*/
         return s;
+    }
+    
+    private boolean setPassword(String fn) {
+        SecFile f = new SecFile(fn);
+        String s = new String ( System.console().readPassword("set new password in secure file "+fn, (Object[]) new String[]{}) );
+        if ( s != null && ! s.isEmpty() ) { f.replace(s); }
+        return ( s.matches(f.readOut().toString()));
     }
     
     private String[] getArgsLower(String[]args,int j) {
@@ -165,8 +165,9 @@ public class Mos extends Updater{
             else if ( args[i].matches("-rota")     ){ logRotate(getArgsLower(args,++i));        fin=true; }
             else if ( args[i].matches("-gclog")    ){ gcLog(getArgsLower(args,++i));            fin=true; }
             else if ( args[i].matches("-update")   ){ updateJar();                              fin=true; }
-            else if ( args[i].matches("-unsecure") ){ unsecureFile(getArgsLower(args,++i));        fin=true; }
-            else if ( args[i].matches("-secure")   ){ secureFile(getArgsLower(args,++i));        fin=true; }
+            else if ( args[i].matches("-unsecure") ){ unsecureFile(getArgsLower(args,++i));     fin=true; }
+            else if ( args[i].matches("-secure")   ){ secureFile(getArgsLower(args,++i));       fin=true; }
+            else if ( args[i].matches("-pwfile")   ){ this.setPassword(args[++i]);              fin=true; }
             else if ( args[i].matches("-d")        ){ debug++; }
             else if ( args[i].matches("-version")  ){ version(); _exit=0;                       fin=true; donemsg=false; }
             else {
@@ -462,6 +463,8 @@ public class Mos extends Updater{
                 + "\n\t\t-wlsinfo <domainhome> [<-server <servername>]\t-\n\t\t\t\t\tprint domain use information\n"
                 + "\n\t\t-wlsrota "+WlsDomainLogRotation.usage()+"\n\t\t\t\t\tweblogic domain logrotation\n"
                 + "\n\t\t-logrota "+net.apache.LogRotation.usage()+"\n\t\t\t\t\tapache|ohs logrotation\n"
+                + "\n\t\t-pwfile <filename>\t-\tstore a password in a secure file\n"
+                
                 //+ "\n\t\t-logrotate\t"+(new LogRotation(new String[]{}).usage(false) )
                 + "\n\n"
         );
