@@ -189,8 +189,13 @@ public class WlsToolConfig extends Version{
         final String func=getFunc("updateDestination(String dest)");
         if ( isUpdateNeeded() ) {
            System.out.println("INFO: update create destination "+dest+" if needed"); 
-           ReadDir dn= new ReadDir(dest+File.separator+"lib");
+           ReadDir dn= new ReadDir(dest+File.separator+"log");
            if ( ! dn.isDirectory() ) { dn.mkdirs(); }
+           
+                  dn= new ReadDir(dest+File.separator+"lib");
+           if ( ! dn.isDirectory() ) { dn.mkdirs(); }
+           
+           
            
            System.out.print("INFO: update OC.jar .. ");
            ReadFile df = new ReadFile(dest+File.separator+"lib"+File.separator+"OC.jar");
