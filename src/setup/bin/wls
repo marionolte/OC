@@ -12,6 +12,8 @@ if [[  "$USER" != "oracle" ]]; then
         exit -1
 fi
 
+log="${dir}/log"
+
 if [[ "$JAVA_HOME" == "" ]]; then JAVA_HOME="/usr/java"; fi
 
 $JAVA_HOME/bin/java -version 2>&1| egrep "1.[7-9].0_" >/dev/null 2>&1
@@ -35,28 +37,31 @@ function rolling(){
    	WAITTIME=90
 	if [[ "$inst" != "" ]] && [ "`expr $inst + 1 2>/dev/null` " != "" ]; then WAITTIME=$inst; fi
 
-           echo "from time import sleep"									 >"${dir}/rolling.py"
-	   echo "from interruptingcow import timeout"								>>"${dir}/rolling.py"
-	   echo "def getMSserverStatus(server):"								>>"${dir}/rolling.py"
-           echo "  try:"											>>"${dir}/rolling.py"
-           echo "    cd('/ServerLifeCycleRuntimes/' +server)"							>>"${dir}/rolling.py"
-	   echo "  except:"											>>"${dir}/rolling.py"
-	   echo "     dumpStack();										>>"${dir}/rolling.py"
-	   echo "  return cmo.getState()"									>>"${dir}/rolling.py"
-	   echo " "												>>"${dir}/rolling.py"
-	   echo "def loopUntil(state,server):"									>>"${dir}/rolling.py"
-	   echo "  try:"											>>"${dir}/rolling.py"
-	   echo "    with timeout(60*5, exception=RuntimeError):"						>>"${dir}/rolling.py"
-           echo "	while True:"										>>"${dir}/rolling.py"
-           echo "	   test = getMSserverStatus(server) "							>>"${dir}/rolling.py"
-	   echo "            if test == state:"									>>"${dir}/rolling.py"
-           echo "		     break"									>>"${dir}/rolling.py"
-	   echo "	     except RuntimeError:"								>>"${dir}/rolling.py"
-   	   echo "		      pass"									>>"${dir}/rolling.py"
+	f="${log}/rolling.py"
+	LOGFILE="$log/rolling.out"
 
-           echo "wlsUserID = java.lang.System.getenv('wlsUserID')"                                              >>"${dir}/rolling.py"
-           echo "wlsPassword = java.lang.System.getenv('wlsPassword')"                                          >>"${dir}/rolling.py"
-           echo "connect(${userID} ${password} url='${ADMINSTOPURL}', adminServerName='${ADMINSERVER}')"        >>"${dir}/rolling.py"
+           echo "from time import sleep"									 >"${f}"
+	   echo "from interruptingcow import timeout"								>>"${f}"
+	   echo "def getMSserverStatus(server):"								>>"${f}"
+           echo "  try:"											>>"${f}"
+           echo "    cd('/ServerLifeCycleRuntimes/' +server)"							>>"${f}"
+	   echo "  except:"											>>"${f}"
+	   echo "     dumpStack();										>>"${f}"
+	   echo "  return cmo.getState()"									>>"${f}"
+	   echo " "												>>"${f}"
+	   echo "def loopUntil(state,server):"									>>"${f}"
+	   echo "  try:"											>>"${f}"
+	   echo "    with timeout(60*5, exception=RuntimeError):"						>>"${f}"
+           echo "	while True:"										>>"${f}"
+           echo "	   test = getMSserverStatus(server) "							>>"${f}"
+	   echo "            if test == state:"									>>"${f}"
+           echo "		     break"									>>"${f}"
+	   echo "	     except RuntimeError:"								>>"${f}"
+   	   echo "		      pass"									>>"${f}"
+
+           echo "wlsUserID = java.lang.System.getenv('wlsUserID')"                                              >>"${f}"
+           echo "wlsPassword = java.lang.System.getenv('wlsPassword')"                                          >>"${f}"
+           echo "connect(${userID} ${password} url='${ADMINSTOPURL}', adminServerName='${ADMINSERVER}')"        >>"${f}"
 
 	echo "$SERVERS" | awk 'BEGIN{FS=","} {for(i=1; i<=NF; i++) { if ( "$i" != "" ){ print $i}} }' | while read pa rest; do
 	     if [[ "$pa" != "" ]]; then
@@ -79,10 +84,10 @@ function rolling(){
 		echo "loopUntil('RUNNING', '$pa')"
 		echo "sleep($WAITTIME)"										
 	     fi
-	done													>>"${dir}/rolling.py"
-        echo "exit()"                                                                                           >>"${dir}/rolling.py"
+	done													>>"${f}"
+        echo "exit()"                                                                                           >>"${f}"
 
-        ( cd $DOMAINHOME && . ./bin/setDomainEnv.sh 2>/dev/null && ${JAVA_HOME}/bin/java -classpath ${FMWCONFIG_CLASSPATH} ${MEM_ARGS} ${JVM_D64} ${JAVA_OPTIONS} weblogic.WLST ${dir}/rolling.py  2>&1 >$STOPFILE )
+        ( cd $DOMAINHOME && . ./bin/setDomainEnv.sh 2>/dev/null && ${JAVA_HOME}/bin/java -classpath ${FMWCONFIG_CLASSPATH} ${MEM_ARGS} ${JVM_D64} ${JAVA_OPTIONS} weblogic.WLST ${dir}/rolling.py  2>&1 >$LOGFILE )
            WLSUP=$?
 }
 
@@ -107,26 +112,28 @@ function startingNM() {
         prop=",props=prps"
 	if [[ "$SERVER" == "$ADMINSERVER" ]]; then prop=""; fi
 
-	echo "nmConnect('${us}','${pa}','${ho}','${po}','${dom}','${DOMAINHOME}', 'ssl')" 		  	  >"${dir}/start-${SERVER}.py"
-	echo "prps= makePropertiesObject(\"AdminURL=${ADMINURL}\")"                                              >>"${dir}/start-${SERVER}.py"
-        echo "nmStart('${SERVER}'${prop});"									 >>"${dir}/start-${SERVER}.py"
-        echo "exit();"												 >>"${dir}/start-${SERVER}.py"
-        RES=`( cd $DOMAINHOME 2>&1 && . ./bin/setDomainEnv.sh 2>&1 && ${JAVA_HOME}/bin/java -classpath ${FMWCONFIG_CLASSPATH} ${MEM_ARGS} ${JVM_D64} ${JAVA_OPTIONS} weblogic.WLST  "${dir}/start-${SERVER}.py" 2>&1 ) `
+	f="${log}/start-${SERVER}.py"
+
+	echo "nmConnect('${us}','${pa}','${ho}','${po}','${dom}','${DOMAINHOME}', 'ssl')" 		  	  >"${f}"
+	echo "prps= makePropertiesObject(\"AdminURL=${ADMINURL}\")"                                              >>"${f}"
+        echo "nmStart('${SERVER}'${prop});"									 >>"${f}"
+        echo "exit();"												 >>"${f}"
+        RES=`( cd $DOMAINHOME 2>&1 && . ./bin/setDomainEnv.sh 2>&1 && ${JAVA_HOME}/bin/java -classpath ${FMWCONFIG_CLASSPATH} ${MEM_ARGS} ${JVM_D64} ${JAVA_OPTIONS} weblogic.WLST  "${f}" 2>&1 ) `
 	
 	echo "$RES" | grep "denied" >/dev/null 2>&1
  	if [ "$?" -eq 0 ]; then
 		echo "ERROR:  nodemanager user wrong - update nmuser/nmpass in $DOMAINHOME/domainkeys with correct credentials"
-		rm "${dir}/start-${SERVER}.py" 2>/dev/null
+		rm "${f}" 2>/dev/null
 		exit 2
 	fi	
 	echo "$RES" | grep "Successfully started server ${SERVER}"  >/dev/null 2>&1
 	if [[ "$?" -eq 0 ]]; then
 	     echo "successfully started"
-	     rm "${dir}/start-${SERVER}.py" 2>/dev/null
+	     rm "${f}" 2>/dev/null
 	     return
 	fi
 	echo "WARNING:  unknown state - please check log files"
-	rm "${dir}/start-${SERVER}.py" 2>/dev/null
+	rm "${f}" 2>/dev/null
 }
 
 function stoppingNM() {
@@ -147,11 +154,15 @@ function stoppingNM() {
         po1="NODE${m}PORT"
         po=${!po1}
 
-        echo "nmConnect('${us}','${pa}','${ho}','${po}','${dom}','${DOMAINHOME}', 'ssl');"   	 	 >"${dir}/shutdown-${SERVER}.py"
-	echo "nmKill('${SERVER}');"									>>"${dir}/shutdown-${SERVER}.py"
-	echo "exit()" 											>>"${dir}/shutdown-${SERVER}.py"
-	RES=`( cd $DOMAINHOME 2>&1 && . ./bin/setDomainEnv.sh 2>&1 && ${JAVA_HOME}/bin/java -classpath ${FMWCONFIG_CLASSPATH} ${MEM_ARGS} ${JVM_D64} ${JAVA_OPTIONS} weblogic.WLST "${dir}/shutdown-${SERVER}.py" 2>&1 )`
+	f="${log}/shutdown-${SERVER}.py"
+
+        echo "nmConnect('${us}','${pa}','${ho}','${po}','${dom}','${DOMAINHOME}', 'ssl');"   	 	 >"${f}"
+	echo "nmKill('${SERVER}');"									>>"${f}"
+	echo "exit()" 											>>"${f}"
+	RES=`( cd $DOMAINHOME 2>&1 && . ./bin/setDomainEnv.sh 2>&1 && ${JAVA_HOME}/bin/java -classpath ${FMWCONFIG_CLASSPATH} ${MEM_ARGS} ${JVM_D64} ${JAVA_OPTIONS} weblogic.WLST "${f}" 2>&1 )`
 	echo $RES
+
+	rm "${f}" 2>/dev/null
 }
 
 function starting() {
@@ -297,13 +308,14 @@ function stopping() {
            echo "* DOMAINHOME: $DOMAINHOME *"
            echo "********************************************************"
        if [[ "$ADMINRUNNING" == "1" ]]; then 
-           echo "wlsUserID = java.lang.System.getenv('wlsUserID')" 						 >"${dir}/shutdown-${SERVER}.py" 
-	   echo "wlsPassword = java.lang.System.getenv('wlsPassword')" 						>>"${dir}/shutdown-${SERVER}.py" 
-	   echo "connect(${userID} ${password} url='${ADMINSTOPURL}', adminServerName='${ADMINSERVER}')" 	>>"${dir}/shutdown-${SERVER}.py" 
-	   echo "shutdown('${SERVER}','Server', ignoreSessions='true',force='true')" 				>>"${dir}/shutdown-${SERVER}.py" 
-	   echo "exit()" 											>>"${dir}/shutdown-${SERVER}.py" 
+	   f="${log}/shutdown-${SERVER}.py"
+           echo "wlsUserID = java.lang.System.getenv('wlsUserID')" 						 >"${f}" 
+	   echo "wlsPassword = java.lang.System.getenv('wlsPassword')" 						>>"${f}" 
+	   echo "connect(${userID} ${password} url='${ADMINSTOPURL}', adminServerName='${ADMINSERVER}')" 	>>"${f}" 
+	   echo "shutdown('${SERVER}','Server', ignoreSessions='true',force='true')" 				>>"${f}" 
+	   echo "exit()" 											>>"${f}" 
 
-	   ( cd $DOMAINHOME && . ./bin/setDomainEnv.sh 2>/dev/null && ${JAVA_HOME}/bin/java -classpath ${FMWCONFIG_CLASSPATH} ${MEM_ARGS} ${JVM_D64} ${JAVA_OPTIONS} weblogic.WLST ${dir}/shutdown-${SERVER}.py  2>&1 >$STOPFILE )
+	   ( cd $DOMAINHOME && . ./bin/setDomainEnv.sh 2>/dev/null && ${JAVA_HOME}/bin/java -classpath ${FMWCONFIG_CLASSPATH} ${MEM_ARGS} ${JVM_D64} ${JAVA_OPTIONS} weblogic.WLST "${f}"  2>&1 >$STOPFILE )
 	   WLSUP=$?
        
 	   if [[ "$ADMINSERVER" == "$SERVER" ]]; then
@@ -311,7 +323,7 @@ function stopping() {
 	   fi
 
            #cleanup
-	   rm -fr "${dir}/shutdown-${SERVER}.py" 2>/dev/null
+	   rm -fr "${f}" 2>/dev/null
 
 	   exit $WLSUP
        else 
