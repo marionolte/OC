@@ -27,7 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipselabs.garbagecat.Main;
+import org.eclipselabs.garbagecat.GCMain;
 import org.eclipselabs.garbagecat.domain.BlockingEvent;
 import org.eclipselabs.garbagecat.domain.JvmRun;
 import org.eclipselabs.garbagecat.domain.LogEvent;
@@ -87,8 +87,9 @@ public class GcManager {
      * Default constructor.
      */
     public GcManager() {
+        System.out.println("1.1");
         this.jvmDao = new JvmDao();
-        ;
+        System.out.println("1.2");
     }
 
     /**
@@ -550,7 +551,7 @@ public class GcManager {
                         jvmDao.getAnalysisKeys().add(Analysis.ERROR_GC_TIME_LIMIT_EXCEEEDED);
                     }
                 } else if (event instanceof UnknownEvent) {
-                    if (jvmDao.getUnidentifiedLogLines().size() < Main.REJECT_LIMIT) {
+                    if (jvmDao.getUnidentifiedLogLines().size() < GCMain.REJECT_LIMIT) {
                         jvmDao.getUnidentifiedLogLines().add(logLine);
                     }
                 }

@@ -74,30 +74,31 @@ public class WlsToolConfig extends Version{
             try {
                         WlsDecrypt wdc = new WlsDecrypt(wd);
                                    wdc.decrypt();
+                        boolean b=false;           
                         if ( wdc.getUser().isEmpty() || wdc.getPass().isEmpty() || wdc.getNMUser().isEmpty() || wdc.getNMPass().isEmpty() ) { 
                             if ( silent ) { throw new RuntimeException("ERROR: empty users settings not allowed in silent "); }
-                                   ask4User(wd);
+                                   ask4User(wd); b=true;
                             wdc.setUser(  wd.getAdminUser()     ); 
                             wdc.setNMUser(wd.getNodeUser()      );
                             wdc.setPass(  wd.getAdminPassword() );
                             wdc.setNMPass(wd.getNodePassword()  );
                         }
-                        if ( wdc.getUser().isEmpty() || wdc.getPass().isEmpty() || wdc.getNMUser().isEmpty() || wdc.getNMPass().isEmpty() ) { 
-                    
+                        if ( ! b && wd._OSUser.isEmpty() ) {
+                            ask4User(wd);
+                        }
+                        if ( wdc.getUser().isEmpty() || wdc.getPass().isEmpty() || wdc.getNMUser().isEmpty() || wdc.getNMPass().isEmpty() ) {                     
                                    wd.updateAccounts( wdc.getUser(), wdc.getPass(), wdc.getNMUser(), wdc.getNMPass() );
-                        }        
+                        }
+                        
             }catch(java.io.IOException io) {
                                    printf(func,1,"ERROR: check decrypt information with error:"+io.getMessage());
             }           
-            //System.out.println("ask4User");
-            //          ask4User(wd);
                       ar.put(wd.getDomainName(),wd);
-            //System.out.println("domainkeys check");          
                       SecFile fd = new SecFile(d.getFQDNDirName()+File.separator+"domainkeys");
                       if ( ! fd.isReadableFile() ) {
                            this._needUpdate=true;
                       } 
-            //System.out.println("done");          
+                      
         } else {
             printf(func,2,"not a readable directory :"+dir);
         }
@@ -111,7 +112,9 @@ public class WlsToolConfig extends Version{
         String p  = wd.getAdminPassword();
         String un = wd.getNodeUser(); 
         String pn = wd.getNodePassword();
-        
+        String osu   = wd.getOSUser();
+        String osp   = wd.getOSPassword();
+        String oskey = wd.getOSUserkey();
         if ( u.isEmpty() || p.isEmpty() ) {
                   System.out.print("Domain Admin User ["+((u!=null && ! u.isEmpty())?u:"")+"] : "); 
                   String readLine = console.readLine().trim();
@@ -144,7 +147,31 @@ public class WlsToolConfig extends Version{
             pn=(pass.length>0)?new String(pass):pn;
             wd.setNodePassword(pn); 
             System.out.println("");
-        }    
+        } 
+        
+        if ( osu.isEmpty() ) {
+             System.out.print("Domain Remote User ["+osu+"] : "); 
+             String readLine = console.readLine().trim();
+             if ( ! readLine.isEmpty() ) { osu=readLine.trim(); wd._OSUser=osu; }
+             System.out.println("");  
+        }
+        
+        if ( ! osu.isEmpty() )  {
+            if ( oskey.isEmpty() ) {
+                System.out.print("Domain Remote User ["+osu+"] ssh key : "); 
+                String readLine = console.readLine().trim();
+                if ( ! readLine.isEmpty() ) { oskey=(new ReadFile(readLine.trim())).getFQDNFileName(); wd._OSUserkey=oskey; }
+                System.out.println("");  
+            }
+            if ( osp.isEmpty() ) {
+                char[] pass = console.readPassword("Domain Remote User ["+osu+"] Password : ", (Object[]) new String[]{});
+                osp=(pass.length>0)?new String(pass):"";
+                wd._OSPass=osp; 
+                System.out.println("");
+            }
+            
+            
+        }
         
     }
 
@@ -226,8 +253,6 @@ public class WlsToolConfig extends Version{
                                     String[] mp = tp[tp.length-1].replaceAll(File.separator+"$", "").split(File.separator);
                                     
                                     if ( ar.get(mp[ mp.length-1]) == null ) {
-                                        //System.out.println("DOMAIN:"+mp[ mp.length-1]+": PATH:"+tp[tp.length-1]+":");
-                                        //this.updateConfig(tp[tp.length-1]);
                                         WlsDomain d = new WlsDomain(mp[ mp.length-1]);
                                                   d.setDomainLocation(tp[tp.length-1]);
                                                   ar.put(d.getDomainName(), d);
@@ -249,7 +274,12 @@ public class WlsToolConfig extends Version{
                                 ft.append("username=").append(d.getAdminUser()    ).append("\n")
                                   .append("password=").append(d.getAdminPassword()).append("\n")
                                   .append("nmuser="  ).append(d.getNodeUser()     ).append("\n")
-                                  .append("nmpass="  ).append(d.getNodePassword() ).append("\n");      
+                                  .append("nmpass="  ).append(d.getNodePassword() ).append("\n"); 
+                                if ( ! d._OSUser.isEmpty() ) {
+                                    ft.append("osuser="   ).append(d._OSUser   ).append("\n")
+                                      .append("ospass="   ).append(d._OSPass   ).append("\n")
+                                      .append("osuserkey=").append(d._OSUserkey).append("\n");
+                                }
                                 SecFile fd = new SecFile(d.getDomainLocation()+File.separator+"domainkeys");
                                         fd.replace(ft.toString());
                       
@@ -352,6 +382,7 @@ public class WlsToolConfig extends Version{
     private void saveResourceFiles(String file, String path, String dest ) {
        final String func=getFunc("saveResourceFiles(String file, String path, String dest )"); 
        try { 
+            String u = System.getProperty("user.name"); 
             ReadDir d = new ReadDir(dest); String dim=path.replaceAll("^/", "");
             ZipInputStream zis = new ZipInputStream(new FileInputStream(file));
             ZipEntry ze;  byte[] buf = new byte[4*1024];
@@ -370,7 +401,7 @@ public class WlsToolConfig extends Version{
                                     mp.append( (char) buf[i] );
                              }
                              //fos.write(buf, 0, len); 
-                             fos.write( mp.toString().replaceAll(" \"oracle\" ", " \""+System.getProperty("user.name")+"\" ").getBytes() );
+                             fos.write( mp.toString().replaceAll(" \"oracle\" ", " \""+u+"\" ").getBytes() );
                          }
                          fos.close();
                          //close this ZipEntry

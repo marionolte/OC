@@ -31,7 +31,7 @@ function usage() {
 function rolling(){
 	if [[ "$ADMINRUNNING" -ne 1 ]]; then 
 		echo "ERROR: Server $ADMINSERVER is not running"
-		#exit 2
+		exit 2
 	fi 
 	export EVALEXTRA=1
    	WAITTIME=90
@@ -46,7 +46,7 @@ function rolling(){
            echo "  try:"											>>"${f}"
            echo "    cd('/ServerLifeCycleRuntimes/' +server)"							>>"${f}"
 	   echo "  except:"											>>"${f}"
-	   echo "     dumpStack();										>>"${f}"
+	   echo "     dumpStack();"										>>"${f}"
 	   echo "  return cmo.getState()"									>>"${f}"
 	   echo " "												>>"${f}"
 	   echo "def loopUntil(state,server):"									>>"${f}"
@@ -333,6 +333,11 @@ function stopping() {
 
 }
 
+function killRemote() {
+    echo "$DOMAIN at $DOMAINHOME as "
+
+}
+
 function status() {
 
            echo "********************************************************"
@@ -449,6 +454,9 @@ case "$1" in
     ;;
     'RollingRestart'|'rollingrestart'|'ROLLINGRESTART')
 		rolling;
+    ;;
+    'kill'|'Kill'|'KILL' ) 
+                killRemote
     ;;
         *) usage;;
 esac

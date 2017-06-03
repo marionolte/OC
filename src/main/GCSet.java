@@ -5,7 +5,6 @@
  */
 package main;
 
-import java.util.HashMap;
 import main.gc.GCSetDefaults;
 
 /**

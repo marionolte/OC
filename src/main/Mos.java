@@ -26,6 +26,7 @@ import net.wls.WlsDomain;
 import net.wls.WlsDomainLogRotation;
 import net.wls.WlsToolConfig;
 import net.wls.WlsUserEnv;
+import org.eclipselabs.garbagecat.GCMain;
 
 /**
  *
@@ -168,6 +169,7 @@ public class Mos extends Updater{
             else if ( args[i].matches("-unsecure") ){ unsecureFile(getArgsLower(args,++i));     fin=true; }
             else if ( args[i].matches("-secure")   ){ secureFile(getArgsLower(args,++i));       fin=true; }
             else if ( args[i].matches("-pwfile")   ){ this.setPassword(args[++i]);              fin=true; }
+            else if ( args[i].matches("-gclog")    ){ checkGC(getArgsLower(args,++i));          fin=true; }
             else if ( args[i].matches("-d")        ){ debug++; }
             else if ( args[i].matches("-version")  ){ version(); _exit=0;                       fin=true; donemsg=false; }
             else {
@@ -177,6 +179,12 @@ public class Mos extends Updater{
             if ( fin ) { setClosed(); return; }
         } 
     }
+    
+    private void checkGC(String[] ar) {
+        GCMain gc = new GCMain(ar);
+               gc.scan();
+    }
+    
     
     private void secureFile(String[] ar) {
         if ( ar.length > 0 ) {
@@ -285,7 +293,7 @@ public class Mos extends Updater{
     }
     
     private void gcLog(String[] args) {
-         org.eclipselabs.garbagecat.Main m = new org.eclipselabs.garbagecat.Main(args);
+         org.eclipselabs.garbagecat.GCMain m = new org.eclipselabs.garbagecat.GCMain(args);
                 m.scan();
     }
     

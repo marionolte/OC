@@ -144,12 +144,13 @@ public class JvmDao {
     public JvmDao() {
         try {
             // Load database driver.
+            System.out.println("Load driver");
             Class.forName("org.hsqldb.jdbcDriver");
         } catch (ClassNotFoundException e) {
             System.err.println(e.getMessage());
             throw new RuntimeException("Failed to load HSQLDB JDBC driver.");
         }
-
+        System.out.println("load done");
         try {
             // Connect to database.
 

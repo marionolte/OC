@@ -34,6 +34,10 @@ public class WlsDomain extends MainTask{
     private String _adminserver="AdminServer";
     String _nodeMUser="";
     String _nodeMPass="";
+    String _OSUser=""; // System.getProperty("user.name");
+    String _OSPass="";
+    String _OSUserkey="";
+    
             boolean _domainkeyLoaded =false;
     
     public WlsDomain(String[] args) {
@@ -229,6 +233,9 @@ public class WlsDomain extends MainTask{
                  else if ( sp[0].toLowerCase().matches("password")) {   p=s.substring(sp[0].length()+1).trim(); }
                  else if ( sp[0].toLowerCase().matches("nmuser")  ) { nmu=s.substring(sp[0].length()+1).trim(); }
                  else if ( sp[0].toLowerCase().matches("nmpass")  ) { nmp=s.substring(sp[0].length()+1).trim(); }
+                 else if ( sp[0].toLowerCase().matches("osuser")  ) { this._OSUser=s.substring(sp[0].length()+1).trim(); }
+                 else if ( sp[0].toLowerCase().matches("ospass")  ) { this._OSPass=s.substring(sp[0].length()+1).trim(); }
+                 else if ( sp[0].toLowerCase().matches("osuserkey")){ this._OSUserkey=(new ReadFile(s.substring(sp[0].length()+1).trim())).getFQDNName(); }
              }
              if ( ! nmu.isEmpty() ) this._nodeMUser=nmu;
              if ( ! nmp.isEmpty() ) this._nodeMPass=nmp;
@@ -277,6 +284,10 @@ public class WlsDomain extends MainTask{
     public String getAdminPassword(){ return (this.wu != null)?this.wu.getPassword():""; }
     public String getNodeUser()     { return this._nodeMUser; }
     public String getNodePassword() { return this._nodeMPass; }
+    public String getOSUser()       { return this._OSUser; }
+    public String getOSPassword()   { return this._OSPass; }
+    public String getOSUserkey()    { return this._OSUserkey; }
+    
     
     public void setNodeUser(     String u) { if (u!=null && ! u.isEmpty() ) {
         this._nodeMUser=u;  updateNodeManagers();

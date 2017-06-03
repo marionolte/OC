@@ -78,14 +78,15 @@ public class ReadFile extends Version {
                       .split(File.separator);
         for(String s : sp) {
             if ( ! s.isEmpty() ) {
-                if ( s.equals("..") ) { ar.remove(ar.size()-1); }
+                if      ( s.equals("..")) { ar.remove(ar.size()-1); }
                 else if ( s.equals(".") ) {}
+                else if ( s.equals("~") ) {}
                 else { ar.add(s); }
             }
         }
         
         StringBuilder sw = new StringBuilder(sepa);
-        while( ar.size() > 0 ) {sw.append(ar.remove(0)).append(sepa); }
+        while( ar.size() > 0 ) { sw.append(ar.remove(0)).append(sepa); }
         
         return new File(sw.toString().replaceAll(sepa, File.separator));
     }
@@ -634,7 +635,5 @@ public class ReadFile extends Version {
         }
         
     }
-    
-    
-            
+               
 }
