@@ -6,8 +6,7 @@ package net.ldap;
 
 import general.Version;
 import io.crypt.Crypt;
-import io.file.ReadFile;
-import io.file.WriteFile;
+import io.file.SecFile;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -129,15 +128,9 @@ abstract public class LdapMain extends Version{
     static public ArrayList getLinesFromFile(String fname) {
         String line; 
         ArrayList a = new ArrayList();
-        
-        WriteFile f = new WriteFile(fname);
-        if ( f.isReadableFile() ) {
-             line = f.readOut().toString();
-             if ( line.endsWith("=") ) {  line = crypt.getUnCrypted(line);  }
-             else {
-                  f.delete(); f.append(crypt.getCrypted(line));
-             }
-             a.add(line);
+        SecFile f = new SecFile(fname);
+        if  ( f.isReadableFile() ) {
+             for ( String s :f.readOut().toString().split("\n") ){ a.add(s); }
         }
         
         if ( a.size() == 0 ) {
@@ -156,7 +149,7 @@ abstract public class LdapMain extends Version{
     
     static public    String protocol="ldap";
     static public    String hostname="localhost";
-    static public    int port=389;
+    static public    int    port=389;
     static public    String userdn=null;
     static public    String userpw=null;
     static public    String filter=null;
@@ -171,34 +164,28 @@ abstract public class LdapMain extends Version{
         String func="scanner(Sting[] args,final String use)";
         if (args.length > 0) {
             for(int i=0; i<args.length; i++) {
-                log(func,3," property:"+args[i]+":");
-                if      ( args[i].matches("-h")  && args.length>i+1 ) { hostname=args[++i]; log(func,2," host:"+hostname+":"); }
-                else if ( args[i].matches("-b")  && args.length>i+1 ) {   baseDN=args[++i]; log(func,2," baseDN:"+baseDN+":");}
-                else if ( args[i].matches("-a")  && args.length>i+1 ) {   userdn=args[++i]; log(func,2," USER:"+userdn+":");}
-                else if ( args[i].matches("-D")  && args.length>i+1 ) {   userdn=args[++i]; log(func,2," USER:"+userdn+":");}
-                else if ( args[i].matches("-P")  && args.length>i+1 ) {   userpw=args[++i]; log(func,2," PASS:"+userpw+":"); }
-                else if ( args[i].matches("-p")  && args.length>i+1 ) {   port = Integer.parseInt(args[++i]); log(func,2," port:"+port+":");}
-                else if ( args[i].matches("-ssl")                   ) {   protocol="ldaps"; log(func,2," SSL:"+protocol+":");}
-                else if ( args[i].matches("-s")  && args.length>i+1 ) {   scope=getScope(args[++i]); log(func,2," scope:"+scope+":"); }
-                else if ( args[i].matches("-j")  && args.length>i+1 ) {   userpw=(String )getLinesFromFile(args[++i]).get(0); log(func,2," PASS:"+userpw+":");}
-                else if ( args[i].matches("-f")  && args.length>i+1 ) {   operationfile=args[++i];  log(func,2," opFile:"+operationfile+":");}
-                else if ( args[i].matches("-help") || args[i].matches("--help") ) { usage=true; printUsage(use); }
+                printf(func,3," property:"+args[i]+":");
+                if      ( args[i].matches("-h")  && args.length>i+1 ) { hostname=args[++i]; printf(func,2," host:"+hostname+":"); }
+                else if ( args[i].matches("-b")  && args.length>i+1 ) {   baseDN=args[++i]; printf(func,2," baseDN:"+baseDN+":");}
+                else if ( args[i].matches("-a")  && args.length>i+1 ) {   userdn=args[++i]; printf(func,2," USER:"+userdn+":");}
+                else if ( args[i].matches("-D")  && args.length>i+1 ) {   userdn=args[++i]; printf(func,2," USER:"+userdn+":");}
+                else if ( args[i].matches("-P")  && args.length>i+1 ) {   userpw=args[++i]; printf(func,2," PASS:"+userpw+":"); }
+                else if ( args[i].matches("-p")  && args.length>i+1 ) {   port = Integer.parseInt(args[++i]); printf(func,2," port:"+port+":");}
+                else if ( args[i].matches("-ssl")                   ) {   protocol="ldaps"; printf(func,2," SSL:"+protocol+":");}
+                else if ( args[i].matches("-s")  && args.length>i+1 ) {   scope=getScope(args[++i]); printf(func,2," scope:"+scope+":"); }
+                else if ( args[i].matches("-j")  && args.length>i+1 ) {   userpw=(String )getLinesFromFile(args[++i]).get(0); printf(func,2," PASS:"+userpw+":");}
+                else if ( args[i].matches("-f")  && args.length>i+1 ) {   operationfile=args[++i];  printf(func,2," opFile:"+operationfile+":");}
+                else if ( args[i].matches("-help") || args[i].matches("--help") ) { usage=true; log(use); }
                 else if ( args[i].matches("-d")                                 ) { debug++; }
-                else if ( args[i].matches("-conn") && args.length>i+1 ){ WriteFile fa=new WriteFile(args[++i]); String m=fa.readOut().toString(); 
+                else if ( args[i].matches("-conn") && args.length>i+1 ){ SecFile fa=new SecFile(args[++i]);  
                                                                          
-                                                                         if ( m.endsWith("=") ) {
-                                                                            m=crypt.getUnCrypted(m);
-                                                                         } else {
-                                                                            if ( fa.isWriteableFile() ) {
-                                                                                 String n=crypt.getCrypted(m);
-                                                                                 fa.delete(); fa.append( n + ((n.endsWith("="))?"":"=")  );
-                                                                            }
+                                                                         try { conn.load( new ByteArrayInputStream(fa.readOut().toString().getBytes("UTF-8")) ); } 
+                                                                         catch(java.io.IOException io) {
+                                                                             printf(func,1,"Exception:"+io.getMessage()+" - with file"+args[i]);
                                                                          }
-                                                                         try { conn.load( new ByteArrayInputStream(m.getBytes("UTF-8")) ); } 
-                                                                         catch(java.io.IOException io) {}
                 }
-                else {
-                    log(func,2,"filter/objectlist for :"+args[i]+":");
+                else {                    
+                    printf(func,2,"filter/objectlist for :"+args[i]+":");
                     if ( args[i].contains("=") ) {
                         filter = (filter == null)?args[i]:filter+" "+args[i];
                     }else {
@@ -210,15 +197,6 @@ abstract public class LdapMain extends Version{
             usage=true; 
         }
     }
-    
-    static Version v;
-    
-    static void printUsage(final String str) {
-        System.out.println(str);
-        error_code=-1;
-    } 
-    
-    static public  void log(String method, int level, String msg ) { printf(name, level, method+" - "+msg); }
     
     static {
        name="LdapMain";

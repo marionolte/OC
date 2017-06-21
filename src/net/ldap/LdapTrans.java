@@ -7,7 +7,6 @@ package net.ldap;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Hashtable;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.SearchControls;
@@ -15,10 +14,7 @@ import javax.naming.directory.SearchResult;
 import javax.naming.ldap.Control;
 import javax.naming.ldap.LdapContext;
 import javax.naming.ldap.PagedResultsControl;
-import javax.naming.ldap.PagedResultsResponseControl;
-import static net.ldap.LdapMain.getEnv;
 import static net.ldap.LdapMain.getLdapContext;
-import static net.ldap.LdapMain.getMyScope;
 import static net.ldap.LdapMain.getSearchSizelimit;
 import static net.ldap.LdapMain.getSearchTimeout;
 import static net.ldap.LdapMain.log;
@@ -106,9 +102,9 @@ public class LdapTrans extends LdapMain {
         
         if      ( scope == 2 ) { ctls.setSearchScope(SearchControls.SUBTREE_SCOPE);  }  // 2
         else if ( scope == 1 ) { ctls.setSearchScope(SearchControls.ONELEVEL_SCOPE); }  // 1
-        else {                   ctls.setSearchScope(SearchControls.OBJECT_SCOPE); }    // 0 base
+        else {                   ctls.setSearchScope(SearchControls.OBJECT_SCOPE);   }  // 0 base
            
-        log(func,2,"run search against :"+baseDN);
+        printf(func,2,"run search against :"+baseDN);
         NamingEnumeration results = ctx.search(baseDN, filter, ctls); //ctx.search( baseDN, getEnv("java.naming.ldap.attributes.binary") , ctls);
         
         
@@ -141,13 +137,13 @@ public class LdapTrans extends LdapMain {
                    System.out.println("mod  dn: "+entry.getNameInNamespace()+" =>"+entry.toString());
             }
             if ( modentry == null ) {
-                log(func,0,"user dn not exist on remote target");
+                printf(func,0,"user dn not exist on remote target");
             } 
             
             return true;
             
         } else {
-            log(func,0,"user "+user+" are not exist on from target ");
+            printf(func,0,"user "+user+" are not exist on from target ");
         }    
         
         return false;
@@ -176,7 +172,7 @@ public class LdapTrans extends LdapMain {
                       lt.trans();
             System.exit(0);
         } catch (Exception e) {
-            log("",0,"Ldap transport stopps running with reason - "+e.getMessage());
+            printf("",0,"Ldap transport stopps running with reason - "+e.getMessage());
             e.printStackTrace();
             System.exit(2);
         }   

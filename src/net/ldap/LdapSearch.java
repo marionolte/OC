@@ -30,12 +30,12 @@ import static net.ldap.LdapMain.userpw;
 public class LdapSearch  extends LdapMain{
     static public LdapSearch getInstance( String protocol, String hostname, int port, String userDN, String userPWD, String filter , String auth ) throws NamingException {
         LdapSearch ls = new LdapSearch();
-        log("getInstance()",3,"initalize "+name+" with :"+protocol+":"+userDN+":"+userPWD+"//"+hostname+":"+port);
+        printf("getInstance()",3,"initalize "+name+" with :"+protocol+":"+userDN+":"+userPWD+"//"+hostname+":"+port);
         
         ls.initialize(ls,  protocol,  hostname,  port,  userDN,  userPWD,  filter ,  auth);
         
         ls.init();
-        log("getInstance()",3,"return Object "+name);
+        printf("getInstance()",3,"return Object "+name);
         return ls;
     }
     
@@ -74,7 +74,7 @@ public class LdapSearch  extends LdapMain{
         if ( getMyScope().equals(LdapScope.base))
            ctls.setSearchScope(SearchControls.OBJECT_SCOPE);
            
-        log(func,2,"run search against :"+baseDN);
+        printf(func,2,"run search against :"+baseDN);
         NamingEnumeration results = getLdapContext().search( baseDN, getEnv("java.naming.ldap.attributes.binary") , ctls);
         
         

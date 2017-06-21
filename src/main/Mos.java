@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import javax.naming.NamingException;
 import static net.ldap.LdapMain.objList;
 import net.ldap.LdapSearch;
+import net.ldap.LdapUserBlk;
 import net.ssl.TestSSLServer;
 import net.tcp.PortScanner;
 import net.wls.WlsDomain;
@@ -59,6 +60,17 @@ public class Mos extends Updater{
             return  t.isValid();
     }
     
+    private boolean ldapBulk(String[] arg) {
+        LdapUserBlk ob = new LdapUserBlk();
+                    ob.scanArgs(arg);
+            ob.search();
+            ob.finishing();
+          
+            System.out.println(ob.getCount()+" ldap entries found \tmodified:"+ob.getModified());
+            
+         return (ob.getCount()>0 && ob.getModified()>0);   
+
+    }
     private boolean ldap(String[] arg) {
         final String func=getFunc("ldap(String[] arg)");
         silent=true;
@@ -142,6 +154,7 @@ public class Mos extends Updater{
             else if ( args[i].matches("-debugssl")) { System.setProperty("javax.net.debug","ssl"); }
             else if ( args[i].matches("-sshcomm") ) { _exit = (sshCommand(getArgsLower(args,++i)))?0:1;   fin=true; printf(func,3, "INFO: sshComm parseArgs closed"); }
             else if ( args[i].matches("-ldap")    ) { _exit = (ldap( getArgsLower(args,++i) )    )?0:1;   fin=true; }
+            else if ( args[i].matches("-ldapbulk")) { _exit = (ldapBulk( getArgsLower(args,++i) ))?0:1;   fin=true; }
             else if ( args[i].matches("-testhttp")) { String[] ar = getArgsLower(args,++i);
                                                       printf(func,1,"testhttp - start");
                                                       boolean b=true;

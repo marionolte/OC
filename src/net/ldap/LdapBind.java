@@ -41,7 +41,7 @@ public class LdapBind extends LdapMain{
         try {
           err=null;
           initialize(this);
-          log(func,3," init to :"+env);
+          printf(func,3," init to :"+env);
           init();          
           b=true;  
         } catch(Exception e) {

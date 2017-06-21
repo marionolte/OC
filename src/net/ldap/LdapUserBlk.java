@@ -1,6 +1,7 @@
 package net.ldap;
 
 import io.crypt.Crypt;
+import io.file.SecFile;
 import io.file.WriteFile;
 import io.thread.RunnableT;
 import java.util.ArrayList;
@@ -203,7 +204,7 @@ public class LdapUserBlk extends RunnableT {
               System.out.println("ERROR: invalid credentials provided for ldap modification");
               System.exit(-2);
         } catch (javax.naming.directory.AttributeInUseException ea ) {
-              System.out.println("INFO: "+name.toString()+" attribute  duplicate add error");
+              System.out.println("INFO: "+name.toString()+" attribute duplicate - add error");
         } catch (Exception e) {
           if (name!=null ) System.out.println("ERROR: modification "+name.toString()+"\n");  
           e.printStackTrace();
@@ -574,35 +575,32 @@ public class LdapUserBlk extends RunnableT {
      
      boolean modEnv=false;
      
-     public static void main(String[] args) {
+     public void scanArgs(String[] args)  {
          
-          LdapUserBlk ob = new LdapUserBlk();
-          
-          try {
-            if (args.length == 0 ) { usage(true); }
-            
+       try {
+           
             String pwfile=""; String modpwfile=""; String ofile="";
             for (int i=0; i< args.length; i++ ) {
-              if      ( args[i].matches("-h") && args.length>i+1) { ob.hostname=args[++i];}
-              else if ( args[i].matches("-p") && args.length>i+1) { ob.port= Integer.parseInt(args[++i]);}
-              else if ( args[i].matches("-a") && args.length>i+1) { ob.userDN=args[++i];}
-              else if ( args[i].matches("-D") && args.length>i+1) { ob.userDN=args[++i];}
-              else if ( args[i].matches("-P") && args.length>i+1) { ob.userPWD=args[++i]; ob.bind=true; }
-              else if ( args[i].matches("-w") && args.length>i+1) { ob.userPWD=args[++i]; ob.bind=true; }
+              if      ( args[i].matches("-h") && args.length>i+1) { hostname=args[++i];}
+              else if ( args[i].matches("-p") && args.length>i+1) { port= Integer.parseInt(args[++i]);}
+              else if ( args[i].matches("-a") && args.length>i+1) { userDN=args[++i];}
+              else if ( args[i].matches("-D") && args.length>i+1) { userDN=args[++i];}
+              else if ( args[i].matches("-P") && args.length>i+1) { userPWD=args[++i]; bind=true; }
+              else if ( args[i].matches("-w") && args.length>i+1) { userPWD=args[++i]; bind=true; }
               else if ( args[i].matches("-j") && args.length>i+1) { pwfile=args[++i];}
-              else if ( args[i].matches("-b") && args.length>i+1) { ob.baseDN=args[++i]; ob.bind=true; }
-              else if ( args[i].matches("-f") && args.length>i+1) { ob.filter=args[++i];}
-	      else if ( args[i].matches("-B")                   ) { ob.bind=true; }
-              else if ( args[i].matches("-modh") && args.length>i+1) { ob.hostnameMod=args[++i];                ob.modEnv=true;}
-              else if ( args[i].matches("-modp") && args.length>i+1) { ob.portMod= Integer.parseInt(args[++i]); ob.modEnv=true;}
-              else if ( args[i].matches("-moda") && args.length>i+1) { ob.userModDN=args[++i];                  ob.modEnv=true;}
-              else if ( args[i].matches("-modP") && args.length>i+1) { ob.userModPWD=args[++i]; ob.bind=true;   ob.modEnv=true;}
-              else if ( args[i].matches("-modj") && args.length>i+1) { modpwfile=args[++i];                     ob.modEnv=true;}
-              else if ( args[i].matches("-modssl")                 ) { ob.protoMod="ldaps"; }
-              else if ( args[i].matches("-o")       && args.length>i+1 ) { ob.addCheckObj(args[++i]);}
+              else if ( args[i].matches("-b") && args.length>i+1) { baseDN=args[++i];  bind=true; }
+              else if ( args[i].matches("-f") && args.length>i+1) { filter=args[++i];}
+	      else if ( args[i].matches("-B")                   ) { bind=true; }
+              else if ( args[i].matches("-modh") && args.length>i+1) { hostnameMod=args[++i];                 modEnv=true;}
+              else if ( args[i].matches("-modp") && args.length>i+1) { portMod= Integer.parseInt(args[++i]);  modEnv=true;}
+              else if ( args[i].matches("-moda") && args.length>i+1) { userModDN=args[++i];                   modEnv=true;}
+              else if ( args[i].matches("-modP") && args.length>i+1) { userModPWD=args[++i];    bind=true;    modEnv=true;}
+              else if ( args[i].matches("-modj") && args.length>i+1) { modpwfile=args[++i];                   modEnv=true;}
+              else if ( args[i].matches("-modssl")                 ) { protoMod="ldaps"; }
+              else if ( args[i].matches("-o")       && args.length>i+1 ) { addCheckObj(args[++i]);}
               else if ( args[i].matches("-of")      && args.length>i+1 ) { ofile=args[++i];}
-	      else if ( args[i].matches("-ssl")                        ) { ob.proto="ldaps"; }
-              else if ( args[i].matches("-size")    && args.length>i+1 ) { ob.pageSize = Integer.parseInt(args[++i]); }
+	      else if ( args[i].matches("-ssl")                        ) { proto="ldaps"; }
+              else if ( args[i].matches("-size")    && args.length>i+1 ) { pageSize = Integer.parseInt(args[++i]); }
               else if ( args[i].matches("-help")                       ) { usage(true);}
               else if ( args[i].matches("-fdown")                      ) { forcedDown=true; }
               else if ( args[i].matches("-create")                     ) { createDN=true;   }
@@ -612,16 +610,16 @@ public class LdapUserBlk extends RunnableT {
             
             String line; StringBuilder sb;
             if ( ! pwfile.isEmpty() ) {
-                ob.userPWD=    getPW(pwfile);
+                userPWD=getPW(pwfile);
             }
             if (! modpwfile.isEmpty()) {
-                ob.userModPWD= getPW(modpwfile);
+                userModPWD=getPW(modpwfile);
             }
             if ( ! ofile.isEmpty() ) {
                 ArrayList a = getSW(ofile); 
-                for ( int i=0; i<a.size(); i++ ) { ob.addCheckObj( ((String) a.get(i) ) );}
+                for ( int i=0; i<a.size(); i++ ) { addCheckObj( ((String) a.get(i) ) );}
             }
-            if ( ob.lbList.size() == 0 ) {
+            if ( lbList.size() == 0 ) {
                 throw new Exception("missing value to check - see option -o or -of");
             }
             
@@ -630,12 +628,23 @@ public class LdapUserBlk extends RunnableT {
               usage(false);
               System.exit(-1);
           }  
+       
+         
+     }
+     
+     public long getCount() { return count; } 
+     public long getModified() { return modified; }
+     
+     public static void main(String[] args) {
+         
+          LdapUserBlk ob = new LdapUserBlk();
           
-          ob.search();
+            if (args.length == 0 ) { usage(true); }
+            ob.scanArgs(args);
+            ob.search();
+            ob.finishing();
           
-          ob.finishing();
-          
-          System.out.println(ob.count+" ldap entries found \tmodified:"+ob.modified);
+            System.out.println(ob.count+" ldap entries found \tmodified:"+ob.modified);
         
     }
 
@@ -661,19 +670,12 @@ public class LdapUserBlk extends RunnableT {
     static private Crypt crypt=new Crypt();
     
     static String getPW(String fname) {
-        WriteFile fa = new WriteFile(fname);
-        if ( fa.isReadableFile() ) {
-             String l = fa.readOut().toString();
-                    if ( l.endsWith("=") ) {  l=crypt.getUnCrypted(l); }
-                    else {
-                         if ( fa.isWriteableFile() ) {
-                              fa.delete(); fa.append(crypt.getCrypted(l));
-                         }
-                    }
-             return l; 
-        } else {
-            throw new RuntimeException("Error - not a reable file "+fname);
+        SecFile fa = new SecFile(fname);
+        if ( fa .isReadableFile() ) {
+             return fa.readOut().toString();
         }
+        
+        throw new RuntimeException("Error - not a reable file "+fname);
     }
     
     private void log(String method, int level, String msg ) { log("LdapUserBlk", level, method+" - "+msg); }
