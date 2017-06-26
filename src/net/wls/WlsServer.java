@@ -242,6 +242,7 @@ public class WlsServer extends TcpHost{
         HashMap<String, String> cmap= new HashMap<String,String>();
         cmap.put("startupdate",   ""+System.currentTimeMillis());
         try { 
+            ht.setTimeout(3000);
             ht.connect( url );
             cmap.put("alive",        ""+(ht.getResponseCode() != 503 ));
             cmap.put("responsecode", ""+(ht.getResponseCode()));

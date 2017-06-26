@@ -421,13 +421,14 @@ public class WlsDomain extends MainTask{
         return sw.toString();
     }
     
+    static boolean noTestOnline=false; 
     public void testAlive() throws Exception {
           Iterator<String> itter = servers.keySet().iterator();
           WlsAdminServer wa =  (servers.get( itter.next() )).getAdminInstance();
-                         wa.testAlive();
+                      if ( ! noTestOnline ) {  wa.testAlive(); }
           while(itter.hasNext()) {
               WlsServer ws = servers.get( itter.next() );
-                        ws.testAlive();
+                      if ( ! noTestOnline ) {  ws.testAlive(); }
           }
     }
     

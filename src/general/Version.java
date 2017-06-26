@@ -27,7 +27,7 @@ public abstract class Version { //extends OraConst {
     final public static int majorVersion=0;
     final public static int minorVersion=0;
     final public static int patchVersion=2;
-    final public static int fixedVersion=1;
+    final public static int fixedVersion=2;
     final public static int   libVersion=0;
     final public static int  betaVersion=1;
     
@@ -48,11 +48,11 @@ public abstract class Version { //extends OraConst {
      *
      * @return
      */
-    final public static String getVersion()    { return ""+majorVersion+"."+minorVersion+((patchVersion==0)?"":"."+patchVersion); }
-    final public static String getFullVersion(){ return ""+majorVersion+"."+minorVersion+"."+patchVersion+((fixedVersion==0)?"":"."+fixedVersion); }
-    final public static String getFullInfo() { return mhservice+"/"+getFullVersion()+" - "+getProductAuthor();}
-    final public static String getProductAuthor() { return prodauthor; }
-    final public static int    getLibVersion() { return libVersion;}
+    final public static String  getVersion()       { return ""+majorVersion+"."+minorVersion+((patchVersion==0)?"":"."+patchVersion); }
+    final public static String  getFullVersion()   { return ""+majorVersion+"."+minorVersion+"."+patchVersion+((fixedVersion==0)?"":"."+fixedVersion); }
+    final public static String  getFullInfo()      { return mhservice+"/"+getFullVersion()+" - "+getProductAuthor();}
+    final public static String  getProductAuthor() { return prodauthor; }
+    final public static int     getLibVersion()    { return libVersion;}
     final public static boolean testLibVersion(String a) {
         int b =0; try { b=Integer.parseInt(a); }catch(Exception e) {}
         return (getLibVersion() == b );
@@ -175,6 +175,7 @@ public abstract class Version { //extends OraConst {
     
     public synchronized static void printf(String cName, String meth, int level, String msg ) { printf(cName+"::"+meth,level,msg); }
     public synchronized static void printf(String cName, int level, String msg ) { 
+        //println(level, cName+" - "+msg);
         if ( level >= debug ) {
             println(level, cName+" - "+msg);
         }

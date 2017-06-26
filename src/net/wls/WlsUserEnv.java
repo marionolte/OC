@@ -23,6 +23,7 @@ public class WlsUserEnv extends Version {
     private static final String sepa="__@__";
     
     public static String updateEnv(String fname, String key) {
+    //debug=4;
         final String func="WlsUserEnv::updateEnv(String fname, String key)";
         StringBuilder ret = new StringBuilder();
         WriteFile fn = new WriteFile(fname);
@@ -34,7 +35,7 @@ public class WlsUserEnv extends Version {
         map.put("DOMKEYSFOUND", "false");
         printf(func,2,"fn"+fn.getFQDNFileName()+" are readable:"+fn.isReadableFile());
         if ( fn.isReadableFile() ) {
-             WlsDomain wsd = new WlsDomain(fn.getParent().getName());
+             WlsDomain wsd = new WlsDomain(fn.getParent().getName()); wsd.debug=debug;
              if ( key.isEmpty() ) {
                 try { wsd.setDomainLocation(fn.getParent().getCanonicalPath()); } catch(java.io.IOException io){
                     printf(func,1,"setlocation fail:"+io.getMessage());
@@ -54,7 +55,7 @@ public class WlsUserEnv extends Version {
              printf(func,3,"ManagedServers :"+lmap.toString()+":");
              StringBuilder sm=new StringBuilder();
              while(lmap.size() >0 ) {
-                 WlsServer ws = lmap.remove(0);
+                 WlsServer ws = lmap.remove(0); ws.debug=debug;
                  sm.append(ws.getName()).append(",");
                  map.put("SERVER"+ws.getName()+"URL",     ws.getURIString());
                 if ( server.isEmpty() || ws.getName().toLowerCase().matches(server)) {
@@ -65,7 +66,7 @@ public class WlsUserEnv extends Version {
                 String ns=ws.getNodeManager();
                  map.put("SERVER"+ws.getName()+"NODE",  ns );
                 for ( int j=0; j< nmap.size() ; j++ ) {
-                    WlsNodeManager s = nmap.get(j);
+                    WlsNodeManager s = nmap.get(j); s.debug=debug;
                     if ( s.getName().matches(ns)) {
                          s.setManagedServer(ws.getName());
                     }

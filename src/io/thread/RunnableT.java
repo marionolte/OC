@@ -15,11 +15,19 @@ import general.Version;
 public abstract class RunnableT extends Version implements Runnable {
     public String lock="default";
     private Thread  th=null;
+    private long startTime=0L;
+    private long   endTime=0L;
     
     public String getName() { return lock; }
     private boolean running=false;
     final public boolean  isRunning() { return running; }
-    final public boolean setRunning() { running=(running)?false:true;  return isRunning(); }
+    final public boolean setRunning() { running=(running)?false:true;  
+            if( ! running ) { endTime=System.currentTimeMillis(); }
+            return isRunning(); 
+    }
+    
+    final public long getStartTime(){ return startTime; }
+    final public long getStopTime() { return   endTime; }
     
     private boolean closed=false;
     final public boolean isClosed() { return closed; }
@@ -36,7 +44,9 @@ public abstract class RunnableT extends Version implements Runnable {
             while( ! isRunning() && System.currentTimeMillis() < d ) { 
                 sleep(300); 
             }
-        //}    
+        //}
+        startTime=System.currentTimeMillis();
+        endTime=0L;
     }
     
     final public void stop() {
