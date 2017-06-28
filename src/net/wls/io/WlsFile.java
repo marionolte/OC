@@ -9,9 +9,7 @@ import io.file.ReadFile;
 import io.java.GCFile;
 import io.thread.RunnableT;
 import java.io.File;
-import static java.lang.System.gc;
 import java.util.ArrayList;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -20,10 +18,13 @@ import java.util.regex.Pattern;
  */
 public class WlsFile extends ReadFile {
     
-    public WlsFile(String dir, String file) { super(dir, file); }    
-    public WlsFile(String file            ) { super(file); }    
-    public WlsFile(File file              ) { super(file); }
-    
+    public WlsFile(String dir, String file) { this(dir+File.separator+file); }    
+    public WlsFile(String file            ) { this( new File(file) ); }    
+    public WlsFile(File file              ) { 
+            super(file);  
+            starttime=System.currentTimeMillis();
+    }
+    private long starttime=0L;
     private GCFile gcfile = null ;
     
     
@@ -42,13 +43,14 @@ public class WlsFile extends ReadFile {
             System.out.println("INFO: no messages found");
             return;
         }
-        System.out.println("start WlsA");
+        System.out.println("create WlsA - "+(System.currentTimeMillis()-starttime));
         WlsA ws = new WlsA(ar); ws.start();
-        System.out.println("started WlsA");
-        while( ws.isRunning() && ! ws.isClosed() ) { sleep(100); }
-        System.out.println("closed WlsA");
+        System.out.println("started WlsA - "+(System.currentTimeMillis()-starttime));
+        while( ws.isRunning() //&& ! ws.isClosed() 
+             ) { sleep(100); }
+        System.out.println("closed WlsA - "+(System.currentTimeMillis()-starttime));
         for( WlsMsg ms : ar ) {
-            System.out.println("msg  >|"+ms.getMessage()+"|<");
+            //System.out.println("msg  >|"+ms.getMessage()+"|<");
         }
         
     }
@@ -63,7 +65,6 @@ public class WlsFile extends ReadFile {
         ArrayList<WlsMsg> ar; 
          WlsA(ArrayList ar){
            this.ar=ar;  
-             
          }
          
          
@@ -73,24 +74,39 @@ public class WlsFile extends ReadFile {
             System.out.println("WlsA running");
             
             int l=1;
-            if      ( ar.size() > 5001 ) { l=100; }
-            else if ( ar.size() > 1001 ) { l=50;  }
-            else if ( ar.size() >  501 ) { l=20;  }
-            else if ( ar.size() >  101 ) { l=10;  }
-            else if ( ar.size() >   51 ) { l=2;  }
+            if      ( this.ar.size() >100001 ) { l=100; }
+            else if ( this.ar.size() >10001  ) { l=50;  }
+            else if ( this.ar.size() > 1001  ) { l=20;  }
+            else if ( this.ar.size() >  501  ) { l=10;  }
+            else if ( this.ar.size() >   51  ) { l=2;   }
             
-            int range= ar.size() / l +1;
+            int range= this.ar.size() / l +1;
             int i=0; 
-            System.out.println("range:"+range+" ");
+            System.out.println("WlsA - range:"+range+" ");
             ArrayList<WlsAnna> arm= new ArrayList();
-            while(i < ar.size() ) {  arm.add(new WlsAnna(ar,i,i+range));  i += range; }
-            System.out.println("have added "+arm.size()+" WlsAnna threads");
+            long d=System.currentTimeMillis();
+            while(i < ar.size() ) {  
+                System.out.println("WlsA - add new WlsAnna["+i+"] - "+(System.currentTimeMillis()-d));
+                arm.add(new WlsAnna(ar,i,i+range));  
+                System.out.println("WlsA - start   WlsAnna["+i+"] - "+(System.currentTimeMillis()-d));
+                arm.get(arm.size()-1).start(); 
+                System.out.println("WlsA - started WlsAnna["+i+"] - "+(System.currentTimeMillis()-d));
+                i += range; 
+            }
+            System.out.println("WlsA - have added "+arm.size()+" WlsAnna threads - runs:"+(System.currentTimeMillis()-d));
+            i=0;
             while( arm.size() > 0 ) {
                 WlsAnna wa = arm.remove(0);
-                        while(wa.isRunning() && ! wa.isClosed() ) { sleep(100); }
-            }
-            
-            System.out.println("have completed all WlsAnna threads");
+                long fa = System.currentTimeMillis();
+                System.out.println("WlsAnna["+(i++)+"] - wait4complete:"+fa);
+                        while(wa.isRunning() 
+                              //  && ! wa.isClosed() 
+                             ) { sleep(100); }
+                long f = System.currentTimeMillis();
+                System.out.println("WlsAnna["+(i++)+"] - completed:"+f +"   ("+(f-fa)+")");
+                
+            }            
+            System.out.println("have completed all WlsAnna threads - runs:"+(System.currentTimeMillis()-d));
             
             setRunning();
             setClosed();
@@ -102,20 +118,25 @@ public class WlsFile extends ReadFile {
          ArrayList<WlsMsg> ar; int start; int stop;
          WlsAnna(ArrayList ar, int start, int stop){
            this.ar=ar; this.start=start; this.stop=stop; 
-           start();    
          }
                  
          
         @Override
         public void run() {
             setRunning();
-            for( int i=start; i<stop && i<ar.size() ; i++ ) {
+            long d= System.currentTimeMillis();
+            System.out.println("WlsAnna["+start+"] started :"+d);
+            int j=(this.ar.size()-1);
+            int r=(j<stop)?j:stop;
+            for( int i=start; i<r ; i++ ) {
+                System.out.println("WlsAnna["+start+"] - get ["+i+"/"+j+"] for msg analyse  - "+(System.currentTimeMillis()-d));
                 WlsMsg ms = ar.get(i);
                        ms.analyse();
                 
             }    
             setRunning();
             setClosed();
+            System.out.println("WlsAnna["+start+"] complete - "+isRunning()+" -  runs:"+(System.currentTimeMillis()-d));
         }        
     }
 }
