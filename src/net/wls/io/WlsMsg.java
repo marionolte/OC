@@ -64,14 +64,20 @@ class WlsMsg extends Version{
     private long msgtime=0L;
 
     private long getDate(String get) {
+        final String func=getFunc("getDate(String get)");
         long ret = 0L;
         if ( get != null && ! get.isEmpty() ) {
+            String[] sp = new String[] { "MMM dd, yyyy, hh:mm:ss,SSS a Z" };
+            for (String map : sp) {
                                                     // Jun 3, 2017, 9:18:42,360 PM CEST
-            SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy, hh:mm:sss Z ");  //"E, dd MMM yyyy hh:mm:ss Z");
-            //ParsePosition pp = new ParsePosition(0);
+                    SimpleDateFormat sdf = new SimpleDateFormat(map); //ss, a Z ");  //"E, dd MMM yyyy hh:mm:ss Z");
                       Date dat   = sdf.parse(get, new ParsePosition(0) );
-                      if ( dat != null )ret = dat.getTime();
-            
+                      if ( dat != null ) {
+                          ret = dat.getTime();
+                          printf(func,2,"time |"+get+"|  goes to |"+ret+"|");
+                          return ret;
+                      }
+            }
         }
         System.out.println("time |"+get+"|  goes to |"+ret+"|");
         return ret;
