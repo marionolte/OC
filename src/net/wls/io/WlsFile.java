@@ -29,35 +29,40 @@ public class WlsFile extends ReadFile {
     
     
     public void analyze() {
+        final String func=getFunc("analyze()");
         ArrayList<WlsMsg> ar = new ArrayList(); 
         WlsMsg msg=null;    Pattern pa = Pattern.compile("^(\\d+.*|-\\d+.*)");
     
         for ( String s : super.readOut().toString().split("\n") ) {
-            System.out.println("line >|"+s+"|<");
+            printf(func,3,"line >|"+s+"|<");
             if ( (pa.matcher(s)).find()                                                               ) { if (gcfile != null) { gcfile.addLine(s); } } // gclog
-            else if ( msg == null ||   s.startsWith("<") || s.startsWith("####<") || msg.isComplete() ) { msg = new WlsMsg(s);  ar.add(msg); }
-            else if ( msg != null && ! s.startsWith("<")                                              ) { boolean b = msg.add(s);  }
+            else if ( msg == null ||   s.startsWith("<") || s.startsWith("####<") || msg.isComplete() ) { msg = new WlsMsg(s.replace("####<", "<") );  ar.add(msg); }
+            else if ( msg != null && ! s.startsWith("<")                                              ) { boolean b = msg.add(s.replace("####<", "<"));  }
             
         }
         if ( ar.size() == 0 ) {
             System.out.println("INFO: no messages found");
             return;
         }
-        System.out.println("create WlsA - "+(System.currentTimeMillis()-starttime));
+        printf(func,4,"create WlsA - "+(System.currentTimeMillis()-starttime));
         WlsA ws = new WlsA(ar); ws.start();
-        System.out.println("started WlsA - "+(System.currentTimeMillis()-starttime));
+        printf(func,4,"started WlsA - "+(System.currentTimeMillis()-starttime));
         while( ws.isRunning() //&& ! ws.isClosed() 
              ) { sleep(100); }
-        System.out.println("closed WlsA - "+(System.currentTimeMillis()-starttime));
+        printf(func,4,"closed WlsA - "+(System.currentTimeMillis()-starttime));
         for( WlsMsg ms : ar ) {
-            //System.out.println("msg  >|"+ms.getMessage()+"|<");
+            System.out.println("msg  >|"+ms.getMessage()+"|<");
         }
         
     }
     
     public static void main(String[] args) {
+        int debug=0;
         for( String s : args ) {  
-            ( new WlsFile(s) ).analyze();
+            if ( s.matches("-d") ) { debug++; }
+            WlsFile wf = new WlsFile(s);
+                    wf.debug=debug;
+                    wf.analyze();
         }
     }
     
@@ -70,8 +75,9 @@ public class WlsFile extends ReadFile {
          
         @Override
         public void run() {
+            final String func=getFunc("run()");
             setRunning();
-            System.out.println("WlsA running");
+            printf(func,4,"WlsA running");
             
             int l=1;
             if      ( this.ar.size() >100001 ) { l=100; }
@@ -82,31 +88,31 @@ public class WlsFile extends ReadFile {
             
             int range= this.ar.size() / l +1;
             int i=0; 
-            System.out.println("WlsA - range:"+range+" ");
+            printf(func,3,"WlsA - range:"+range+" ");
             ArrayList<WlsAnna> arm= new ArrayList();
             long d=System.currentTimeMillis();
             while(i < ar.size() ) {  
-                System.out.println("WlsA - add new WlsAnna["+i+"] - "+(System.currentTimeMillis()-d));
+                printf(func,4,"WlsA - add new WlsAnna["+i+"] - "+(System.currentTimeMillis()-d));
                 arm.add(new WlsAnna(ar,i,i+range));  
-                System.out.println("WlsA - start   WlsAnna["+i+"] - "+(System.currentTimeMillis()-d));
+                printf(func,4,"WlsA - start   WlsAnna["+i+"] - "+(System.currentTimeMillis()-d));
                 arm.get(arm.size()-1).start(); 
-                System.out.println("WlsA - started WlsAnna["+i+"] - "+(System.currentTimeMillis()-d));
+                printf(func,4,"WlsA - started WlsAnna["+i+"] - "+(System.currentTimeMillis()-d));
                 i += range; 
             }
-            System.out.println("WlsA - have added "+arm.size()+" WlsAnna threads - runs:"+(System.currentTimeMillis()-d));
+            printf(func,3,"WlsA - have added "+arm.size()+" WlsAnna threads - runs:"+(System.currentTimeMillis()-d));
             i=0;
             while( arm.size() > 0 ) {
                 WlsAnna wa = arm.remove(0);
                 long fa = System.currentTimeMillis();
-                System.out.println("WlsAnna["+(i++)+"] - wait4complete:"+fa);
+                printf(func,4,"WlsAnna["+(i++)+"] - wait4complete:"+fa);
                         while(wa.isRunning() 
                               //  && ! wa.isClosed() 
                              ) { sleep(100); }
                 long f = System.currentTimeMillis();
-                System.out.println("WlsAnna["+(i++)+"] - completed:"+f +"   ("+(f-fa)+")");
+                printf(func,4,"WlsAnna["+(i++)+"] - completed:"+f +"   ("+(f-fa)+")");
                 
             }            
-            System.out.println("have completed all WlsAnna threads - runs:"+(System.currentTimeMillis()-d));
+            printf(func,3,"have completed all WlsAnna threads - runs:"+(System.currentTimeMillis()-d));
             
             setRunning();
             setClosed();
