@@ -128,7 +128,8 @@ public class Crypt extends Version {
                                      (( cl == null )? userch.getCrypted(getHostCrypted(txt)) 
                                                     : usercl.getCrypted(getHostCrypted(txt)))
                                     );
-                          if ( ! sw.substring(sw.capacity()-1).equals("=") ) { sw.append("="); }
+                          //System.out.println("crypt user sw:"+sw.toString()+":");
+                          if ( sw.length() > 4 && ! sw.toString().endsWith("=") ) { sw.append("="); }
             return "<"+user+">"+sw.toString()+"</"+user+">";
         }
         return txt;

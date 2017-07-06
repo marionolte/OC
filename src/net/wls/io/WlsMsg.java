@@ -49,8 +49,8 @@ class WlsMsg extends Version{
         int i=sw.indexOf("<"); int j=0;
         while ( i < sw.length() && i >= 0 ) {
             
-            printf(func,3,"substr("+j+","+i+") of "+sw.length()+" sw|"+sw.substring(j, i).replaceAll("^<", "").replaceAll(">[ ]$", "")+"|");
-            ar.add(sw.substring(j, i).replaceAll("^<", "").replaceAll(">[ ]$", ""));
+            printf(func,0,"substr("+j+","+i+") of "+sw.length()+" sw|"+sw.substring(j, i).replaceAll("^<", "").replaceAll("> $", "").replaceAll(">$", "")+"|");
+            ar.add(sw.substring(j, i).replaceAll("^<", "").replaceAll(">$", "").replaceAll("> $", ""));
             j=i; i=sw.indexOf("<",i+1);
             printf(func,3," ("+j+","+i+") of "+sw.length()+" -  new ");
         }
@@ -58,10 +58,19 @@ class WlsMsg extends Version{
         ar.add(sw.substring(j).replaceAll("^<", "").replaceAll(">[ ]$", ""));
         
         this.msgtime=getDate(ar.get(1));
+        this.msgtyp=ar.get(2);
+        this.msgsrv=ar.get(3);
+        
         complete=true;
+        
+        System.out.println(func+" msgTime:"+this.msgtime+":");
     }
     
     private long msgtime=0L;
+    private String msgtyp="info";
+    private String msgsrv="localhost";
+    
+    
 
     private long getDate(String get) {
         final String func=getFunc("getDate(String get)");

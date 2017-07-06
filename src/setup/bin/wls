@@ -198,6 +198,12 @@ function starting() {
                         echo "Server $SERVER is RUNNING"
                         WLSUP=0
                     else
+		      TAIL=`tail -100 $STARTFILE 2>/dev/null | grep -i error`
+		      echo "${TAIL}" | grep "Error: Could not find or load main class" >/dev/null 2>&1
+ 		      if [ $? -eq 0 ]; then
+                                 echo "Server $SERVER in CONFIG ERROR"
+                                 WLSUP=3
+ 		       else 
                         echo "${TAIL}" | grep 'FORCE_SHUTTING_DOWN' >/dev/null 2>&1
                         if  [ $? -eq 0 ]; then
                         	echo "Server $SERVER in ERROR"
@@ -209,6 +215,7 @@ function starting() {
                                      WLSUP=-1
                                 fi
                         fi
+		      fi
                     fi
 
                     if  [ $WLSUP -eq 1 ]; then sleeper; fi 

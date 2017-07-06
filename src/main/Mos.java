@@ -415,6 +415,7 @@ public class Mos extends Updater{
                       dest=args[++i]; 
                       printf(func,2,"update destination to :"+dest);
                   }
+                  else if (args[i].matches("-reconfig")) {  w.setUpdateNeeded(); }
               }  
           }
           printf(func,2,"check configuration on dest:"+dest);
@@ -481,7 +482,8 @@ public class Mos extends Updater{
                 + "\t\t-portscan [-host <host>] [-pmin <min port>] [-pmax <max port>]\t-\tport  scanner \n"
                 + "\n\t\t-testhttp <url> [url1,]\t-\tTest URL Connection to URL\n"
                 + "\n\t\t-ldap -D <bindDN> -j <Password File> <-h <Host>> <-p <Port>> -filter <filter> -b <baseDN>\n"
-                + "\n\t\t-wlsconfig [-dest <script dir [.]>] <domaindir <domaindir1...>>\n\t\t\t\t\t-\tConfigure Wls Starting scripts in directory <dest>\n"
+                + "\n\t\t-wlsconfig "+WlsToolConfig.usage()+"\n\t\t\t\t\t-\tConfigure Wls Starting scripts in directory <dest>"
+                //+ "\n\t\t-wlsconfig [-dest <script dir [.]>] <domaindir <domaindir1...>>\n\t\t\t\t\t-\tConfigure Wls Starting scripts in directory <dest>\n"
                 + "\n\t\t-wlsinfo <domainhome> [<-server <servername>]\t-\n\t\t\t\t\tprint domain use information\n"
                 + "\n\t\t-wlsrota "+WlsDomainLogRotation.usage()+"\n\t\t\t\t\tweblogic domain logrotation\n"
                 + "\n\t\t-logrota "+net.apache.LogRotation.usage()+"\n\t\t\t\t\tapache|ohs logrotation\n"

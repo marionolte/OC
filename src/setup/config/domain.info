@@ -3,6 +3,8 @@ export DOM="$1"
 export NODEMANAGER=""
 export DOMAINHOME=""
 
+export GCG1="-XX:+UseG1 "
+
 ### begin domain
 ### end   domain
 
@@ -11,4 +13,8 @@ if [[ "$DOMAINHOME" == "" ]]; then
     exit 1
 fi
 
+export GCCMS="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:SurvivorRatio=4 -XX:MaxTenuringThreshold=0 -XX:+UseTLAB -XX:CMSInitiatingOccupancyFraction=50 -XX:+CMSClassUnloadingEnabled -XX:+CMSPermGenSweepingEnabled"
+export GCDEBUG="-verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps -Xloggc:${DOMAINHOME}/logs/${DOM}.${SERVER}.gc.log -XX:+PrintTenuringDistribution -XX:+PrintGCApplicationStoppedTime"
+export GCG1="-XX:+UseG1 "
 
+mkdir -p "${DOMAINHOME}/logs/" 2>/dev/null

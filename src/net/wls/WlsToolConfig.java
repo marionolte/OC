@@ -26,6 +26,11 @@ import java.util.zip.ZipInputStream;
  * @author SuMario
  */
 public class WlsToolConfig extends Version{
+
+    public static String usage() {
+        return "[-dest <script dir [.]>] [-reconfig] [-silient] <domaindir <domaindir1...>>";
+    }
+    
     boolean silent=false;
 
     public static void main(String[] args) {
@@ -35,9 +40,10 @@ public class WlsToolConfig extends Version{
         if ( args.length > 0 ) {
             ArrayList<String> dirs = new ArrayList();
             for(int i=0; i< args.length; i++) {
-                if ( args[i].matches("-dest")        ) { w.checkConfig(args[++i]); } 
-                else if ( args[i].matches("-d")      ) { debug++; }
-                else if ( args[i].matches("-silent") ) { w.silent=true; }
+                if ( args[i].matches("-dest")         ) { w.checkConfig(args[++i]); } 
+                else if ( args[i].matches("-d")       ) { debug++; }
+                else if ( args[i].matches("-silent")  ) { w.silent=true; }
+                else if ( args[i].matches("-reconfig")) { w.setUpdateNeeded();}
                 else {  dirs.add(args[i]); }    
             }
             for ( String s : dirs ) {
@@ -158,7 +164,7 @@ public class WlsToolConfig extends Version{
         
         if ( ! osu.isEmpty() )  {
             if ( oskey.isEmpty() ) {
-                System.out.print("Domain Remote User ["+osu+"] ssh key : "); 
+                System.out.print("Domain Remote User ["+osu+"] ssh keyfile : "); 
                 String readLine = console.readLine().trim();
                 if ( ! readLine.isEmpty() ) { oskey=(new ReadFile(readLine.trim())).getFQDNFileName(); wd._OSUserkey=oskey; }
                 System.out.println("");  
@@ -182,16 +188,16 @@ public class WlsToolConfig extends Version{
           }
           setLocation(dest);
           ReadDir dn= new ReadDir(dest+File.separator+"lib");
-          if ( ! dn.isDirectory() ) { this._needUpdate=true;  }
+          if ( ! dn.isDirectory() ) { this.setUpdateNeeded();  }
 
-          if ( ! this._needUpdate ) {
+          if ( ! this.isUpdateNeeded() ) {
             ReadFile df = new ReadFile(dest+File.separator+"lib"+File.separator+"OC.jar");
             if ( ! df.isReadableFile() || ! df.getFQDNFileName().replaceAll(File.separator, sepa).matches(jarfile.replaceAll(File.separator, sepa))) {
-                  this._needUpdate=true;
+                  this.setUpdateNeeded();
             }
           }
           
-          if ( ! this._needUpdate ) {
+          if ( ! this.isUpdateNeeded() ) {
             ReadFile fn = new ReadFile(d.getFile("domain.info").getFQDNFileName());
             if ( fn.isReadableFile() ) {
                 String[] sp = fn.readOut().toString().split("\n");
@@ -202,15 +208,16 @@ public class WlsToolConfig extends Version{
                           
                       }
                 }
-            } else { this._needUpdate=true; }  // domain.info not exist
+            } else { this.setUpdateNeeded(); }  // domain.info not exist
           } 
-    
+          System.out.println("update needed:"+this.isUpdateNeeded());
     }
 
     private final String sepa="__@@__";
     
     private boolean _needUpdate=false;
-    public boolean isUpdateNeeded() { return _needUpdate; }
+    public boolean  isUpdateNeeded() { return _needUpdate; }
+    public boolean setUpdateNeeded() { _needUpdate=true; return this.isUpdateNeeded(); }
 
     public void updateDestination(String dest) {
         final String func=getFunc("updateDestination(String dest)");
