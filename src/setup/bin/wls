@@ -192,19 +192,19 @@ function starting() {
        sleep 1
        ENDTIME=$((`date '+%s' ` + 1200000 ))
        while  [ $WLSUP -eq 1 ]; do
-                    TAIL=`tail -100 $STARTFILE 2>/dev/null | grep state `
+                    TAIL=`tail -500 $STARTFILE 2>/dev/null | egrep -i "state|BEA-|error" `
 		    echo "${TAIL}" | grep "BEA-" | grep 'RUNNING' 
                     if [ $? -eq 0 ]; then
                         echo "Server $SERVER is RUNNING"
                         WLSUP=0
                     else
-		      TAIL=`tail -100 $STARTFILE 2>/dev/null | grep -i error`
-		      echo "${TAIL}" | grep "Error: Could not find or load main class" >/dev/null 2>&1
+		      #TAIL=`tail -500 $STARTFILE 2>/dev/null | grep -i error`
+		      echo "${TAIL}" | egrep "Error: Could not find or load main class" >/dev/null 2>&1
  		      if [ $? -eq 0 ]; then
                                  echo "Server $SERVER in CONFIG ERROR"
                                  WLSUP=3
  		       else 
-                        echo "${TAIL}" | grep 'FORCE_SHUTTING_DOWN' >/dev/null 2>&1
+                        echo "${TAIL}" | egrep "FORCE_SHUTTING_DOWN|A critical service failed."' >/dev/null 2>&1
                         if  [ $? -eq 0 ]; then
                         	echo "Server $SERVER in ERROR"
                                 WLSUP=2
