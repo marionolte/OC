@@ -3,8 +3,6 @@ export DOM="$1"
 export NODEMANAGER=""
 export DOMAINHOME=""
 
-export GCG1="-XX:+UseG1 "
-
 ### begin domain
 ### end   domain
 

@@ -155,14 +155,14 @@ public class WlsToolConfig extends Version{
             System.out.println("");
         } 
         
-        if ( osu.isEmpty() ) {
+        if ( this.isBlackoutNeeded() && osu.isEmpty() ) {
              System.out.print("Domain Remote User ["+osu+"] : "); 
              String readLine = console.readLine().trim();
              if ( ! readLine.isEmpty() ) { osu=readLine.trim(); wd._OSUser=osu; }
              System.out.println("");  
         }
         
-        if ( ! osu.isEmpty() )  {
+        if ( this.isBlackoutNeeded() &&  ! osu.isEmpty() )  {
             if ( oskey.isEmpty() ) {
                 System.out.print("Domain Remote User ["+osu+"] ssh keyfile : "); 
                 String readLine = console.readLine().trim();
@@ -174,9 +174,7 @@ public class WlsToolConfig extends Version{
                 osp=(pass.length>0)?new String(pass):"";
                 wd._OSPass=osp; 
                 System.out.println("");
-            }
-            
-            
+            }                        
         }
         
     }
@@ -210,7 +208,7 @@ public class WlsToolConfig extends Version{
                 }
             } else { this.setUpdateNeeded(); }  // domain.info not exist
           } 
-          System.out.println("update needed:"+this.isUpdateNeeded());
+          //System.out.println("update needed:"+this.isUpdateNeeded());
     }
 
     private final String sepa="__@@__";
@@ -218,6 +216,10 @@ public class WlsToolConfig extends Version{
     private boolean _needUpdate=false;
     public boolean  isUpdateNeeded() { return _needUpdate; }
     public boolean setUpdateNeeded() { _needUpdate=true; return this.isUpdateNeeded(); }
+
+    private boolean _blUpdate=false;
+    public boolean  isBlackoutNeeded() { return _blUpdate; }
+    public boolean setBlackoutNeeded() { _blUpdate=true; return this.isBlackoutNeeded(); }
 
     public void updateDestination(String dest) {
         final String func=getFunc("updateDestination(String dest)");
@@ -273,8 +275,10 @@ public class WlsToolConfig extends Version{
                                 //System.out.println("domain.info:"+d.getDomainName());
                                 wta.append("if [[ \"$DOM\" == \"").append(d.getDomainName()).append("\" ]]; then \n");
                                 wta.append("\texport DOMAINHOME=\"").append(d.getDomainLocation()).append("\"\n");
+                              if ( this.isBlackoutNeeded() ) {  
                                 wta.append("\texport CTLUSER=\"").append(System.getProperty("user.name")).append("\"\n");
                                 wta.append("\texport CTLPASSFILE=\"").append(dest+File.separator+"ctluserkey.pass").append("\"\n");
+                              }  
                                 wta.append("fi\n");
                                 
                                 StringBuilder ft = new StringBuilder();
@@ -282,7 +286,7 @@ public class WlsToolConfig extends Version{
                                   .append("password=").append(d.getAdminPassword()).append("\n")
                                   .append("nmuser="  ).append(d.getNodeUser()     ).append("\n")
                                   .append("nmpass="  ).append(d.getNodePassword() ).append("\n"); 
-                                if ( ! d._OSUser.isEmpty() ) {
+                                if ( this.isBlackoutNeeded() && ! d._OSUser.isEmpty() ) {
                                     ft.append("osuser="   ).append(d._OSUser   ).append("\n")
                                       .append("ospass="   ).append(d._OSPass   ).append("\n")
                                       .append("osuserkey=").append(d._OSUserkey).append("\n");
@@ -298,7 +302,7 @@ public class WlsToolConfig extends Version{
                 
            }
            if (wta.capacity() > 0 ) { 
-               wt.append(wta, false); 
+               wt.append(wta, true); 
            }
            System.out.println("done");
            

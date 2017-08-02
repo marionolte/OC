@@ -169,23 +169,23 @@ public class Mos extends Updater{
                                                       fin=true;
                                                       _exit=(b)?0:1;
                                                     }
-            else if ( args[i].matches("-logrotate")){ logRotate(getArgsLower(args,++i));        fin=true; }
-            else if ( args[i].matches("-portscan") ){ portScanner(getArgsLower(args,++i));      fin=true; }
-            else if ( args[i].matches("-wlsconfig")){ wlsConfigTools(getArgsLower(args,++i));   fin=true; }
-            else if ( args[i].matches("-wlsinfo")  ){ wlsInfoTools(getArgsLower(args,++i));     fin=true; donemsg=false; }
-            else if ( args[i].matches("-wlsrota")  ){ wlsRotate(getArgsLower(args,++i));        fin=true; donemsg=false; }
-            else if ( args[i].matches("-logrota")  ){ logApacheRotate(getArgsLower(args,++i));  fin=true; donemsg=false; }
+            else if ( args[i].matches("-logrotate")){ this.logRotate(getArgsLower(args,++i));        fin=true; }
+            else if ( args[i].matches("-portscan") ){ this.portScanner(getArgsLower(args,++i));      fin=true; }
+            else if ( args[i].matches("-wlsconfig")){ this.wlsConfigTools(getArgsLower(args,++i));   fin=true; }
+            else if ( args[i].matches("-wlsinfo")  ){ this.wlsInfoTools(getArgsLower(args,++i));     fin=true; donemsg=false; }
+            else if ( args[i].matches("-wlsrota")  ){ this.wlsRotate(getArgsLower(args,++i));        fin=true; donemsg=false; }
+            else if ( args[i].matches("-logrota")  ){ this.logApacheRotate(getArgsLower(args,++i));  fin=true; donemsg=false; }
             else if ( args[i].matches("-crypt")    ||
                       args[i].matches("-uncrypt")  ){ crypt.runArgs(getArgsLower(args,i));      fin=true; }  
-            else if ( args[i].matches("-rota")     ){ logRotate(getArgsLower(args,++i));        fin=true; }
-            else if ( args[i].matches("-gclog")    ){ gcLog(getArgsLower(args,++i));            fin=true; }
-            else if ( args[i].matches("-update")   ){ updateJar();                              fin=true; }
-            else if ( args[i].matches("-unsecure") ){ unsecureFile(getArgsLower(args,++i));     fin=true; }
-            else if ( args[i].matches("-secure")   ){ secureFile(getArgsLower(args,++i));       fin=true; }
+            else if ( args[i].matches("-rota")     ){ this.logRotate(getArgsLower(args,++i));        fin=true; }
+            else if ( args[i].matches("-gclog")    ){ this.gcLog(getArgsLower(args,++i));            fin=true; }
+            else if ( args[i].matches("-update")   ){ this.updateJar();                              fin=true; }
+            else if ( args[i].matches("-unsecure") ){ this.unsecureFile(getArgsLower(args,++i));     fin=true; }
+            else if ( args[i].matches("-secure")   ){ this.secureFile(getArgsLower(args,++i));       fin=true; }
             else if ( args[i].matches("-pwfile")   ){ this.setPassword(args[++i]);              fin=true; }
-            else if ( args[i].matches("-gclog")    ){ checkGC(getArgsLower(args,++i));          fin=true; }
+            else if ( args[i].matches("-gclog")    ){ this.checkGC(getArgsLower(args,++i));          fin=true; }
             else if ( args[i].matches("-d")        ){ debug++; }
-            else if ( args[i].matches("-version")  ){ version(); _exit=0;                       fin=true; donemsg=false; }
+            else if ( args[i].matches("-version")  ){ this.version(); _exit=0;                       fin=true; donemsg=false; }
             else {
                 usage(); _exit=1; fin=true; 
             }
@@ -403,6 +403,7 @@ public class Mos extends Updater{
     private void wlsConfigTools(String[] args) {
           final String func=getFunc("wlsConfigTools(String[] args)");
           //if ( args.length <= j+1 ) { return; }
+          //debug=3;
           String dest=System.getProperty("user.home")+File.separator+"bin";
           WlsToolConfig w = new WlsToolConfig(); w.debug=debug;
           for( int i=0; i <args.length; i++ ) {
@@ -415,7 +416,8 @@ public class Mos extends Updater{
                       dest=args[++i]; 
                       printf(func,2,"update destination to :"+dest);
                   }
-                  else if (args[i].matches("-reconfig")) {  w.setUpdateNeeded(); }
+                  else if (args[i].matches("-reconfig")) {  w.setUpdateNeeded();   }
+                  else if (args[i].matches("-backout") ) {  w.setBlackoutNeeded(); }
               }  
           }
           printf(func,2,"check configuration on dest:"+dest);
