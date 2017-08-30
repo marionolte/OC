@@ -146,53 +146,67 @@ public class Mos extends Updater{
         return ar;
     }
     
-    boolean fin=false;  private boolean donemsg=true;
-    private void parseArgs() throws Exception{
-        final String func="parseArgs()";
-        
-        for( int i=0; i<args.length; i++ ) {
-            if      ( args[i].matches("-testssl") ) { _exit = ( testssl(args[++i],args[++i])     )?0:1;   fin=true; }
-            else if ( args[i].matches("-debugssl")) { System.setProperty("javax.net.debug","ssl"); }
-            else if ( args[i].matches("-sshcomm") ) { _exit = (sshCommand(getArgsLower(args,++i)))?0:1;   fin=true; printf(func,3, "INFO: sshComm parseArgs closed"); }
-            else if ( args[i].matches("-ldap")    ) { _exit = (ldap( getArgsLower(args,++i) )    )?0:1;   fin=true; }
-            else if ( args[i].matches("-ldapbulk")) { _exit = (ldapBulk( getArgsLower(args,++i) ))?0:1;   fin=true; }
-            else if ( args[i].matches("-testhttp")) { String[] ar = getArgsLower(args,++i);
-                                                      printf(func,1,"testhttp - start");
-                                                      boolean b=true;
-                                                      for (String s: ar) {
-                                                            printf(func,2,"testhttp:"+s);
-                                                            Http ht= new Http(new URL(s) ); 
-                                                                 System.out.println( ht.getResponse().toString());
-                                                                 if( ! b || ht.getResponseCode()<=0 || ht.getResponseCode() > 403 ) { b=false;}      
-                                                      }
-                                                      printf(func,1,"testhttp - fin");
-                                                      fin=true;
-                                                      _exit=(b)?0:1;
-                                                    }
-            else if ( args[i].matches("-logrotate")){ this.logRotate(getArgsLower(args,++i));        fin=true; }
-            else if ( args[i].matches("-portscan") ){ this.portScanner(getArgsLower(args,++i));      fin=true; }
-            else if ( args[i].matches("-wlsconfig")){ this.wlsConfigTools(getArgsLower(args,++i));   fin=true; }
-            else if ( args[i].matches("-wlsinfo")  ){ this.wlsInfoTools(getArgsLower(args,++i));     fin=true; donemsg=false; }
-            else if ( args[i].matches("-wlsrota")  ){ this.wlsRotate(getArgsLower(args,++i));        fin=true; donemsg=false; }
-            else if ( args[i].matches("-logrota")  ){ this.logApacheRotate(getArgsLower(args,++i));  fin=true; donemsg=false; }
-            else if ( args[i].matches("-crypt")    ||
-                      args[i].matches("-uncrypt")  ){ crypt.runArgs(getArgsLower(args,i));      fin=true; }  
-            else if ( args[i].matches("-rota")     ){ this.logRotate(getArgsLower(args,++i));        fin=true; }
-            else if ( args[i].matches("-gclog")    ){ this.gcLog(getArgsLower(args,++i));            fin=true; }
-            else if ( args[i].matches("-update")   ){ this.updateJar();                              fin=true; }
-            else if ( args[i].matches("-unsecure") ){ this.unsecureFile(getArgsLower(args,++i));     fin=true; }
-            else if ( args[i].matches("-secure")   ){ this.secureFile(getArgsLower(args,++i));       fin=true; }
-            else if ( args[i].matches("-pwfile")   ){ this.setPassword(args[++i]);              fin=true; }
-            else if ( args[i].matches("-gclog")    ){ this.checkGC(getArgsLower(args,++i));          fin=true; }
-            else if ( args[i].matches("-d")        ){ debug++; }
-            else if ( args[i].matches("-version")  ){ this.version(); _exit=0;                       fin=true; donemsg=false; }
-            else {
-                usage(); _exit=1; fin=true; 
+    boolean fin=false;  private boolean donemsg=true; private boolean parseCompleted=false;
+    private void parseArgs() {
+        final String func=getFunc("parseArgs()");
+        parseCompleted=false;
+        try {
+            int argu=0;
+            for( int i=0; i<args.length; i++ ) {
+                if ( args[i].matches("-d")        ){ debug++; argu++; }
             }
-            printf(func,4,"parse closed");
-            if ( fin ) { setClosed(); return; }
-        } 
-    }
+            if ( argu == args.length ) { this.usage(); }  // goes direct out
+            for( int i=0; i<args.length; i++ ) {
+                printf(func,3,"test args["+i+"/"+args.length+"]:"+args[i]+":");
+                if      ( args[i].matches("-testssl") ) { _exit = ( testssl(args[++i],args[++i])     )?0:1;   fin=true; }
+                else if ( args[i].matches("-debugssl")) { System.setProperty("javax.net.debug","ssl"); }
+                else if ( args[i].matches("-sshcomm") ) { _exit = (sshCommand(getArgsLower(args,++i)))?0:1;   fin=true; printf(func,3, "INFO: sshComm parseArgs closed"); }
+                else if ( args[i].matches("-ldap")    ) { _exit = (ldap( getArgsLower(args,++i) )    )?0:1;   fin=true; }
+                else if ( args[i].matches("-ldapbulk")) { _exit = (ldapBulk( getArgsLower(args,++i) ))?0:1;   fin=true; }
+                else if ( args[i].matches("-testhttp")) { String[] ar = getArgsLower(args,++i);
+                                                          printf(func,1,"testhttp - start");
+                                                          boolean b=true;
+                                                          for (String s: ar) {
+                                                                printf(func,2,"testhttp:"+s);
+                                                                Http ht= new Http(new URL(s) ); 
+                                                                     System.out.println( ht.getResponse().toString());
+                                                                     if( ! b || ht.getResponseCode()<=0 || ht.getResponseCode() > 403 ) { b=false;}      
+                                                          }
+                                                          printf(func,1,"testhttp - fin");
+                                                          fin=true;
+                                                          _exit=(b)?0:1;
+                                                        }
+                else if ( args[i].matches("-logrotate")){       this.logRotate(getArgsLower(args,++i));        fin=true; _exit=0; }
+                else if ( args[i].matches("-portscan") ){       this.portScanner(getArgsLower(args,++i));      fin=true; _exit=0;}
+                else if ( args[i].matches("-wlsconfig")){ _exit=this.wlsConfigTools(getArgsLower(args,++i));   fin=true; }
+                else if ( args[i].matches("-wlsinfo")  ){ this.wlsInfoTools(getArgsLower(args,++i));     fin=true; donemsg=false; }
+                else if ( args[i].matches("-wlsrota")  ){ this.wlsRotate(getArgsLower(args,++i));        fin=true; donemsg=false; }
+                else if ( args[i].matches("-logrota")  ){ this.logApacheRotate(getArgsLower(args,++i));  fin=true; donemsg=false; }
+                else if ( args[i].matches("-crypt")    ||
+                          args[i].matches("-uncrypt")  ){ crypt.runArgs(getArgsLower(args,i));           fin=true; }  
+                else if ( args[i].matches("-rota")     ){ this.logRotate(getArgsLower(args,++i));        fin=true; }
+                else if ( args[i].matches("-gclog")    ){ this.gcLog(getArgsLower(args,++i));            fin=true; }
+                else if ( args[i].matches("-update")   ){ this.updateJar();                              fin=true; }
+                else if ( args[i].matches("-unsecure") ){ this.unsecureFile(getArgsLower(args,++i));     fin=true; }
+                else if ( args[i].matches("-secure")   ){ this.secureFile(getArgsLower(args,++i));       fin=true; }
+                else if ( args[i].matches("-pwfile")   ){ this.setPassword(args[++i]);                   fin=true; }
+                else if ( args[i].matches("-gclog")    ){ this.checkGC(getArgsLower(args,++i));          fin=true; }
+                else if ( args[i].matches("-d")        ){ } // needs empty - run in pre-scan
+                else if ( args[i].matches("-version")  ){ this.version(); _exit=0;                       fin=true; donemsg=false; }
+                else {
+                    usage(); sleep(300); _exit=1; throw new RuntimeException("force closing - unknown argument"); 
+                }
+                printf(func,4,"parse loop ["+i+"/"+args.length+"] ends");
+                if ( fin ) { throw new RuntimeException("closing"); }
+            }
+        } catch(Exception e) {
+            printf(func,1,"closing parsing with "+e.getMessage() );
+            fin=true;
+        }    
+        if ( fin ) { setClosed(); }
+        parseCompleted=true;
+        return; 
+   }
     
     private void checkGC(String[] ar) {
         GCMain gc = new GCMain(ar);
@@ -400,8 +414,9 @@ public class Mos extends Updater{
              
          }
     }
-    private void wlsConfigTools(String[] args) {
+    private int wlsConfigTools(String[] args) {
           final String func=getFunc("wlsConfigTools(String[] args)");
+          int ret=-1;
           //if ( args.length <= j+1 ) { return; }
           //debug=3;
           String dest=System.getProperty("user.home")+File.separator+"bin";
@@ -417,7 +432,7 @@ public class Mos extends Updater{
                       printf(func,2,"update destination to :"+dest);
                   }
                   else if (args[i].matches("-reconfig")) {  w.setUpdateNeeded();   }
-                  else if (args[i].matches("-backout") ) {  w.setBlackoutNeeded(); }
+                  else if (args[i].matches("-blackout")) {  w.setBlackoutNeeded(); }
               }  
           }
           printf(func,2,"check configuration on dest:"+dest);
@@ -425,10 +440,11 @@ public class Mos extends Updater{
           if ( w.isUpdateNeeded() ) { 
               printf(func,2,"call destionation update - needed");
               w.updateDestination(dest); 
-              
+              ret=0;
           } else {
               printf(func,3,"call destionation updated not needed");
           }
+          return ret;
     }
     
     @Override
@@ -466,7 +482,7 @@ public class Mos extends Updater{
     public static void main(String[] args) {
            Mos m = new Mos(args); m.silent=true;
                m.start();
-               while( m.isRunning() && ! m.fin ) { sleep(300); }
+               while( (m.isRunning() && ! m.fin) || ! m.parseCompleted ) { sleep(300); }
                if ( m.donemsg ) System.out.println("done."); 
                System.exit(m._exit);
     }
@@ -476,7 +492,7 @@ public class Mos extends Updater{
     }
     
     private void usage() {
-        System.out.println("Options:\n"
+        System.out.println(this.getFullInfo()+"\n\nOptions:\n"
                 + "\t\t-version \t\t-\tprint version information\n\n"
                 + "\t\t-crypt "+crypt.usage(false)+"\n\t\t\t\t\t-\tcrypt or uncrypt a string or file\n\n"
                 + "\t\t-testssl <host> <port>\t-\tTest SSL Connection to the server and port \n"

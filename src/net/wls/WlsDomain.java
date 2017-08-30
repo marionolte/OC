@@ -321,6 +321,10 @@ public class WlsDomain extends MainTask{
         }    
     }
     
+    private String _alias="";
+    public void   setScriptAlias(String alias) { this._alias=alias;}
+    public String getSrciptAlias() { return (this._alias==null || this._alias.isEmpty() )? this.getDomainName():this._alias ;}
+    
     void updateAccounts(String user, String pass, String nmUser, String nmPass ) {
          this.wu = new WlsUser(wu.getUrl(),user,pass); 
          this._nodeMUser=nmUser;
