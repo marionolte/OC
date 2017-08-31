@@ -78,6 +78,7 @@ public class WlsToolConfig extends Version{
     }
     public void updateConfig(String dir,String alias) {
         final String func=getFunc("updateConfig(String dir)"); 
+        this._needUpdate=true;
         if ( dir == null || dir.isEmpty() ) { return; }
         ReadDir d = new ReadDir(dir);
         if (d.isReadable()){
@@ -261,32 +262,41 @@ public class WlsToolConfig extends Version{
                     //System.out.println("sp:"+sp.trim());
                     if ( sp.trim().matches("### begin domain") ) {
                          //System.out.println("check exsting\n"+sw.toString());
-                         boolean begin=false;
+                         boolean begin=false; WlsDomain d = null;
                          for( String s : sw.toString().split("\n") ) {
                              if      ( s.trim().startsWith("### begin domain") ) { begin=true; }
                              else if ( s.trim().startsWith("### end   domain") ) { begin=false; }
-                             if ( begin && ! s.startsWith("#") && s.contains("DOMAINHOME") ) {
+                             if ( begin && ! s.startsWith("#") ) { 
+                                 if ( s.contains("DOMAINHOME=") ) {
                                     String[] tp = s.trim().split("\"");  
                                     String[] mp = tp[tp.length-1].replaceAll(File.separator+"$", "").split(File.separator);
                                     
                                     if ( ar.get(mp[ mp.length-1]) == null ) {
-                                        WlsDomain d = new WlsDomain(mp[ mp.length-1]);
-                                                  d.setDomainLocation(tp[tp.length-1]);
-                                                  ar.put(d.getDomainName(), d);
-                                    }                             
+                                         d = new WlsDomain(mp[ mp.length-1]);
+                                         d.setDomainLocation(tp[tp.length-1]);
+                                        ar.put(d.getDomainName(), d);
+                                    }
+                                 }
+                                 else if ( s.contains("DOMAINALIAS=") ) {
+                                    String[] tp = s.trim().split("="); 
+                                    d.setScriptAlias(tp[tp.length -1 ].replaceAll("\\\"",""));
+                                    printf(func,2,"domainalias="+ d.getSrciptAlias());
+                                 }
                              } 
                          }
                          
+                         System.out.print(ar.keySet()+" ");
                          Iterator<String> itter = ar.keySet().iterator();
                          while( itter.hasNext() ) {
-                                WlsDomain d = ar.get(itter.next());
-                                //System.out.println("domain.info:"+d.getDomainName());
+                                d = ar.get(itter.next());
+                                System.out.print("["+d.getSrciptAlias()+"] ");
                                 wta.append("if [[ \"$DOM\" == \"").append(d.getDomainName()).append("\" ]]");
                               if ( ! d.getDomainName().equals(d.getSrciptAlias())) {  
                                 wta.append(" || [[ \"$DOM\" == \"").append(d.getSrciptAlias()).append("\" ]]");
                               }          
                                 wta.append("; then \n");
                                 wta.append("\texport DOMAINHOME=\"").append(d.getDomainLocation()).append("\"\n");
+                                wta.append("\texport DOMAINALIAS=\"").append(d.getSrciptAlias()).append("\"\n");
                               if ( this.isBlackoutNeeded() ) {  
                                 wta.append("\texport CTLUSER=\"").append(System.getProperty("user.name")).append("\"\n");
                                 wta.append("\texport CTLPASSFILE=\"").append(dest+File.separator+d.getSrciptAlias()+"ctluserkey.pass").append("\"\n");
@@ -331,6 +341,7 @@ public class WlsToolConfig extends Version{
            String state = getOutString( new BufferedInputStream( WlsToolConfig.class.getResourceAsStream("/setup/config/dom.status") ) );
            String serv  = getOutString( new BufferedInputStream( WlsToolConfig.class.getResourceAsStream("/setup/config/dom.server") ) );
            String node  = getOutString( new BufferedInputStream( WlsToolConfig.class.getResourceAsStream("/setup/config/dom.node") ) );
+           String roll  = getOutString( new BufferedInputStream( WlsToolConfig.class.getResourceAsStream("/setup/config/dom.rolling") ) );
            
            Iterator<String> itter = ar.keySet().iterator();
            while( itter.hasNext() ) {
@@ -350,7 +361,7 @@ public class WlsToolConfig extends Version{
                            
                            wf = new WriteFile(dest+File.separator+d.getSrciptAlias()+"RollingRestart"); 
                            printf(func,3,"update "+wf.getFQDNFileName());                
-                           wf.append( state.replaceAll(" status ", " rollingrestart ").replaceAll("@@DOMAIN@@", dom+" \\$\\@").getBytes(), false );
+                           wf.append( roll.replaceAll("@@DOMAIN@@", dom).getBytes(), false );
                            wf.setExecutable(true);   
                            
                     /*String na = d.getAdminServer().getAdminServerName();
@@ -363,7 +374,7 @@ public class WlsToolConfig extends Version{
                  while( its.hasNext() ) {
                         String n=its.next();
                         if ( ! n.isEmpty() ) {
-                           wf = new WriteFile(dest+File.separator+d.getDomainName()+n); wf.append( serv.replaceAll("@@DOMAIN@@", dom)
+                           wf = new WriteFile(dest+File.separator+d.getSrciptAlias()+n); wf.append( serv.replaceAll("@@DOMAIN@@", dom)
                                                                                                        .replaceAll("@@SERVER@@", n).getBytes(), false);  
                            printf(func,3,"update "+wf.getFQDNFileName());
                            wf.setExecutable(true);
@@ -375,7 +386,7 @@ public class WlsToolConfig extends Version{
                         WlsNodeManager nm = ma.remove(0);
                         String n=nm.getMachineName();
                         if ( ! n.isEmpty() ) {
-                           wf = new WriteFile(dest+File.separator+d.getDomainName()+n+"Node"); 
+                           wf = new WriteFile(dest+File.separator+d.getSrciptAlias()+n+"Node"); 
                            printf(func,3,"update "+wf.getFQDNFileName());
                            wf.append(  node.replaceAll("@@DOMAIN@@", dom).replaceAll("@@SERVER@@", n).replaceAll("@@MACHINE@@", n).getBytes(), false);  
                            wf.setExecutable(true);
