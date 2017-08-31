@@ -99,7 +99,8 @@ public class WlsDomain extends MainTask{
                 String[] sp = f.readOut().toString().split("\n");
                 for(String s: sp) {
                     String[] fp = s.trim().split(";");
-                    if ( fp[0].matches(this._domainname)) {
+                    if ( fp[0].matches(this.getDomainName())) {
+                        printf(func,2,"setProperty conf to :"+fp[1]+":  for domain:"+this.getDomainName()+":");
                         setProperty("conf", fp[1]);
                     }
                 }
@@ -227,16 +228,20 @@ public class WlsDomain extends MainTask{
         if ( nf.isReadableFile() ) {
              printf(func,3,"readout SecFile "+te);
              String u=""; String p=""; String nmu=""; String nmp="";
-             for(String s: nf.readOut().toString().split("\n") ) {
-                 String[] sp = s.trim().split("=");
-                 if      ( sp[0].toLowerCase().matches("username")) {   u=s.substring(sp[0].length()+1).trim(); }
-                 else if ( sp[0].toLowerCase().matches("password")) {   p=s.substring(sp[0].length()+1).trim(); }
-                 else if ( sp[0].toLowerCase().matches("nmuser")  ) { nmu=s.substring(sp[0].length()+1).trim(); }
-                 else if ( sp[0].toLowerCase().matches("nmpass")  ) { nmp=s.substring(sp[0].length()+1).trim(); }
-                 else if ( sp[0].toLowerCase().matches("osuser")  ) { this._OSUser=s.substring(sp[0].length()+1).trim(); }
-                 else if ( sp[0].toLowerCase().matches("ospass")  ) { this._OSPass=s.substring(sp[0].length()+1).trim(); }
-                 else if ( sp[0].toLowerCase().matches("osuserkey")){ this._OSUserkey=(new ReadFile(s.substring(sp[0].length()+1).trim())).getFQDNName(); }
-             }
+             try {
+                for(String s: nf.readOut().toString().split("\n") ) {
+                    String[] sp = s.trim().split("=");
+                    if      ( sp[0].toLowerCase().matches("username")) {   u=s.substring(sp[0].length()+1).trim(); }
+                    else if ( sp[0].toLowerCase().matches("password")) {   p=s.substring(sp[0].length()+1).trim(); }
+                    else if ( sp[0].toLowerCase().matches("nmuser")  ) { nmu=s.substring(sp[0].length()+1).trim(); }
+                    else if ( sp[0].toLowerCase().matches("nmpass")  ) { nmp=s.substring(sp[0].length()+1).trim(); }
+                    else if ( sp[0].toLowerCase().matches("osuser")  ) { this._OSUser=s.substring(sp[0].length()+1).trim(); }
+                    else if ( sp[0].toLowerCase().matches("ospass")  ) { this._OSPass=s.substring(sp[0].length()+1).trim(); }
+                    else if ( sp[0].toLowerCase().matches("osuserkey")){ this._OSUserkey=(new ReadFile(s.substring(sp[0].length()+1).trim())).getFQDNName(); }
+                }
+             } catch (Exception e) {
+                 printf(func,1,"Exception on read "+nf.getFQDNName()+" reason "+e.getMessage());
+             }   
              if ( ! nmu.isEmpty() ) this._nodeMUser=nmu;
              if ( ! nmp.isEmpty() ) this._nodeMPass=nmp;
              this.wu = new WlsUser(new URL("http://localhost:7001"),u,p);

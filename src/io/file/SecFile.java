@@ -127,8 +127,13 @@ public class SecFile extends ReadFile {
     
     @Override
     public StringBuilder readOut() {
-        StringBuilder sw = new StringBuilder(crypt.getUnCrypted(super.readOut().toString()));
-        return sw;
+        try {
+            StringBuilder sw = new StringBuilder(crypt.getUnCrypted(super.readOut().toString()));
+            return sw;
+        } catch ( Exception e ) {
+            return new StringBuilder("");
+        }
+        
     }
     
     @Override

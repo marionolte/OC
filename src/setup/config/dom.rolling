@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ti="30"
+re='^[0-9]+$'
+num="$1" 
+if [[ "$num" != "" ]] && [[ $num =~ $re ]] ; then
+ ti="$num"
+fi
+
+${dir}/wls rollingrestart @@DOMAIN@@ $ti $@

@@ -257,6 +257,7 @@ public class Crypt extends Version {
                     }
                 }    
              } else {
+                 System.out.println("i="+i+": |"+args[i]+"|");
                  System.out.println(usage(true));
              }
          }

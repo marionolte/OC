@@ -417,23 +417,20 @@ public class Mos extends Updater{
     private int wlsConfigTools(String[] args) {
           final String func=getFunc("wlsConfigTools(String[] args)");
           int ret=-1;
-          //if ( args.length <= j+1 ) { return; }
-          //debug=3;
           String dest=System.getProperty("user.home")+File.separator+"bin";
           WlsToolConfig w = new WlsToolConfig(); w.debug=debug;
           for( int i=0; i <args.length; i++ ) {
-              ReadDir d = new ReadDir(args[i]);
-              if ( d.isDirectory() ) {
-                  printf(func,2,"call updateConfig for "+args[i]);
-                  w.updateConfig(args[i]);
-              } else {
+              
                   if ( args[i].matches("-dest") ) { 
                       dest=args[++i]; 
                       printf(func,2,"update destination to :"+dest);
                   }
                   else if (args[i].matches("-reconfig")) {  w.setUpdateNeeded();   }
                   else if (args[i].matches("-blackout")) {  w.setBlackoutNeeded(); }
-              }  
+                  else { 
+                      printf(func,2,"call updateConfig for "+args[i]);                  
+                      w.updateConfig(args[i]);
+                  }  
           }
           printf(func,2,"check configuration on dest:"+dest);
           w.checkConfig(dest);

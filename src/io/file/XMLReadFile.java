@@ -15,6 +15,9 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 /**
  *
@@ -35,7 +38,30 @@ public class XMLReadFile extends ReadFile{
     private void parse() {
       if ( ! __OK__ ) {  
         try {   
-          if ( docBuilder == null ) { docBuilder = docBuilderFactory.newDocumentBuilder(); }
+          if ( docBuilder == null ) { 
+              
+              docBuilder = docBuilderFactory.newDocumentBuilder(); 
+              docBuilder.setErrorHandler(new ErrorHandler() {
+                                            @Override
+                                            public void warning(SAXParseException ex) throws SAXException {
+                                                final String func=getFunc("error(SAXParseException ex)");
+                                                printf(func,2,"Exception produced in line "+ex.getLineNumber()+" position "+ex.getColumnNumber()+" message are :"+ex.getMessage());
+                                            }
+
+                                            @Override
+                                            public void fatalError(SAXParseException ex) throws SAXException {
+                                                final String func=getFunc("error(SAXParseException ex)");
+                                                printf(func,2,"Exception produced in line "+ex.getLineNumber()+" position "+ex.getColumnNumber()+" message are :"+ex.getMessage());
+                                            }
+
+                                            @Override
+                                            public void error(SAXParseException ex) throws SAXException {
+                                                final String func=getFunc("error(SAXParseException ex)");
+                                                printf(func,2,"Exception produced in line "+ex.getLineNumber()+" position "+ex.getColumnNumber()+" message are :"+ex.getMessage());
+                                            }
+                                        });
+          
+          }
           ByteArrayInputStream input =  new ByteArrayInputStream( readOut().toString().getBytes("UTF-8"));
           doc = docBuilder.parse(input);
           __OK__=true;
