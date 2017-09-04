@@ -1,0 +1,12 @@
+#!/bin/bash
+CLASS="LdapBind"
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+prog=`basename $0`
+case "$prog" in
+   "ldapsearch" ) CLASS="LdapSearch"  ;;
+   "ldapmodify" ) CLASS="LdapModify"  ;;
+   "ldapbulk"   ) CLASS="LdapUserBlk" ;;
+   "ldaptrans"  ) CLASS="LdapTrans"   ;;
+esac
+java -cp dist/OC.jar net.ldap.${CLASS} "$@"
+exit $?

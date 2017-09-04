@@ -371,12 +371,15 @@ public class WlsToolConfig extends Version{
                            wf.setExecutable(true);*/
                  HashMap<String, WlsServer> m = d.getServers();
                  Iterator<String> its = m.keySet().iterator();
+                 String nam=d.getSrciptAlias(); int count=0;
                  while( its.hasNext() ) {
                         String n=its.next();
-                        if ( ! n.isEmpty() ) {
-                           wf = new WriteFile(dest+File.separator+d.getSrciptAlias()+n); wf.append( serv.replaceAll("@@DOMAIN@@", dom)
-                                                                                                       .replaceAll("@@SERVER@@", n).getBytes(), false);  
+                        if ( ! n.isEmpty() ) { 
+                           count++;
+                           String na1 = ( n.length() > 6 )?("mana"+count):n;
+                           wf = new WriteFile(dest+File.separator+nam+na1); 
                            printf(func,3,"update "+wf.getFQDNFileName());
+                           wf.append( serv.replaceAll("@@DOMAIN@@", dom).replaceAll("@@SERVER@@", n).getBytes(), false);  
                            wf.setExecutable(true);
                         }
                  }

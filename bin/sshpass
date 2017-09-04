@@ -1,0 +1,4 @@
+#!/bin/bash
+dir=`dirname $0`
+if [[ "$dir" == "" ]]; then dir="." ; fi
+java -cp dist/OC.jar main.SSHpass $@

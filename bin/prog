@@ -1,0 +1,35 @@
+#!/usr/bin/env bash 
+exec 2>&1
+PHOME="/Users/SuMario/Dropbox/NetBeans/OC"
+exec 2>&1
+JAVAARGS=" -XX:+UseConcMarkSweepGC -XX:+UseParNewGC "
+day=`date '+%Y%m%d-%H%M%S'`
+FLIGHT="-XX:+UnlockCommercialFeatures -XX:+FlightRecorder -XX:StartFlightRecording=duration=60s,filename=${PHOME}/recording${day}.jfr -XX:FlightRecorderOptions=defaultrecording=true,dumponexit=true,dumponexitpath=${PHOME}/"
+
+SERVICEJAR=$PHOME/dist/OC.jar
+CLASSP=`( cd "${PHOME}/lib" && for i in *.jar; do echo $i; done | awk -v pa="${PHOME}/lib/" -v st="$SERVICEJAR" 'BEGIN{s="";se=":"}{s=s se pa $0}END{print st s}' )`
+dir=`dirname $0`
+if [[ "$dir" == "" ]]; then dir="." ; fi
+DEBUG=""
+WEBDEBUG=""
+if [[ "$JAVADEBUG" != "" ]]; then
+   if [[ "$JAVADEBUG" == *"JAVA"* ]]; then
+        DEBUG="${DEBUG} ${FLIGHT}"
+   fi
+   if [[ "$JAVADEBUG" == *"WEB"* ]];  then
+        WEBDEBUG=" -dhttp $PHOME/http.job"
+   fi
+   if [[ "$JAVADEBUG" == *"DEBUG="* ]];  then
+        if [[ "$JAVADEBUG" == *"DEBUG=MAX"* ]];  then             WEBDEBUG="${WEBDEBUG} -d -d -d -d -d" ; else 
+           if [[ "$JAVADEBUG" == *"DEBUG=FINEST"* ]];  then       WEBDEBUG="${WEBDEBUG} -d -d -d -d"    ; else
+                if [[ "$JAVADEBUG" == *"DEBUG=FINE"* ]];  then    WEBDEBUG="${WEBDEBUG} -d -d -d "      ; else
+                   if [[ "$JAVADEBUG" == *"DEBUG=FINE"* ]];  then WEBDEBUG="${WEBDEBUG} -d -d "         ; else
+                                                                  WEBDEBUG="${WEBDEBUG} -d  "  
+                   fi
+                fi
+           fi
+        fi
+   fi
+fi
+java -cp "${CLASSP}" ${JAVAARGS} $DEBUG "$@" ${WEBDEBUG}
+exit $?

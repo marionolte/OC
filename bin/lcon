@@ -1,0 +1,18 @@
+PRODHOST=localhost
+PRODPORT=17389
+PRODPROTO=ldap
+PRODUSER=cn=Directory Manager
+PRODPASS=secret12
+PRODBASE=ou=Users,dc=macmario,dc=de
+QAHOST=localhost
+QAPORT=17389
+QAPROTO=ldap
+QAUSER=cn=Directory Manager
+QAPASS=secret12
+QABASE=ou=People,dc=macmario,dc=de
+TESTHOST=localhost
+TESTPORT=17389
+TESTPROTO=ldap
+TESTUSER=cn=Directory Manager
+TESTPASS=secret12
+TESTBASE=ou=TestUser,dc=macmario,dc=de
