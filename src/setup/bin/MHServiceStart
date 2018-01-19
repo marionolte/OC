@@ -1,8 +1,14 @@
 #!/bin/sh
-
+### BEGIN INIT INFO
+# Provides:          MHStartService
+# Short-Description: MarioHelp Startup Service 
+# Description:       mh-startup service
+# Required-Start:    $local_fs $remote_fs $network $syslog
+# Required-Stop:     $local_fs $remote_fs $network $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
 # chkconfig: 345 95 5
-# description: MHService Startup
-#
+### END INIT INFO
 
 if [ -f /etc/rc.d/init.d/functions ]; then
 	. /etc/rc.d/init.d/functions

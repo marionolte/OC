@@ -35,8 +35,8 @@ public class WlsDecrypt extends Version {
              String script = getOutString( new BufferedInputStream( WlsDecrypt.class.getResourceAsStream("/net/wls/scripts/decrypthash.py") ) )
                                  .replace("@@USER@@", wls.getAdminUser())
                                  .replace("@@PASS@@", wls.getAdminPassword())
-                                 .replace("@@NMUS@@", wls._nodeMUser)
-                                 .replace("@@NMPA@@", wls._nodeMPass); 
+                                 .replace("@@NMUS@@", wls.getNodeUser() )
+                                 .replace("@@NMPA@@", wls.getNodePassword()   ); 
             //System.out.println("script:"+script+":");
             //System.out.println("create "+f); 
             WriteFile wt = new WriteFile(wls.getDomainLocation()+File.separator+f); wt.replace(script);
@@ -79,9 +79,9 @@ public class WlsDecrypt extends Version {
     public String setPass(  String p) {  _pass=p; return getPass();   }
     public String setNMPass(String p) { _npass=p; return getNMPass(); }
     
-    
-    private String splitout(String s) {
-        String[] sp = s.split(":");
+    private String splitout(String s             ) { return splitout(s,":"); }
+    private String splitout(String s,String split) {
+        String[] sp = s.split(split);
         if ( s.length() > sp[0].length()+1 ) { return s.trim().substring(sp[0].length()+1);}
         return "";
     }

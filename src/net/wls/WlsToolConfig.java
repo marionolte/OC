@@ -69,14 +69,15 @@ public class WlsToolConfig extends Version{
     }
     
     private HashMap<String,WlsDomain> ar = new HashMap();
-    public void updateConfig(String dir){
+    synchronized public void updateConfig(String dir){
         String[] sp = dir.split("=");
         String di = sp[sp.length-1];
         String al ="";
         if ( sp.length>1 ) { al=sp[0]; }
+        //System.out.println("di:"+di+":  al:"+al+":");
         this.updateConfig(di, al);
     }
-    public void updateConfig(String dir,String alias) {
+    synchronized public void updateConfig(String dir,String alias) {
         final String func=getFunc("updateConfig(String dir)"); 
         this._needUpdate=true;
         if ( dir == null || dir.isEmpty() ) { return; }
@@ -85,7 +86,7 @@ public class WlsToolConfig extends Version{
             printf(func,2,"Dir:"+d.getFQDNDirName()+":  domain:"+d.getDirName()+":");
             WlsDomain wd = new WlsDomain(d.getDirName());
                       wd.setDomainLocation(d.getFQDNDirName());
-                      wd.setScriptAlias(alias);
+                      if ( alias != null && ! alias.isEmpty() ){ wd.setScriptAlias(alias); }
             try {
                         WlsDecrypt wdc = new WlsDecrypt(wd);
                                    wdc.decrypt();
@@ -105,14 +106,15 @@ public class WlsToolConfig extends Version{
                                    wd.updateAccounts( wdc.getUser(), wdc.getPass(), wdc.getNMUser(), wdc.getNMPass() );
                         }
                         
-            }catch(java.io.IOException io) {
-                                   printf(func,1,"ERROR: check decrypt information with error:"+io.getMessage());
-            }           
                       ar.put(wd.getDomainName(),wd);
                       SecFile fd = new SecFile(d.getFQDNDirName()+File.separator+"domainkeys");
-                      if ( ! fd.isReadableFile() ) {
-                           this._needUpdate=true;
-                      } 
+                      if ( ! fd.isReadableFile() ) { this.setUpdateNeeded(); }
+                        
+            }catch(java.io.IOException io) {
+                      printf(func,1,"ERROR: check decrypt information with error:"+io.getMessage());
+                      
+            }           
+             
                       
         } else {
             printf(func,2,"not a readable directory :"+dir);
@@ -193,7 +195,7 @@ public class WlsToolConfig extends Version{
           if ( ! d.isDirectory() ) { d.mkdirs(); }
           setLocation(dest);
           this.setUpdateNeeded();
-          return;
+          
           /*ReadDir dn= new ReadDir(dest+File.separator+"lib");
           if ( ! dn.isDirectory() ) { this.setUpdateNeeded();  }
 
@@ -203,21 +205,31 @@ public class WlsToolConfig extends Version{
                   this.setUpdateNeeded();
             }
           }
-          
-          if ( ! this.isUpdateNeeded() ) {
+          */
+          //if ( ! this.isUpdateNeeded() ) {
             ReadFile fn = new ReadFile(d.getFile("domain.info").getFQDNFileName());
             if ( fn.isReadableFile() ) {
                 String[] sp = fn.readOut().toString().split("\n");
                 StringBuilder sw = new StringBuilder();
-                for ( String line : sp) {
+                for ( int i=0; i<sp.length; i++) {
+                    String line = sp[i]; 
                       if ( line.contains("DOMAINHOME=")) {
-                          String[] tp = line.split("\"");
                           
+                          for ( String s : line.split("\"") ) {
+                              if ( ! s.isEmpty() && ! s.contains(" ")) {
+                                  String dom="";
+                                  for( String a : s.split(File.separator)){
+                                      if ( ! a.isEmpty() ) {
+                                        System.out.println("dom? :"+a+":  "+s+"\n"+sp[ (i-1) ]   );
+                                      }  
+                                  }  
+                              }
+                          }
                       }
                 }
-            } else { this.setUpdateNeeded(); }  // domain.info not exist
+            //} else { this.setUpdateNeeded(); }  // domain.info not exist
           } 
-          System.out.println("update needed:"+this.isUpdateNeeded());*/
+          /*System.out.println("update needed:"+this.isUpdateNeeded());*/
     }
 
     private final String sepa="__@@__";
@@ -261,7 +273,7 @@ public class WlsToolConfig extends Version{
                     wta.append(sp.trim()).append("\n");
                     //System.out.println("sp:"+sp.trim());
                     if ( sp.trim().matches("### begin domain") ) {
-                         //System.out.println("check exsting\n"+sw.toString());
+                         System.out.println("check exsting\n"+sw.toString());
                          boolean begin=false; WlsDomain d = null;
                          for( String s : sw.toString().split("\n") ) {
                              if      ( s.trim().startsWith("### begin domain") ) { begin=true; }
@@ -291,9 +303,9 @@ public class WlsToolConfig extends Version{
                                 d = ar.get(itter.next());
                                 System.out.print("["+d.getSrciptAlias()+"] ");
                                 wta.append("if [[ \"$DOM\" == \"").append(d.getDomainName()).append("\" ]]");
-                              if ( ! d.getDomainName().equals(d.getSrciptAlias())) {  
+                              //if ( ! d.getDomainName().equals(d.getSrciptAlias())) {  
                                 wta.append(" || [[ \"$DOM\" == \"").append(d.getSrciptAlias()).append("\" ]]");
-                              }          
+                                       
                                 wta.append("; then \n");
                                 wta.append("\texport DOMAINHOME=\"").append(d.getDomainLocation()).append("\"\n");
                                 wta.append("\texport DOMAINALIAS=\"").append(d.getSrciptAlias()).append("\"\n");

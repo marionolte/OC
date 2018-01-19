@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import javax.naming.NamingException;
+import main.checker.Checker;
 import static net.ldap.LdapMain.objList;
 import net.ldap.LdapSearch;
 import net.ldap.LdapUserBlk;
@@ -191,7 +192,9 @@ public class Mos extends Updater{
                 else if ( args[i].matches("-secure")   ){ this.secureFile(getArgsLower(args,++i));       fin=true; }
                 else if ( args[i].matches("-pwfile")   ){ this.setPassword(args[++i]);                   fin=true; }
                 else if ( args[i].matches("-gclog")    ){ this.checkGC(getArgsLower(args,++i));          fin=true; }
+                else if ( args[i].matches("-checker")  ){ this.runChecker(getArgsLower(args,++i));       fin=true; }
                 else if ( args[i].matches("-d")        ){ } // needs empty - run in pre-scan
+                else if ( args[i].matches("-monitor")  ){ this.runMonitor(getArgsLower(args,++i));       fin=true; }
                 else if ( args[i].matches("-version")  ){ this.version(); _exit=0;                       fin=true; donemsg=false; }
                 else {
                     usage(); sleep(300); _exit=1; throw new RuntimeException("force closing - unknown argument"); 
@@ -213,6 +216,17 @@ public class Mos extends Updater{
                gc.scan();
     }
     
+    private void runChecker(String[] ar) {
+        Checker ch=new Checker(ar);
+                ch.verify();
+             _exit=ch.getResult();
+    }
+    
+    private void runMonitor(String[] ar) {
+        io.perf.Perf p= io.perf.Perf.getInstance(ar);
+                     p.test();
+        
+    }
     
     private void secureFile(String[] ar) {
         if ( ar.length > 0 ) {
@@ -496,6 +510,7 @@ public class Mos extends Updater{
                 + "\n\t\t-sshcomm "+SSHshell.usage()+"\n\t\t\t\t\t-\tsend a single ssh command\n"
                 + "\t\t-portscan [-host <host>] [-pmin <min port>] [-pmax <max port>]\t-\tport  scanner \n"
                 + "\n\t\t-testhttp <url> [url1,]\t-\tTest URL Connection to URL\n"
+                + "\n\t\t-checker "+Checker.usage()+"\n"
                 + "\n\t\t-ldap -D <bindDN> -j <Password File> <-h <Host>> <-p <Port>> -filter <filter> -b <baseDN>\n"
                 + "\n\t\t-wlsconfig "+WlsToolConfig.usage()+"\n\t\t\t\t\t-\tConfigure Wls Starting scripts in directory <dest>"
                 //+ "\n\t\t-wlsconfig [-dest <script dir [.]>] <domaindir <domaindir1...>>\n\t\t\t\t\t-\tConfigure Wls Starting scripts in directory <dest>\n"

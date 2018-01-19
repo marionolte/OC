@@ -203,7 +203,10 @@ class CryptHigh extends Version {
 		 key = new SecretKeySpec(getBytes(updateLength(encryptionKey,64)), "AES");
                   iv = new IvParameterSpec(getBytes(updateLength(pass, 16)));
 		cipher.init(Cipher.DECRYPT_MODE, key,iv);
-		return new String(cipher.doFinal(cipherText),"UTF-8");
+                printf(func,3,"cipherText len:"+cipherText.length+":  mod:"+(cipherText.length%16) );
+		String s=new String(cipher.doFinal(cipherText),"UTF-8");
+                printf(func,3,"s:"+s+":  len:"+s.length()+"  mod:"+(s.length()%16));
+                return s;
          } catch (Exception e) {
              log(func, 1, "encrption error (with unlimited size)- "+e.getMessage(),e);
          }
