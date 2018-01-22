@@ -41,7 +41,7 @@ function rolling(){
 	LOGFILE="$log/rolling.out"
 
            echo "from time import sleep"									 >"${f}"
-	   echo "from interruptingcow import timeout"								>>"${f}"
+	   echo "from interrupting now import timeout"								>>"${f}"
 	   echo "def getMSserverStatus(server):"								>>"${f}"
            echo "  try:"											>>"${f}"
            echo "    cd('/ServerLifeCycleRuntimes/' +server)"							>>"${f}"

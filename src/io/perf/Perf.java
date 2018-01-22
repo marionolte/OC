@@ -16,7 +16,8 @@ public class Perf extends MainTask{
 
     public Perf(String[] ar) {
         args = parseArgs(ar);
-        System.out.println("args hash:"+args);
+        final String func=getFunc("Perf(String[] ar)");
+        printf(func,3,"args hash:"+args);
         map=new HashMap<String,PerfTask> (); 
         if ( this.args.getProperty("-cpu") != null ) { map.put("cpu", new PerfTask("cpu",this.args.getProperty("-cpu"))); }
         if ( this.args.getProperty("-io")  != null ) { map.put("io",  new PerfTask("io", this.args.getProperty("-io" ) )); }
@@ -26,7 +27,7 @@ public class Perf extends MainTask{
         if ( itter.hasNext() ) {
             while ( itter.hasNext() ) {
                 String s = itter.next();
-                System.out.println("map s:"+s+":");
+                printf(func,3,"map s:"+s+":");
                 PerfTask pt = map.get(s);
                 if ( pt != null ) {
                      pt.start();
@@ -40,9 +41,12 @@ public class Perf extends MainTask{
     }
     
     public void test() {
-        while ( ! pm.isCompleted() ) {            
+        final String func=getFunc("test()");
+        printf(func,4,"run test()");
+        while ( ! pm.isClosed() ) {            
             sleep(300);
         }
+        printf(func,4,"complete test()");
     }
 
     
@@ -94,13 +98,14 @@ public class Perf extends MainTask{
 
         @Override
         public void run() {
+            final String func=getFunc("run()");
             setRunning();
             int ru=1;
             System.out.println("count:"+count+" time:"+time);
-            while (ru<count) {
-                System.out.println("ru:"+ru+" count:"+count);
+            while (ru<=count) {
+                printf(func,3,"ru:"+ru+" count:"+count);
                 if ( ! this.command.isEmpty() ) {
-                    System.out.println("command="+this.command+"");
+                    printf(func,3,"command="+this.command+"");
                     //try { 
 
                          //System.out.println(execReadToString(this.command));
@@ -110,12 +115,14 @@ public class Perf extends MainTask{
                 }
                 ru++;
                 if ( ru < count ) { 
-                    System.out.println("go sleep");
-                    sleep(time); }
+                    printf(func,4,"go sleep");
+                    sleep(time); 
+                    printf(func,4,"waitup");
+                }
             }    
-            System.out.println("out while");
+            printf(func,4,"out while");
             setRunning();
-            System.out.println("done");
+            printf(func,4,"done");
         }
 
         boolean isPrintable() {
@@ -128,8 +135,9 @@ public class Perf extends MainTask{
        
         @Override
         public void run() {
+            final String func=getFunc("run()");
             setRunning();
-            System.out.println("Monitor starts");
+            printf(func,4,"Monitor starts");
             
             boolean loop=true;
             while(loop) {
@@ -151,7 +159,8 @@ public class Perf extends MainTask{
                 sleep(300);
             }
             setRunning();
-            System.out.println("Monitor ends");
+            printf(func,4,"Monitor ends");
+            setClosed();
         }
        
    }
