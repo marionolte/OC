@@ -223,7 +223,9 @@ public class Mos extends Updater{
     }
     
     private void runMonitor(String[] ar) {
+        
         io.perf.Perf p= io.perf.Perf.getInstance(ar);
+                     p.debug=debug;
                      p.test();
         
     }

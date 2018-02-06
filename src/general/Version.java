@@ -176,7 +176,8 @@ public abstract class Version { //extends OraConst {
     public synchronized static void printf(String cName, String meth, int level, String msg ) { printf(cName+"::"+meth,level,msg); }
     public synchronized static void printf(String cName, int level, String msg ) { 
         //println(level, cName+" - "+msg);
-        if ( level >= debug ) {
+        //println(level,cName+" - "+msg+"debug["+level+"/"+debug+"]");
+        if ( level <= debug ) {
             println(level, cName+" - "+msg);
         }
     }

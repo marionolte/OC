@@ -23,6 +23,7 @@ public class Perf extends MainTask{
         if ( this.args.getProperty("-io")  != null ) { map.put("io",  new PerfTask("io", this.args.getProperty("-io" ) )); }
         if ( this.args.getProperty("-net") != null ) { map.put("net", new PerfTask("net",this.args.getProperty("-net"))); }
         
+        printf(func,2,"hash:"+map+":");
         Iterator<String> itter = map.keySet().iterator();
         if ( itter.hasNext() ) {
             while ( itter.hasNext() ) {
@@ -41,12 +42,15 @@ public class Perf extends MainTask{
     }
     
     public void test() {
+        debug=4;
         final String func=getFunc("test()");
         printf(func,4,"run test()");
+        while(! pm.isRunning()) { sleep(300);}
+        printf(func,4,"pm running");
         while ( ! pm.isClosed() ) {            
             sleep(300);
         }
-        printf(func,4,"complete test()");
+        printf(func,4,"pm complete test()");
     }
 
     
@@ -67,12 +71,15 @@ public class Perf extends MainTask{
         long time=15000L;
         int count=3;
         private final String command;
+        private final String area;
 
         PerfTask(String area, String ar) {
-            System.out.println("area:"+area+": ar:"+ar+":");
+            final String func=getFunc("PerfTask(String area, String ar)");
+            printf(func,3,"area:"+area+": ar:"+ar+":");
+            this.area=area;
             if ( ar != null && ! ar.isEmpty() ) {
                  for ( String s : ar.split(",") ) {
-                     System.out.println("s:"+s+":");
+                     printf(func,3,"s:"+s+":");
                      if ( s.startsWith("time:") ) { 
                          time=Long.parseLong(s.substring("time:".length()))*1000L;
                      }else if ( s.startsWith("count:") ) { 
@@ -80,10 +87,12 @@ public class Perf extends MainTask{
                      }
                  }
             }
+            
             switch(area) {
                 case "net": this.command="netstat -an"; break;
                 default: this.command="";
             }
+            printf(func,3,"area:"+area+":  command:"+this.command+":");
             
         }
         
@@ -101,17 +110,24 @@ public class Perf extends MainTask{
             final String func=getFunc("run()");
             setRunning();
             int ru=1;
-            System.out.println("count:"+count+" time:"+time);
+            printf(func,3,"count:"+count+" time:"+time);
             while (ru<=count) {
                 printf(func,3,"ru:"+ru+" count:"+count);
                 if ( ! this.command.isEmpty() ) {
                     printf(func,3,"command="+this.command+"");
-                    //try { 
+                    try { 
+                         StringBuilder sw = new StringBuilder(execReadToString(this.command));
+                         printf(func,2,"command produce "+sw.capacity()+" char outcome");
+                         
+                         switch(area) {
+                             case "net": sw.replace(0, sw.capacity(), NetStat.outline(sw).toString()); break;
+                             default: ;
+                        }
+            
 
-                         //System.out.println(execReadToString(this.command));
-
-                    //}catch(java.io.IOException io) {
-                    //}
+                    }catch(java.io.IOException io) {
+                        printf(func,1,"execReadToString end with exeception "+io.getMessage(),io);
+                    }
                 }
                 ru++;
                 if ( ru < count ) { 
