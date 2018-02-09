@@ -70,8 +70,14 @@ class NetStat extends Version{
         private boolean tcp4=false;
         private boolean udp6=false;
         private boolean udp4=false;
-        private long recvPackets;
-        private long sendPackets;
+        private long recvPackets=0L;
+        private long sendPackets=0L;
+        private String connstate="NOP";
+        private String localIP;
+        private String localPort;
+        private String remIP;
+        private String remPort;
+        private boolean listener=false;
         
         ConnStat(String[] ar) {
             final String func="io.perf.NetStat::ConnStat(String[] ar)::ConnStat(String[] ar)";
@@ -79,13 +85,26 @@ class NetStat extends Version{
             for(String s : ar) { sw.append(s).append("|"); }
             printf(func,2, ar.toString()+" =>"+sw.toString());
             for ( int i=0; i<ar.length; i++ ) {
-                if      ( ar[i].toLowerCase().startsWith("tcp") ) { setTcp(ar[i]); }
-                else if ( ar[i].toLowerCase().startsWith("udp") ) { setUdp(ar[i]); }
-                else if (i == 1 ) { this.recvPackets=Long.parseLong(ar[i]);}
-                else if (i == 2 ) { this.sendPackets=Long.parseLong(ar[i]);}
+                if      (i == 0 &&  ar[i].toLowerCase().startsWith("tcp") ) { setTcp(ar[i]); }
+                else if (i == 0 &&  ar[i].toLowerCase().startsWith("udp") ) { setUdp(ar[i]); }
+                else if (i == 1                                         ) { this.recvPackets=Long.parseLong(ar[i]);}
+                else if (i == 2                                         ) { this.sendPackets=Long.parseLong(ar[i]);}
+                else if (i == 3                                         ) { String[] sp =getIP(ar[i]); this.localIP=sp[0]; this.localPort=sp[1];  }
+                else if (i == 4                                         ) { String[] sp =getIP(ar[i]);   this.remIP=sp[0];   this.remPort=sp[1];  }
+                else if (i == 5                                         ) { this.connstate=ar[i]; }
+                else if (i == 6                                         ) { setConnTyp(ar[i]);}
+                
             }
         }
     
+        private String[] getIP(String inf) {
+            String[] ret = new String[] { "", ""};
+            String[] ip = inf.split("[:,\\.]");
+            ret[0]=inf.substring(0, inf.length()-ip[ip.length-1].length()-1);
+            ret[1]=ip[ip.length-1];
+                  System.out.println("ip[0]="+ret[0]+"::"+ret[1]);
+            return ret;
+        }
         void setTcp(String inf) {
              this.tcp=true; this.udp=false;
              this.tcp6=(inf.contains("6")); this.tcp4=!this.tcp6;
@@ -94,6 +113,14 @@ class NetStat extends Version{
         void setUdp(String inf) {
              this.udp=true; this.tcp=false;
              this.udp6=(inf.contains("6")); this.udp4=!this.udp6;
+        }
+        
+        void setConnTyp(String inf) {
+            switch(inf) {
+                case "LISTEN"       : this.listener=true; break;
+                case "ESTABLISHED"  :  break;
+                default : break;
+            }
         }
     }
 }
