@@ -37,7 +37,8 @@ class NetStat extends Version{
                 printf(func,3,"line:"+line+":");
                 String[] sp = Pattern.compile("\\s+").matcher(line).replaceAll(" ").split(" ");
                 ConnStat cs = new ConnStat(sp);
-                printf(func,2,"sp 3:"+sp[3]);
+                printf(func,2,"localIP:"+cs.localIP+":"+cs.localPort+":  remoteIP:"+cs.remIP+":"+cs.remPort+"("+cs.recvPackets+")");
+                
               }  
             }
             i=ma.end();
@@ -78,6 +79,11 @@ class NetStat extends Version{
         private String remIP;
         private String remPort;
         private boolean listener=false;
+        private boolean closed=false;
+        private boolean wait4Closed=false;
+        private boolean connected=false;
+        private boolean wait4ClosedFIN=false;
+        private boolean wait4ClosedFIN2=false;
         
         ConnStat(String[] ar) {
             final String func="io.perf.NetStat::ConnStat(String[] ar)::ConnStat(String[] ar)";
@@ -98,11 +104,12 @@ class NetStat extends Version{
         }
     
         private String[] getIP(String inf) {
+            final String func="io.perf.NetStat::ConnStat(String[] ar)::getIP(String inf)";
             String[] ret = new String[] { "", ""};
             String[] ip = inf.split("[:,\\.]");
             ret[0]=inf.substring(0, inf.length()-ip[ip.length-1].length()-1);
             ret[1]=ip[ip.length-1];
-                  System.out.println("ip[0]="+ret[0]+"::"+ret[1]);
+            printf(func,2,"ip[0]="+ret[0]+":  port:"+ret[1]+":");
             return ret;
         }
         void setTcp(String inf) {
@@ -118,7 +125,12 @@ class NetStat extends Version{
         void setConnTyp(String inf) {
             switch(inf) {
                 case "LISTEN"       : this.listener=true; break;
-                case "ESTABLISHED"  :  break;
+                case "ESTABLISHED"  : this.connected=true; break;
+                case "CLOSED"       : this.closed=true; this.wait4Closed=false; break;
+                case "CLOSE_WAIT"   : break;
+                case "TIME_WAIT"    : this.wait4Closed=true; break; 
+                case "FIN_WAIT"     : this.wait4Closed=true; this.wait4ClosedFIN=true;  break;
+                case "FIN_WAIT_2"   : this.wait4Closed=true; this.wait4ClosedFIN2=true; break;  
                 default : break;
             }
         }
