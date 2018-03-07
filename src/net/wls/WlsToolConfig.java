@@ -270,9 +270,31 @@ public class WlsToolConfig extends Version{
            System.out.println("done");
            System.out.print("INFO: update OC profile .. ");
            String temp  = getOutString( new BufferedInputStream( WlsToolConfig.class.getResourceAsStream("/setup/config/oc_profile") ) );
-           WriteFile wf = new WriteFile(dest+File.separator+"oc_profile");
+           WriteFile ocp = new WriteFile(dest+File.separator+"oc_profile");
            if ( temp != null && ! temp.isEmpty() ) {
-               
+                StringBuilder sqq = new StringBuilder();
+                for( String sp : temp.split("\n") ) {
+                    if ( sp.startsWith("JAVA_HOME=") ) { sqq.append(sp).append("\"").append(getJavaHome()).append("\"");}
+                    else { sqq.append(sp); }
+                    sqq.append("\n");
+                }
+                temp=sqq.toString();
+           }
+           StringBuilder ocpa = ocp.readOut();
+           String ext="###++extra+setttings+now++####";
+           if ( ocpa.length() == 0 ) { 
+               ocp.append(temp+"\n"+ext+"\n"); 
+           } else {
+               StringBuilder ocpb = new StringBuilder(); ocpb.append(temp).append("\n").append(ext).append("\n");
+               boolean pri=false;
+               for ( String sp : ocpa.toString().split("\n") ) {
+                   
+                   if ( pri ) { ocpb.append(sp.trim()).append("\n"); }
+                   else {
+                       if ( sp.trim().equals(ext) ) { pri=true;}
+                   }
+               }
+               ocp.append(ocpb.toString()); 
            }
            System.out.println("done");
            System.out.print("INFO: update domain.info & domainkeys .. ");
