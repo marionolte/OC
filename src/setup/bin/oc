@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+prog=`basename $0`
+java  -Dprog="${dir}/$prog" -jar ${dir}/lib/OC.jar -Djava.security.egd=file:/dev/urandom "$@"  2>&1
+exit $?

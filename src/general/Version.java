@@ -53,6 +53,7 @@ public abstract class Version { //extends OraConst {
     final public static String  getFullInfo()      { return mhservice+"/"+getFullVersion()+" - "+getProductAuthor();}
     final public static String  getProductAuthor() { return prodauthor; }
     final public static int     getLibVersion()    { return libVersion;}
+    final public static String  getJavaHome()      { return JAVAHOME; }
     final public static boolean testLibVersion(String a) {
         int b =0; try { b=Integer.parseInt(a); }catch(Exception e) {}
         return (getLibVersion() == b );
@@ -138,8 +139,7 @@ public abstract class Version { //extends OraConst {
     static public final boolean isSolaris() { return (OSNAME.contains("sunos")) || (OSNAME.contains("solaris")); } 
     static public final boolean isAIX()     { return OSNAME.contains("aix");}
     static public final boolean isLinux()   { return OSNAME.contains("linux"); }
-    public final String  getJavaHome(){ return JAVAHOME; }
-
+    
     
     public static String jarfile;
     

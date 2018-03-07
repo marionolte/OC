@@ -363,6 +363,7 @@ public class Mos extends Updater{
          
          SSHshell.debug=debug;
          SSHshell ssh = SSHshell.getInstance(args);
+         if (ssh == null ){  return true; }
          if ( ssh.isSSHShell() ) {
             try { 
                 printf(func,3,"send command :"+ssh.getCommand().toString());
@@ -435,6 +436,18 @@ public class Mos extends Updater{
           int ret=-1;
           String dest=System.getProperty("user.home")+File.separator+"bin";
           WlsToolConfig w = new WlsToolConfig(); w.debug=debug;
+          boolean forced=false;
+          for( int i=0; i<args.length; i++) {
+              if (args[i].matches("-help")    ) { 
+                    String prog = System.getProperty("prog");
+                    System.out.println( ( (prog==null)?"":prog )+" "+w.usage()); 
+                    return ret;
+              } 
+              else if ( args[i].matches("-d")     ) { w.debug++; }
+              else if ( args[i].matches("-forced")) {forced=true;}
+                  
+          }
+          int doms=0;
           for( int i=0; i <args.length; i++ ) {
               
                   if ( args[i].matches("-dest") ) { 
@@ -443,10 +456,17 @@ public class Mos extends Updater{
                   }
                   else if (args[i].matches("-reconfig")) {  w.setUpdateNeeded();   }
                   else if (args[i].matches("-blackout")) {  w.setBlackoutNeeded(); }
+                  else if (args[i].matches("-d")) { }
                   else { 
                       printf(func,2,"call updateConfig for "+args[i]);                  
-                      w.updateConfig(args[i]);
+                      w.updateConfig(args[i]); doms++;
                   }  
+          }
+          if ( doms == 0 ) {
+                  System.out.println("WARNING: no weblogic domain checked");
+               if ( ! forced ) {
+                   System.out.println("ERROR: use option -forced to proceed"); 
+               }
           }
           printf(func,2,"check configuration on dest:"+dest);
           w.checkConfig(dest);

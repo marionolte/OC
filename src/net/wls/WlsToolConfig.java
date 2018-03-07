@@ -28,7 +28,7 @@ import java.util.zip.ZipInputStream;
 public class WlsToolConfig extends Version{
 
     public static String usage() {
-        return "[-dest <script dir [.]>] [-reconfig] [-silient] <domaindir <domaindir1...>>";
+        return "[-dest <script dir ["+System.getProperty("user.home")+File.separator+"bin]>] [-reconfig] [-silient] <domaindir <domaindir1...>>";
     }
     
     boolean silent=false;
@@ -46,10 +46,15 @@ public class WlsToolConfig extends Version{
                 else if ( args[i].matches("-reconfig")) { w.setUpdateNeeded();}
                 else {  dirs.add(args[i]); }    
             }
-            for ( String s : dirs ) {
-                 printf(func,2, "updateConfig:"+s+":"); 
-                 w.updateConfig(s);
-            }
+            if ( dirs.size() > 0 ) {
+                for ( String s : dirs ) {
+                     printf(func,2, "updateConfig:"+s+":"); 
+                     w.updateConfig(s);
+                }
+            } else {
+                System.out.println("ERROR: missing domain directory");
+                System.exit(-1);
+            }    
             
         } else {
             System.out.println("ERROR: need domaindiras property");
@@ -67,6 +72,8 @@ public class WlsToolConfig extends Version{
           if ( loc == null ) { setLocation(null);}
           return loc;
     }
+    
+    
     
     private HashMap<String,WlsDomain> ar = new HashMap();
     synchronized public void updateConfig(String dir){
@@ -261,11 +268,18 @@ public class WlsToolConfig extends Version{
                           dfr.copy(new File(dn.getFQDNDirName()+File.separator+"OC.jar"));
            }
            System.out.println("done");
+           System.out.print("INFO: update OC profile .. ");
+           String temp  = getOutString( new BufferedInputStream( WlsToolConfig.class.getResourceAsStream("/setup/config/oc_profile") ) );
+           WriteFile wf = new WriteFile(dest+File.separator+"oc_profile");
+           if ( temp != null && ! temp.isEmpty() ) {
+               
+           }
+           System.out.println("done");
            System.out.print("INFO: update domain.info & domainkeys .. ");
            WriteFile wt = new WriteFile(dest+File.separator+"domain.info");
            StringBuilder wta = new StringBuilder();
            StringBuilder sw = wt.readOut();
-           String temp = getOutString( new BufferedInputStream( WlsToolConfig.class.getResourceAsStream("/setup/config/domain.info") ) );
+            temp = getOutString( new BufferedInputStream( WlsToolConfig.class.getResourceAsStream("/setup/config/domain.info") ) );
            printf(func,4,"read from resource domain.info:"+temp);
            if ( temp != null && ! temp.isEmpty() ) {
                 printf(func,3,"domain.info:"+temp);

@@ -506,8 +506,12 @@ public class SSHshell  extends RunnableT {
                         else if ( args[i].matches("-j") ) { 
                                     SecFile f=new SecFile(args[++i]); 
                                     p = f.readOut().toString();
-                                } 
+                        } 
                         else if (args[i].matches("-key") ) { ReadFile rf = new ReadFile(args[++i]); if ( rf.isReadableFile()) { kFile=new File(rf.getFQDNFileName()); } }
+                        else if (args[i].matches("-help")) {  String prog = System.getProperty("prog");
+                                                              System.out.println( ( (prog==null)?"":prog ) +usage()); 
+                                                              return null;
+                        }
                         else { 
                             if ( comm.length() > 0 ) { comm.append(" "); }
                             comm.append(args[i]);
