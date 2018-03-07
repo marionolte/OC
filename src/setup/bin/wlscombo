@@ -4,6 +4,7 @@ dom="$2"
 comp="$3"
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. ${dir}/oc_profile 2>/dev/null
 
 if [[  "$USER" != "SuMario" ]]; then
         echo "ERROR: could not execute as user $USER"

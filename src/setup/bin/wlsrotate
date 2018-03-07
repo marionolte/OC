@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+prog=`basename $0 `
+. ${dir}/oc_profile 2>/dev/null
 COMM="-wlsrota"
 LOGA=">${dir}/logs/wlsrota.$HOSTNAME.$USER.log"
 if [[ "$#" -eq 0 ]]; then
@@ -7,5 +9,5 @@ if [[ "$#" -eq 0 ]]; then
 	LOGA=""
 	echo "ERROR: missing domain directory to run"
 fi
-java ${SSLDEBUG} -jar ${dir}/lib/OC.jar ${COMM} "$@" ${LOGA} 2>/dev/null
+"$JAVA_HOME/bin/java" $JAVAEX -Dprog="${dir}/$prog" ${SSLDEBUG} -jar ${dir}/lib/OC.jar ${COMM} "$@" ${LOGA} 2>/dev/null
 exit $?

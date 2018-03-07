@@ -1,4 +1,5 @@
 #!/bin/bash
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 prog=`basename $0`
-java  -Dprog="${dir}/$prog" -jar $dir/lib/OC.jar -sshcomm $@
+. ${dir}/oc_profile 2>/dev/null
+"$JAVA_HOME/bin/java"  -Dprog="${dir}/$prog" -jar $dir/lib/OC.jar -sshcomm $@

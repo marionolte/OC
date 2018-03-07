@@ -282,8 +282,10 @@ public class WlsToolConfig extends Version{
            }
            StringBuilder ocpa = ocp.readOut();
            String ext="###++extra+setttings+now++####";
+           ocp.delete();
            if ( ocpa.length() == 0 ) { 
-               ocp.append(temp+"\n"+ext+"\n"); 
+               ocp.append(temp+"\n"+ext+"\n",true); 
+              
            } else {
                StringBuilder ocpb = new StringBuilder(); ocpb.append(temp).append("\n").append(ext).append("\n");
                boolean pri=false;
@@ -294,7 +296,7 @@ public class WlsToolConfig extends Version{
                        if ( sp.trim().equals(ext) ) { pri=true;}
                    }
                }
-               ocp.append(ocpb.toString()); 
+               ocp.append(ocpb.toString(),true); 
            }
            System.out.println("done");
            System.out.print("INFO: update domain.info & domainkeys .. ");
