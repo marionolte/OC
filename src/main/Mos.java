@@ -162,6 +162,7 @@ public class Mos extends Updater{
                 if      ( args[i].matches("-testssl") ) { _exit = ( testssl(args[++i],args[++i])     )?0:1;   fin=true; }
                 else if ( args[i].matches("-debugssl")) { System.setProperty("javax.net.debug","ssl"); }
                 else if ( args[i].matches("-sshcomm") ) { _exit = (sshCommand(getArgsLower(args,++i)))?0:1;   fin=true; printf(func,3, "INFO: sshComm parseArgs closed"); }
+                else if ( args[i].matches("-sshpass") ) { _exit = (sshScript(getArgsLower(args,++i)) )?0:1;   fin=true; printf(func,3, "INFO: sshScript parseArgs closed"); }
                 else if ( args[i].matches("-ldap")    ) { _exit = (ldap( getArgsLower(args,++i) )    )?0:1;   fin=true; }
                 else if ( args[i].matches("-ldapbulk")) { _exit = (ldapBulk( getArgsLower(args,++i) ))?0:1;   fin=true; }
                 else if ( args[i].matches("-testhttp")) { String[] ar = getArgsLower(args,++i);
@@ -223,11 +224,9 @@ public class Mos extends Updater{
     }
     
     private void runMonitor(String[] ar) {
-        
         io.perf.Perf p= io.perf.Perf.getInstance(ar);
                      p.debug=debug;
                      p.test();
-        
     }
     
     private void secureFile(String[] ar) {
@@ -402,6 +401,10 @@ public class Mos extends Updater{
              
          }   
          return ssh.isValid();
+    }
+    
+    private boolean sshScript(String[] args ) {
+        return false;
     }
     
     private void wlsInfoTools(String[] args ) {

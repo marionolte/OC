@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. ${dir}/oc_profile 2>/dev/null
 
 if [[  "$USER" != "oracle" ]] && [[  "$USER" != "SuMario" ]]; then
         echo "ERROR: could not execute as user $USER"
@@ -9,7 +10,7 @@ fi
 
 if [[ "$JAVA_HOME" == "" ]]; then JAVA_HOME="/usr/java"; fi
 
-$JAVA_HOME/bin/java -version 2>&1| egrep "1.[7-9].0_" >/dev/null 2>&1
+"$JAVA_HOME/bin/java" -version 2>&1| egrep "1.[7-9].0_" >/dev/null 2>&1
 if [[ "$?" -ne 0 ]]; then
         echo "ERROR: unsupport java version - minimum java 1.7 required"
         exit -1
@@ -43,8 +44,8 @@ function init()
 {
     echo "init"
     . "${dir}/domain.info" 
-    SSHP="\"${JAVA_HOME}/bin/java\" -jar \"${dir}/lib/OC.jar\" -sshcomm host=localhost port=22 user=$CTLUSER -j $CLTPASSFILE  -key ~/.ssh/id_rsa "  
-    TESTPass="\"${JAVA_HOME}/bin/java\" -jar \"${dir}/lib/OC.jar\" -pwfile $CLTPASSFILE " 
+    SSHP="\"${JAVA_HOME}/bin/java\" $JAVAEX -jar \"${dir}/lib/OC.jar\" -sshcomm host=localhost port=22 user=$CTLUSER -j $CLTPASSFILE  -key ~/.ssh/id_rsa "  
+    TESTPass="\"${JAVA_HOME}/bin/java\" $JAVAEX -jar \"${dir}/lib/OC.jar\" -pwfile $CLTPASSFILE " 
 }
 
 init

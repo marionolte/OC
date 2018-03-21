@@ -282,7 +282,7 @@ public class WlsToolConfig extends Version{
            }
            StringBuilder ocpa = ocp.readOut();
            String ext="###++extra+setttings+now++####";
-           ocp.delete();
+           ocp.truncate();
            if ( ocpa.length() == 0 ) { 
                ocp.append(temp+"\n"+ext+"\n",true); 
               

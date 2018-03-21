@@ -2,5 +2,5 @@
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 prog=`basename $0`
 . ${dir}/oc_profile 2>/dev/null
-"$JAVA_HOME/bin/java" -Dprog="${dir}/$prog" -jar ${dir}/lib/OC.jar -Djava.security.egd=file:/dev/urandom "$@"  2>&1
+"$JAVA_HOME/bin/java" -Dprog="${dir}/$prog" $JAVAEX -jar ${dir}/lib/OC.jar "$@"  2>&1
 exit $?

@@ -517,7 +517,11 @@ public class SSHshell  extends RunnableT {
                             comm.append(args[i]);
                         }
                     }
-            }
+           } else {
+               String prog = System.getProperty("prog");
+               System.out.println( ( (prog==null)?"":prog ) +usage()); 
+               return null;
+           }
            SSHshell.confDir=conf;
            SSHshell.debug=debug;
            if ( debug > 0 ) {
