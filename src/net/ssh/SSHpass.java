@@ -28,20 +28,29 @@ public class SSHpass extends Version{
         return ssh.login();
     }
     
+    
+    public void runScript() {
+       completeOK=false; 
+       if ( prescript != null && ! prescript.isEmpty() ) {
+                
+       }
+       connect();
+       if ( script     != null && ! script.isEmpty() ) {
+            ssh.send(script);
+       }
+       if ( postscript != null && ! postscript.isEmpty() ) {
+                
+       }
+       completeOK=true; 
+    }
+    private boolean completeOK=false;
+    public boolean isValid() { return this.completeOK; }
+    
     public static void main(String[] args) {
         SSHpass s=null;
         try {
-            s = new SSHpass(args);
-            if ( s.prescript != null && ! s.prescript.isEmpty() ) {
-                
-            }
-            s.connect();
-            if ( s.script     != null && ! s.script.isEmpty() ) {
-                s.ssh.send(s.script);
-            }
-            if ( s.postscript != null && ! s.postscript.isEmpty() ) {
-                
-            }
+            s = getInstance(args);
+            s.runScript();
         } catch (Exception e) {
             System.out.println("ERROR: stopping with error "+e.getMessage());
             e.printStackTrace();
@@ -57,8 +66,8 @@ public class SSHpass extends Version{
                          + "\t\t script file \t- are the script which are runs remote\n\n"
                          + "\t\t preaction  script \t- are a local script, which runs before the script on this system\n"
                          + "\t\t postaction script \t- are a local script, which runs after the script on this system\n");
-        
     }
+    
     private String script;
     private String prescript;
     private String postscript;
@@ -68,6 +77,16 @@ public class SSHpass extends Version{
     private int    port=-1;
     private String user="";
     private String pass="";
+    
+    public static SSHpass getInstance(String[] args) {
+        try {
+            SSHpass sshp = new SSHpass(args); 
+
+            return sshp;
+        } catch (Exception e)  {
+            return null;
+        }   
+    }
     
     private SSHpass(String[] args) throws Exception {
         boolean config=false;

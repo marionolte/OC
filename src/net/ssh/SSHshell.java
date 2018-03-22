@@ -539,6 +539,7 @@ public class SSHshell  extends RunnableT {
                            if ( sp[i].matches("scp") || sp[i].matches("sftp") ) { scom=sp[i]; }
                         }
                     }
+                    printf(func,3,"scom:"+scom);
                     ssh.scom=scom;
            return ssh;
     }
