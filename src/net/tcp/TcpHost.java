@@ -6,14 +6,13 @@
 package net.tcp;
 
 import io.file.ReadFile;
-import java.io.InputStream;
+import static io.lib.IOLib.execReadToString;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.Scanner;
 import main.Http;
 import main.MainTask;
 
@@ -135,12 +134,5 @@ public abstract class TcpHost extends MainTask{
     }
     
     
-    public static String execReadToString(String execCommand) throws java.io.IOException {
-        Process proc = Runtime.getRuntime().exec(execCommand);
-        try (InputStream stream = proc.getInputStream()) {
-            try (Scanner s = new Scanner(stream).useDelimiter("\\A")) {
-                return s.hasNext() ? s.next().trim() : "";
-            }
-        }
-    }
+    
 }

@@ -1,5 +1,6 @@
 package main;
 
+import static io.lib.IOLib.execReadToString;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -87,8 +88,6 @@ public class Watcher extends TcpHost{
     }
 
     public static void main(String[] args) throws Exception{
-        //System.out.println( execReadToString("ifconfig -a"));
-        //System.out.println( execReadToString("netstat -an"));
         if ( args.length > 0  ) {
             Watcher w = new Watcher(args);
                     w.test();
@@ -98,13 +97,6 @@ public class Watcher extends TcpHost{
         
     }
 
-    public static String execReadToString(String execCommand) throws java.io.IOException {
-        Process proc = Runtime.getRuntime().exec(execCommand);
-        try (InputStream stream = proc.getInputStream()) {
-            try (Scanner s = new Scanner(stream).useDelimiter("\\A")) {
-                return s.hasNext() ? s.next().trim() : "";
-            }
-        }
-    }
+    
 }
 

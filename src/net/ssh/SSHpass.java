@@ -9,7 +9,9 @@ import general.Version;
 import io.crypt.Crypt;
 import io.file.ReadFile;
 import io.file.WriteFile;
+import static io.lib.IOLib.execReadToString;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.util.Properties;
 
 /**
@@ -29,20 +31,39 @@ public class SSHpass extends Version{
     }
     
     
-    public void runScript() {
+    public int runScript() {
+        final String func=getFunc("runScript()");
        completeOK=false; 
        if ( prescript != null && ! prescript.isEmpty() ) {
-                
+           printf(func,3,"run pre script:"+prescript);
+           try {
+                execReadToString(prescript);
+            } catch (Exception e) {
+                printf(func,1,"prescript runs in error "+e.getMessage(),e);
+                return 1;
+            }  
        }
        connect();
        if ( script     != null && ! script.isEmpty() ) {
             ssh.send(script);
+            ssh.sendSingleCommand("chmod 755 "+File.separator+"tmp"+script );
+            StringBuilder sw= ssh.sendSingleCommand(File.separator+"tmp"+script);
+            ssh.sendSingleCommand("rm "+File.separator+"tmp"+script + " 2>/dev/null");
        }
        if ( postscript != null && ! postscript.isEmpty() ) {
-                
+            printf(func,3,"run post script:"+postscript);
+            try {
+                execReadToString(postscript);
+            } catch (Exception e) {
+                printf(func,1,"postscript runs in error "+e.getMessage(),e);
+                return 101;
+            }    
+            
        }
        completeOK=true; 
+       return 0;
     }
+    
     private boolean completeOK=false;
     public boolean isValid() { return this.completeOK; }
     

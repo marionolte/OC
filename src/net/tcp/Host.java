@@ -5,8 +5,7 @@
  */
 package net.tcp;
 
-import java.io.InputStream;
-import java.util.Scanner;
+import static io.lib.IOLib.execReadToString;
 
 /**
  *
@@ -31,14 +30,6 @@ public class Host extends TcpHost{
       return "00:37:17:44:88:EF";
     }
     
-    public static String execReadToString(String execCommand) throws java.io.IOException {
-        Process proc = Runtime.getRuntime().exec(execCommand);
-        try (InputStream stream = proc.getInputStream()) {
-            try (Scanner s = new Scanner(stream).useDelimiter("\\A")) {
-                return s.hasNext() ? s.next().trim() : "";
-            }
-        }
-    }
     
     public static void main(String[] args) {
           System.out.println("Hostname:"+getHostname());

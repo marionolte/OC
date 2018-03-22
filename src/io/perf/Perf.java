@@ -1,6 +1,7 @@
 package io.perf;
 
 
+import static io.lib.IOLib.execReadToString;
 import io.thread.RunnableT;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -96,15 +97,7 @@ public class Perf extends MainTask{
             
         }
         
-        private String execReadToString(String execCommand) throws java.io.IOException {
-            Process proc = Runtime.getRuntime().exec(execCommand);
-            try (InputStream stream = proc.getInputStream()) {
-                try (Scanner s = new Scanner(stream).useDelimiter("\\A")) {
-                    return s.hasNext() ? s.next().trim() : "";
-                }
-            }
-        }
-
+        
         @Override
         public void run() {
             final String func=getFunc("run()");

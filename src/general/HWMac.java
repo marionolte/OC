@@ -6,6 +6,7 @@
 package general;
 
 import io.crypt.Crypt;
+import static io.lib.IOLib.execReadToString;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -96,7 +97,11 @@ public class HWMac extends Version{
     
     public static String getHostName()  {
         if ( ! HWMac.hostId.isEmpty() ) { return HWMac.hostId; }
-        HWMac.hostId = execReadToString("hostname");
+        try  {
+            HWMac.hostId = execReadToString("hostname");
+        } catch(Exception e) {
+            HWMac.hostId="";
+        }
         if ( HWMac.hostId.isEmpty() && HWMac.hostId.contains(".") ) {
              HWMac.hostId = (HWMac.hostId.split("."))[0];
         }
@@ -113,14 +118,5 @@ public class HWMac extends Version{
         return HWMac.hostId;
     }
 
-    public static String execReadToString(String execCommand) {
-        try { Process proc = Runtime.getRuntime().exec(execCommand);  
-              InputStream stream = proc.getInputStream() ;
-                try (Scanner s = new Scanner(stream).useDelimiter("\\A")) {
-                    return s.hasNext() ? s.next().trim() : "";
-                }
-        } catch(java.io.IOException io){}
-        return "";    
-    }  
-
+    
 }

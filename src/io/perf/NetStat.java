@@ -6,6 +6,7 @@
 package io.perf;
 
 import general.Version;
+import static io.lib.IOLib.execReadToString;
 import java.io.InputStream;
 import java.util.Scanner;
 import java.util.regex.Matcher;
@@ -47,15 +48,6 @@ class NetStat extends Version{
         return ret;
     }
     
-    static private String execReadToString(String execCommand) throws java.io.IOException {
-            Process proc = Runtime.getRuntime().exec(execCommand);
-            try (InputStream stream = proc.getInputStream()) {
-                try (Scanner s = new Scanner(stream).useDelimiter("\\A")) {
-                    return s.hasNext() ? s.next().trim() : "";
-                }
-            }
-        }
-
     
     public static void main(String[] args) throws Exception{
         debug=3;
