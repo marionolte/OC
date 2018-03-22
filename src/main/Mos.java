@@ -22,6 +22,7 @@ import main.checker.Checker;
 import static net.ldap.LdapMain.objList;
 import net.ldap.LdapSearch;
 import net.ldap.LdapUserBlk;
+import net.ssh.SSHpass;
 import net.ssl.TestSSLServer;
 import net.tcp.PortScanner;
 import net.wls.WlsDomain;
@@ -373,25 +374,35 @@ public class Mos extends Updater{
             }
             printf(func,2,"send command return :"+ssh.isValid());
          } else {
+           printf(func,3,"transfer files");  
            try {
                
                ArrayList<String> fr = new ArrayList();
                ArrayList<String> fl = new ArrayList();  
                int way=-1;
-               for ( int i=0; i< args.length; i++) {
-                   if ( args[i].matches("scp") ) {}
-                   else if ( args[i].startsWith(":") ) { fr.add( args[i].substring(1) );  if(way==-1){ way=1; } }
-                   else {                                fl.add( args[i].substring(1) );  if(way==-1){ way=2; }  }
+               for (String arg : ssh.getCommand().split(" ") ) {
+                   if      ( arg.matches("scp")   ) { } 
+                   else if ( arg.startsWith(":")  ) { fr.add(arg.substring(1)); if(way==-1){ way=1; } } 
+                   else   { fl.add(arg); if(way==-1){ way=2; } }
                }
-               String[] rfiles = new String[ fr.size() ]; for( int j=0; j<fr.size(); j++ ) { rfiles[j]=fr.get(j); }
-               String[] lfiles = new String[ fr.size() ]; for( int j=0; j<fl.size(); j++ ) { lfiles[j]=fl.get(j); }
+               printf(func,2,"remote files:"+fr.size()+" local files:"+fl.size() );
                
+               StringBuilder sw = new StringBuilder();
+               String[] rfiles = new String[ fr.size() ]; for( int j=0; j<fr.size(); j++ ) { rfiles[j]=fr.get(j); sw.append(rfiles[j]).append(";"); }
+               printf(func,3,"remote files:"+fr.size()+" files: "+sw.toString());
+               sw = new StringBuilder();
+               String[] lfiles = new String[ fl.size() ]; for( int j=0; j<fl.size(); j++ ) { lfiles[j]=fl.get(j);  sw.append(lfiles[j]).append(";");}
+               printf(func,3,"local files:"+fl.size()+" files: "+sw.toString());
+               
+               printf(func,3,"remote files:"+rfiles.length+" local files:"+lfiles.length );
                if ( rfiles.length == 0 || lfiles.length == 0) { throw new IOException("missing properties"); }
                if ( way == 1 ) {
                     ReadDir d = new ReadDir(lfiles[0]);
                     if ( ! d.isDirectory() ) { throw new IOException(lfiles[0]+" is not a local directory"); }
+                    printf(func,2,"like to send from"+rfiles+" to local:"+lfiles[0]);
                     ssh.scpFrom(rfiles, lfiles[0]);
                } else {
+                    printf(func,0,"like to send local "+lfiles+" to remote "+rfiles[0]);
                     ssh.scpTo(lfiles, rfiles[0]);
                }     
            } catch (IOException io ) {
@@ -404,7 +415,13 @@ public class Mos extends Updater{
     }
     
     private boolean sshScript(String[] args ) {
-        return false;
+        final String func=getFunc("sshScript(String[] args )");
+         printf(func,2,"sshScript start");
+         
+         SSHpass.debug=debug;
+         SSHpass ssh = SSHpass.getInstance(args);        
+                 ssh.runScript();
+         return ssh.isValid();
     }
     
     private void wlsInfoTools(String[] args ) {
