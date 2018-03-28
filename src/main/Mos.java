@@ -13,6 +13,7 @@ import io.file.ReadDir;
 import io.file.ReadFile;
 import io.file.SecFile;
 import io.file.WriteFile;
+import io.java.GCFile;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -188,12 +189,13 @@ public class Mos extends Updater{
                 else if ( args[i].matches("-crypt")    ||
                           args[i].matches("-uncrypt")  ){ crypt.runArgs(getArgsLower(args,i));           fin=true; }  
                 else if ( args[i].matches("-rota")     ){ this.logRotate(getArgsLower(args,++i));        fin=true; }
-                else if ( args[i].matches("-gclog")    ){ this.gcLog(getArgsLower(args,++i));            fin=true; }
+                else if ( args[i].matches("-gclog1")    ){ this.gcLog(getArgsLower(args,++i));            fin=true; }
                 else if ( args[i].matches("-update")   ){ this.updateJar();                              fin=true; }
                 else if ( args[i].matches("-unsecure") ){ this.unsecureFile(getArgsLower(args,++i));     fin=true; }
                 else if ( args[i].matches("-secure")   ){ this.secureFile(getArgsLower(args,++i));       fin=true; }
                 else if ( args[i].matches("-pwfile")   ){ this.setPassword(args[++i]);                   fin=true; }
                 else if ( args[i].matches("-gclog")    ){ this.checkGC(getArgsLower(args,++i));          fin=true; }
+                else if ( args[i].matches("-gcfile")   ){ this.checkGCFile(getArgsLower(args,++i));      fin=true; }
                 else if ( args[i].matches("-checker")  ){ this.runChecker(getArgsLower(args,++i));       fin=true; }
                 else if ( args[i].matches("-d")        ){ } // needs empty - run in pre-scan
                 else if ( args[i].matches("-monitor")  ){ this.runMonitor(getArgsLower(args,++i));       fin=true; }
@@ -212,6 +214,16 @@ public class Mos extends Updater{
         parseCompleted=true;
         return; 
    }
+    
+    private void checkGCFile(String[] ar) {
+        
+        for(String a : ar) {
+            GCFile gc = new GCFile(a); gc.debug=debug;
+            if ( gc.isReadableFile() ) {
+                while(gc.hasNext()) { gc.check(); }
+            }
+        }
+    }
     
     private void checkGC(String[] ar) {
         GCMain gc = new GCMain(ar);

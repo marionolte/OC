@@ -5,6 +5,7 @@
  */
 package io.file;
 
+import general.Version;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
@@ -13,7 +14,7 @@ import java.util.regex.Pattern;
  *
  * @author SuMario
  */
-public class FileWalker {
+public class FileWalker extends Version{
     private File root;
     private File[] flist;
     public FileWalker(String dir) {
@@ -29,6 +30,7 @@ public class FileWalker {
     private ArrayList<File> files;
     private ArrayList<File> dirs;
     private void list() {
+        final String func=getFunc("list()");
         files=new ArrayList<File>();
         dirs=new ArrayList<File>();
         if (flist == null) return;
@@ -37,23 +39,25 @@ public class FileWalker {
             if ( f.isDirectory() ) {
                     list( f.getAbsoluteFile());
             } else {
+                printf(func,2,"add root file:"+f.getAbsoluteFile().toString());
                 files.add(f.getAbsoluteFile());
-                //System.out.println("add root file:"+f.getAbsoluteFile().toString());
+                
             }
         }
     }
     private void list(File newpath) {
+        final String func=getFunc("list(File newpath)");
         File[] fl = newpath.listFiles();
         for ( File f : fl ) {
             if ( f.isDirectory() ) {
                 if ( ! f.toString().matches(".") && ! f.toString().matches("..") ) {
                     dirs.add(f);
+                    printf(func,2,"dir:"+f.getAbsoluteFile().toString()+":");
                     list( f.getAbsoluteFile());
-                    //System.out.println("dir:"+f.getAbsoluteFile().toString()+":");
                 }    
             } else {
                 files.add(f.getAbsoluteFile());
-                //System.out.println("add sub file:"+f.getAbsoluteFile().toString());
+                printf(func,2,"add sub file:"+f.getAbsoluteFile().toString());
             }
         }
     }

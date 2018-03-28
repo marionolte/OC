@@ -178,7 +178,16 @@ public abstract class Version { //extends OraConst {
         //println(level, cName+" - "+msg);
         //println(level,cName+" - "+msg+"debug["+level+"/"+debug+"]");
         if ( level <= debug ) {
-            println(level, cName+" - "+msg);
+            if ( msg.contains("\n") ) {
+                boolean t=false;
+                for(String m: msg.split("\n")) {
+                    String n=(t)?"\t":"";
+                    println(level, cName+" - "+n+m);
+                    t=true;
+                }
+            } else {
+                println(level, cName+" - "+msg);
+            }    
         }
     }
     
