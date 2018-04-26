@@ -68,7 +68,9 @@ public class SecFile extends ReadFile {
         final String func=getFunc("crypt()");
         if ( ! rFile.isBinaryFile() )  {
               String s= rFile.readOut().toString();
+              if ( ! crypt.isCrypted(s) ) {
                      s= crypt.getCrypted(s.replaceAll("==$", "="));
+              }       
               rFile.replace( s+((s.endsWith("="))?"":"=") );
         } else {
             InputStream in = getInputStream();
@@ -77,6 +79,7 @@ public class SecFile extends ReadFile {
             byte[] b = new byte[1000];
             int i;
             try { 
+                
                 while( in.available() > 0 ) {
                 
                     i=in.read(b);

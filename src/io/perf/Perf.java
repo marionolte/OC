@@ -3,11 +3,9 @@ package io.perf;
 
 import static io.lib.IOLib.execReadToString;
 import io.thread.RunnableT;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Properties;
-import java.util.Scanner;
 import main.MainTask;
 
 public class Perf extends MainTask{
@@ -23,6 +21,8 @@ public class Perf extends MainTask{
         if ( this.args.getProperty("-cpu") != null ) { map.put("cpu", new PerfTask("cpu",this.args.getProperty("-cpu"))); }
         if ( this.args.getProperty("-io")  != null ) { map.put("io",  new PerfTask("io", this.args.getProperty("-io" ) )); }
         if ( this.args.getProperty("-net") != null ) { map.put("net", new PerfTask("net",this.args.getProperty("-net"))); }
+        if ( this.args.getProperty("-mem") != null ) { map.put("mem", new PerfTask("mem",this.args.getProperty("-mem"))); }
+        
         
         printf(func,2,"hash:"+map+":");
         Iterator<String> itter = map.keySet().iterator();
@@ -91,6 +91,7 @@ public class Perf extends MainTask{
             
             switch(area) {
                 case "net": this.command="netstat -an"; break;
+                case "mem": this.command="buildin";     break;
                 default: this.command="";
             }
             printf(func,3,"area:"+area+":  command:"+this.command+":");
@@ -106,7 +107,7 @@ public class Perf extends MainTask{
             printf(func,3,"count:"+count+" time:"+time);
             while (ru<=count) {
                 printf(func,3,"ru:"+ru+" count:"+count);
-                if ( ! this.command.isEmpty() ) {
+                if ( ! this.command.isEmpty() && ! this.command.equals("buildin") ) {
                     printf(func,3,"command="+this.command+"");
                     try { 
                          StringBuilder sw = new StringBuilder(execReadToString(this.command));
@@ -121,6 +122,12 @@ public class Perf extends MainTask{
                     }catch(java.io.IOException io) {
                         printf(func,1,"execReadToString end with exeception "+io.getMessage(),io);
                     }
+                }
+                else if ( ! this.command.isEmpty() &&  this.command.equals("buildin")  ) {
+                        switch (area) {
+                            case "mem":  MemInfo.outLine(); break;
+                            default: ;
+                        }
                 }
                 ru++;
                 if ( ru < count ) { 

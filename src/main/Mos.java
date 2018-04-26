@@ -248,6 +248,7 @@ public class Mos extends Updater{
                 ReadFile rf = new ReadFile(ar[i]);
                 if ( rf.isReadableFile() ) {
                     SecFile wf = new SecFile(ar[i]);
+                            wf.isCrypted();
                 } else {
                     System.out.println("WARNING: "+ar[i]+" is not a readable file - skipping");
                 }
@@ -560,6 +561,7 @@ public class Mos extends Updater{
         System.out.println(this.getFullInfo()+"\n\nOptions:\n"
                 + "\t\t-version \t\t-\tprint version information\n\n"
                 + "\t\t-crypt "+crypt.usage(false)+"\n\t\t\t\t\t-\tcrypt or uncrypt a string or file\n\n"
+                + "\t\t\n"        
                 + "\t\t-testssl <host> <port>\t-\tTest SSL Connection to the server and port \n"
                 + "\n\t\t-sshcomm "+SSHshell.usage()+"\n\t\t\t\t\t-\tsend a single ssh command\n"
                 + "\t\t-portscan [-host <host>] [-pmin <min port>] [-pmax <max port>]\t-\tport  scanner \n"

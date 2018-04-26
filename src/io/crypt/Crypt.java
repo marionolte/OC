@@ -114,6 +114,21 @@ public class Crypt extends Version {
         return md;
     }
     
+    public boolean isCrypted(String txt) {
+        if ( txt == null || txt.isEmpty() ) return false;
+        return isCrypted(txt.getBytes());
+        
+    }
+    
+    public boolean isCrypted(byte[] b) {
+         for (int i=0; i<b.length; i++) {
+            if ( ! Base64.isBase64(b[i]) ) {
+                return false;
+            } 
+         }
+        return true;
+    }
+    
     public String getCrypted(String txt) {
          String out = getUserCrypted(txt);
                 out = getHostCrypted(out);
