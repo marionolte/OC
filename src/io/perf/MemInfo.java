@@ -5,6 +5,7 @@
  */
 package io.perf;
 
+import io.buffer.RingBuffer;
 import io.thread.RunnableT;
 import java.util.HashMap;
 
@@ -33,10 +34,12 @@ class MemInfo {
         long prevUsed  = 0L;
         long free      = 0L;
         HashMap<String, String> map = new HashMap<String,String>();
+        RingBuffer<String> rbuf = new RingBuffer<String>(10);
 
         MemRuntime() {
              prevFree = rt.freeMemory();
              total    = rt.totalMemory();
+             
         }
         
         @Override
@@ -58,6 +61,7 @@ class MemInfo {
                             ", ∆Free: " + (free - prevFree));
                      
                         map.put(i, total+lim+used+lim+ (used - prevUsed)+lim+free+lim+(free-prevFree) );
+                        rbuf.push(i+lim+total+lim+used+lim+ (used - prevUsed)+lim+free+lim+(free-prevFree));
                     
                         prevTotal = total;
                         prevFree = free;

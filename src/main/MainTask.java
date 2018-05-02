@@ -8,6 +8,10 @@ package main;
 import general.Version;
 import io.crypt.Crypt;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.Properties;
 
 /**
@@ -28,8 +32,11 @@ public abstract class MainTask extends Version{
     public String getName() { return this.name; }
     Properties prop=null;
     public Properties parseArgs(String[] args) {
-        final String func="parseArgs(String[] args)";
+        final String func=getFunc("parseArgs(String[] args)");
+        int savdebug=debug;
+        debug=savdebug;
         Properties p = new Properties();
+                   p.setProperty("COMMAND", "");
         if ( args != null && args.length > 0 ) {
             for(int i=0; i < args.length; i++ ) {
                 if ( args[i].matches("-d") ) { debug++; }
@@ -38,20 +45,29 @@ public abstract class MainTask extends Version{
                 else {
                     if( args[i].startsWith("-") ) {
                         String a=args[i].replaceAll("^-", "");
-                        printf(getFunc(func),2,"args.length:"+args.length+":  i="+i+"  ("+( args.length > (i+i))+") - ("+( args.length > (i+i))+")" );
+                        printf(func,2,"args.length:"+args.length+":  i="+i+"  ("+( args.length > (i+i))+") - ("+( args.length > (i+i))+")" );
                         if ( args.length <= i+1 || ( args.length > (i+1) && args[ i+1 ].startsWith("-") ) ) {
                             p.setProperty(a,"true"); 
                             if ( p.getProperty("COMMAND") == null ) { p.setProperty("COMMAND",a.toUpperCase()); }
-                        } else {    
+                        } else { 
+                            printf(func,2,"set "+a+" with contant of "+args[ (i+1)]);
                             p.setProperty(a, getReplaceSeparator(args[++i]));
                         }    
                         //System.out.println(a+"="+p.getProperty(a)+"|");
+                    }
+                    else if ( p.get("COMMAND").toString().isEmpty() ) {
+                        final String a=args[i].toUpperCase();
+                        printf(func,2,"set COMMAND with "+a);
+                        p.setProperty("COMMAND", a ); 
                     } else {
-                        p.setProperty("COMMAND", args[i].toUpperCase() ); 
+                        final String a=( p.getProperty("value") == null )?args[i]:p.getProperty("value")+" "+args[i];
+                        printf(func,2,"set value with "+a);
+                        p.setProperty("value", a);
                     }    
                 }
             }        
-        }      
+        }
+        debug=savdebug;
         return p;
     }
     
@@ -71,34 +87,73 @@ public abstract class MainTask extends Version{
    } 
    
    
-   public synchronized boolean getBooleanProperty(String key) {
-       String a = getProperty(key,"false");
+   public synchronized boolean getBooleanProperty(String key) { return getBooleanProperty(key,prop); }
+   public synchronized boolean getBooleanProperty(String key,Properties p) {
+       String a = getProperty(key,"false",p);
        return ( a!= null && a.toLowerCase().matches("true") );
    }
    
-   public synchronized int getIntProperty(String key) { return getIntProperty(key,"-1"); }
-   public synchronized int getIntProperty(String key, String def) {
-       String a = getProperty(key,def);
+   public synchronized int getIntProperty(String key            ) { return getIntProperty(key,"-1"); }
+   public synchronized int getIntProperty(String key, String def) { return getIntProperty(key,"-1",prop); }   
+   public synchronized int getIntProperty(String key, String def, Properties p) {
+       String a = getProperty(key,def,p);
        return Integer.parseInt(a);
    }
    
-   public synchronized void   setProperty(String key, String val) {
+   
+   public synchronized void   setProperty(String key, String val) { setProperty(key,val,prop); }
+   public synchronized void   setProperty(String key, String val, Properties p) {
        if ( key != null && !key.isEmpty() ) { 
            printf(getFunc("setProperty(String key, String val)"),2,"key:"+((key==null)?"NULL":key)+";  val:"+((val==null)?"NULL":val));
            if ( key != null && ! key.isEmpty() ) {
                if ( val == null ) {
-                 prop.remove(key);
+                 p.remove(key);
                } else {
-                 prop.setProperty(key, val); 
+                 p.setProperty(key, val); 
                } 
            }
        }
    }
+   
+   
    public synchronized String getProperty(String key            ) { return getProperty(key,""); }
-   public synchronized String getProperty(String key, String def) {
-       String a = prop.getProperty(key, def);
+   public synchronized String getProperty(String key, String def) { return getProperty(key,def,prop); }   
+   public synchronized String getProperty(String key, String def, Properties p) {
+       String a = p.getProperty(key, def);
        if ( a != null &&  a.contains(__rep) ) { return getReplaceSeparatorBack(a); }
        return a;
    }
    
+   public  synchronized Properties getIMapProperties(String[] key) {
+       
+       Properties p = null;
+       int i=0; String skey="";
+       while ( p == null && i < key.length) {
+           p = iMap.get(key[i]);
+           if ( p != null ) {
+               skey=key[i];
+           }
+           i++;
+       }
+       if ( p == null ) {
+            p = new Properties();
+            iMap.put(key[0], p);
+       }
+       return p;
+   }
+   private HashMap<String, Properties> iMap = new HashMap<String, Properties>();
+   public synchronized void loadProperty(String[] key) {
+       final String func=getFunc("loadProperties(String key)");
+       Properties p = getIMapProperties(key);
+           String v = getProperty(key[0]);
+       try {
+           p.load(new FileInputStream(v));
+       } catch(FileNotFoundException fne) {
+           
+       } catch(IOException io) {
+           
+       } catch(NullPointerException npe) {
+           
+       }
+   }
 }

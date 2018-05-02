@@ -37,15 +37,18 @@ public class Perf extends MainTask{
             }
         }
         
-         pm = new PerfMonitor();
-         pm.start();
-
+        pm = new PerfMonitor();
+        if ( ! map.isEmpty() ) pm.start();
+        else printUsage=true;
     }
+    
+    public boolean printUsage=false;
     
     public void test() {
         debug=4;
         final String func=getFunc("test()");
         printf(func,4,"run test()");
+        if ( printUsage ) {  return; }
         while(! pm.isRunning()) { sleep(300);}
         printf(func,4,"pm running");
         while ( ! pm.isClosed() ) {            
@@ -55,7 +58,12 @@ public class Perf extends MainTask{
     }
 
     
-    
+    public String usage() {
+        printUsage=true;
+        StringBuilder sw = new StringBuilder();
+        sw.append("< [-cpu|-mem|-io|-net]:time=XX >");
+        return sw.toString();
+    }
     
     public static Perf getInstance(String[] args) {
          Perf p = new Perf(args);          

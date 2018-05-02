@@ -26,6 +26,8 @@ public class RingBuffer<Item> extends Version implements Iterable<Item> {
     private int last   = 0;      // last element in the queue
     private String lock = null ;
     private RingBuffer<Object> ring;
+    private boolean autoInc=true;
+    
 
     // contructor for the RingBuffer - array where not generated on default
     public RingBuffer(int capacity) { this.elements = ( Item[] ) new Object[capacity];  }
@@ -39,13 +41,13 @@ public class RingBuffer<Item> extends Version implements Iterable<Item> {
         if ( ! this.isEmpty() ) { return false; }
         getLock("resize");
         
-        this.elements = ( Item[] ) new Object[newSize];
+            this.elements = ( Item[] ) new Object[newSize];
         
         clearLock("resize");
         
         return true;
     }
-    
+    public void setAutoIncrease(boolean b) { this.autoInc=b; }
     
     private synchronized boolean islocked() { return (lock == null)?false:true; }
 
@@ -71,13 +73,16 @@ public class RingBuffer<Item> extends Version implements Iterable<Item> {
     }
 
     public synchronized boolean push( String s ) { return push( (Object) s );         }
-    public synchronized boolean push( Object s ) { return this.enqueue( (Item) (s) ); }
+    public synchronized boolean push( Object s ) { 
+        if ( ! autoInc && isFull() ) { popObject(); }
+        return this.enqueue( (Item) (s) ); 
+    }
     
 
     private synchronized boolean enqueue(Item item) {
         final String func="enqueue(Item item)";
         printf(func,6,"verify RingBuffer length number:"+number+" == element.length:"+this.elements.length+" ?");
-        if ( this.number == this.elements.length ) { return false; }
+        if ( isFull() ) { return false; }
 
         printf(func,5,"ask for queue lock");
         getLock("queue");

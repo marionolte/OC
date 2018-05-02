@@ -237,34 +237,51 @@ public class Mos extends Updater{
     }
     
     private void runMonitor(String[] ar) {
-        io.perf.Perf p= io.perf.Perf.getInstance(ar);
+        io.perf.Perf p= io.perf.Perf.getInstance(ar);        
                      p.debug=debug;
-                     p.test();
+        if ( p.printUsage ) { System.out.println("usage: "+System.getProperty("prog")+" -monitor "+p.usage()); } 
+        else { p.test(); }
     }
     
     private void secureFile(String[] ar) {
         if ( ar.length > 0 ) {
             for (int i=0; i<ar.length; i++ ) {
-                ReadFile rf = new ReadFile(ar[i]);
-                if ( rf.isReadableFile() ) {
-                    SecFile wf = new SecFile(ar[i]);
-                            wf.isCrypted();
-                } else {
-                    System.out.println("WARNING: "+ar[i]+" is not a readable file - skipping");
-                }
+                if ( ! ar[i].isEmpty()  )  {
+                    if ( ar[i].equals("-help") ) {
+                        System.out.println("usage: "+System.getProperty("prog")+" -secure <file <file1 ...>>");
+                        return;
+                    } else if ( ar[i].equals("-d") ) {    
+                    } else {
+                        ReadFile rf = new ReadFile(ar[i]);
+                        if ( rf.isReadableFile() ) {
+                            SecFile wf = new SecFile(ar[i]);
+                               if ( ! wf.isCrypted() ) {
+                                   wf.crypt();
+                               }
+                        } else {
+                            System.out.println("WARNING: "+ar[i]+" is not a readable file - skipping");
+                        }
+                    }     
+                }     
             }
         }
     }
     private void unsecureFile(String[] ar) {
         if ( ar.length > 0 ) {
             for (int i=0; i<ar.length; i++ ) {
-                SecFile sec = new SecFile(ar[i]);
-                if ( sec.isReadableFile() ) {
-                    WriteFile wf = new WriteFile(ar[i]);
-                              wf.replace(sec.readOut().toString());
-                } else {
-                    System.out.println("WARNING: "+ar[i]+" is not a readable file - skipping");
-                }
+                if ( ar[i].equals("-help") ) {
+                        System.out.println("usage: "+System.getProperty("prog")+" -unsecure <file <file1 ...>>");
+                        return;
+                    } else if ( ar[i].equals("-d") ) {    
+                    } else {
+                        SecFile sec = new SecFile(ar[i]);
+                        if ( sec.isReadableFile() ) {
+                            WriteFile wf = new WriteFile(ar[i]);
+                                      wf.replace(sec.readOut().toString());
+                        } else {
+                            System.out.println("WARNING: "+ar[i]+" is not a readable file - skipping");
+                        }
+                    }    
             }
         }
     }
@@ -574,6 +591,9 @@ public class Mos extends Updater{
                 + "\n\t\t-wlsrota "+WlsDomainLogRotation.usage()+"\n\t\t\t\t\tweblogic domain logrotation\n"
                 + "\n\t\t-logrota "+net.apache.LogRotation.usage()+"\n\t\t\t\t\tapache|ohs logrotation\n"
                 + "\n\t\t-pwfile <filename>\t-\tstore a password in a secure file\n"
+                + "\n\t\t-secure <filename>\t-\tgenerate a secure file from filename\n"
+                + "\n\t\t-unsecure <filename>\t-\tunsecure a secure file back to normal file\n"
+                        
                 
                 //+ "\n\t\t-logrotate\t"+(new LogRotation(new String[]{}).usage(false) )
                 + "\n\n"
