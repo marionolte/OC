@@ -61,7 +61,7 @@ public class Perf extends MainTask{
     public String usage() {
         printUsage=true;
         StringBuilder sw = new StringBuilder();
-        sw.append("< [-cpu|-mem|-io|-net]:time=XX >");
+        sw.append("< [-cpu|-mem|-io|-net]=time=XX,count=XX  ..>");
         return sw.toString();
     }
     
