@@ -189,7 +189,7 @@ public class Mos extends Updater{
                 else if ( args[i].matches("-crypt")    ||
                           args[i].matches("-uncrypt")  ){ crypt.runArgs(getArgsLower(args,i));           fin=true; }  
                 else if ( args[i].matches("-rota")     ){ this.logRotate(getArgsLower(args,++i));        fin=true; }
-                else if ( args[i].matches("-gclog1")    ){ this.gcLog(getArgsLower(args,++i));            fin=true; }
+                else if ( args[i].matches("-gclog1")    ){ this.gcLog(getArgsLower(args,++i));           fin=true; }
                 else if ( args[i].matches("-update")   ){ this.updateJar();                              fin=true; }
                 else if ( args[i].matches("-unsecure") ){ this.unsecureFile(getArgsLower(args,++i));     fin=true; }
                 else if ( args[i].matches("-secure")   ){ this.secureFile(getArgsLower(args,++i));       fin=true; }
@@ -197,6 +197,7 @@ public class Mos extends Updater{
                 else if ( args[i].matches("-gclog")    ){ this.checkGC(getArgsLower(args,++i));          fin=true; }
                 else if ( args[i].matches("-gcfile")   ){ this.checkGCFile(getArgsLower(args,++i));      fin=true; }
                 else if ( args[i].matches("-checker")  ){ this.runChecker(getArgsLower(args,++i));       fin=true; }
+                else if ( args[i].startsWith("-ldap")  ){ this.runLdap(args[i].substring(1),getArgsLower(args,++i));  fin=true; }
                 else if ( args[i].matches("-d")        ){ } // needs empty - run in pre-scan
                 else if ( args[i].matches("-monitor")  ){ this.runMonitor(getArgsLower(args,++i));       fin=true; }
                 else if ( args[i].matches("-version")  ){ this.version(); _exit=0;                       fin=true; donemsg=false; }
@@ -230,6 +231,43 @@ public class Mos extends Updater{
                gc.scan();
     }
     
+    private void runLdap(String foo, String[] ar ) {
+        final String func=getFunc("runLdap(String foo, String[] ar ) ");
+        try {
+            switch(foo) {
+                case "ldapsearch" : 
+                                    net.ldap.LdapSearch ls = net.ldap.LdapSearch.getInstance(ar);
+                                    ls.printResults( ls.search(ls.getBaseDN(), ls.getFilter(), ls.getAttrList()) );
+                                    this._exit = ls.error_code;
+                                    break;
+                case "ldapbind"   : 
+                                    net.ldap.LdapBind lb   = net.ldap.LdapBind.getInstance(ar);
+                                    System.out.println("bind "+((lb.bind())?"successful":"failed"));
+                                    this._exit=lb.error_code;
+                                    break;
+                case "ldapblk"    :
+                case "ldapuserblk":
+                                    net.ldap.LdapUserBlk lu = net.ldap.LdapUserBlk.getInstance(ar);
+                                                         lu.runSearch();
+                                                         System.out.println(lu.getCount()+" ldap entries found \tmodified:"+lu.getModified());
+                                    break;
+                case "ldapmodify":
+                                    net.ldap.LdapModify lm = net.ldap.LdapModify.getInstance(ar);
+                                    
+                default:
+                    System.out.println("ERROR: "+foo+" not found");
+                    this._exit=1;
+            }
+        } catch(NamingException ne) {
+            System.out.println("ERROR: "+ne.getMessage());
+            printf(func,1,"full message:",ne);
+            this._exit=-1;
+        } catch(IOException io) {
+            System.out.println("ERROR: "+io.getMessage());
+            printf(func,1,"full message:",io);
+            this._exit=-1;
+        }     
+    }
     private void runChecker(String[] ar) {
         Checker ch=new Checker(ar);
                 ch.verify();

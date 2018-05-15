@@ -39,8 +39,16 @@ public abstract class TcpHost extends MainTask{
     }
     
     public boolean isPort(String k) {
-        int i = isInteger(k);        
-        return (i>0 && i<(64*1024-1));
+        try { 
+            int i = isInteger(k);        
+            return (i>0 && i<(64*1024-1));
+        } catch(Exception e) {}
+        return false;
+    }
+    
+    public int getPort(String k) {
+        if ( isPort(k) ) return isInteger(k);
+        return -1;
     }
     
     public boolean isHostIp(String k) {

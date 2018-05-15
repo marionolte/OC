@@ -39,6 +39,17 @@ public class LdapModify extends LdapMain {
                    lm.init();
         return lm;
     }
+    static public LdapModify getInstance(String[] ar) throws NamingException {
+        protocol="ldap";
+        hostname="localhost";
+        port=389;
+        userdn="cn=admin";
+        userpw="";
+        filter="objectclass=*";
+        auth="simple";
+        scanner(ar,myusage);
+        return getInstance();
+    }
     
     private LdapModify() {
         name="LdapModify";
@@ -107,6 +118,25 @@ public class LdapModify extends LdapMain {
         
     }
     
+    synchronized public void modify(String file) {
+        ReadFile f = new ReadFile(file);
+               if ( f.isReadableFile() ) {
+                    for ( String s: f.readOut().toString().split("\n") ) {
+                         if ( ! s.isEmpty() ) {
+                            String[] sp = validate(s);
+                            if ( sp[0].matches("unknown") ) {
+                                throw new LdapException("unkown ldapmodify operation provided");
+                            }
+                            if ( sp.length == 4) {
+                                modify(sp[0],sp[1],sp[2], sp[3]);
+                            } else {
+                                modify(sp[0],sp[1],null,null); 
+                            }    
+                         }
+                    } 
+               }
+    }
+    
     static private String myusage="\nusage():\noption: [-h hostname] [-p port] [-D adminDN ] [-j passwordfile] -f <file for operation>\n";
     public static void main(String[] args) throws Exception {
         scanner(args,myusage);
@@ -119,22 +149,7 @@ public class LdapModify extends LdapMain {
                 System.out.println("ERROR: doesn't create an LdapModify object");
                 error_code=-1;
             } else {
-               ReadFile f = new ReadFile(operationfile);
-               if ( f.isReadableFile() ) {
-                    for ( String s: f.readOut().toString().split("\n") ) {
-                         if ( ! s.isEmpty() ) {
-                            String[] sp = ls.validate(s);
-                            if ( sp[0].matches("unknown") ) {
-                                throw new LdapException("unkown ldapmodify operation provided");
-                            }
-                            if ( sp.length == 4) {
-                                ls.modify(sp[0],sp[1],sp[2], sp[3]);
-                            } else {
-                                ls.modify(sp[0],sp[1],null,null); 
-                            }    
-                         }
-                    } 
-               }
+               ls.modify(operationfile);
             }
         }    
         System.exit(error_code);

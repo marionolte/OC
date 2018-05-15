@@ -7,22 +7,29 @@ package io.perf;
 
 import general.Version;
 import static io.lib.IOLib.execReadToString;
-import java.io.InputStream;
-import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.tcp.Host;
 
 /**
  *
  * @author SuMario
  */
-class NetStat extends Version{
-    
-    
+class NetStat extends Host{
+    private static NetStat aHost;
+    private static int     aPort;    
     static {
-        
+        aHost = new NetStat();
+        aPort=-1;
     }
 
+    static public void setPort(String a) {
+        try {
+            if ( aHost.isPort(a) ) {
+                aPort = aHost.getPort(a);
+            }
+        }catch(Exception e) {}
+    }
     static StringBuilder outline(StringBuilder sw) {
         final String func="io.perf.NetStat::outline(StringBuilder sw)";
         StringBuilder ret = new StringBuilder();
@@ -38,8 +45,11 @@ class NetStat extends Version{
                 printf(func,3,"line:"+line+":");
                 String[] sp = Pattern.compile("\\s+").matcher(line).replaceAll(" ").split(" ");
                 ConnStat cs = new ConnStat(sp);
-                printf(func,2,"localIP:"+cs.localIP+":"+cs.localPort+":  remoteIP:"+cs.remIP+":"+cs.remPort+"("+cs.recvPackets+")");
-                
+                boolean count=true;
+                if ( aPort > 0  && ( !cs.localPort.equals(""+aPort) || !cs.remPort.equals(""+aPort) ) ) { count=false; }
+                if ( count ) {
+                     printf(func,2,"localIP:"+cs.localIP+":"+cs.localPort+":  remoteIP:"+cs.remIP+":"+cs.remPort+"("+cs.recvPackets+")");
+                }
               }  
             }
             i=ma.end();
@@ -49,10 +59,10 @@ class NetStat extends Version{
     }
     
     
-    public static void main(String[] args) throws Exception{
+    /*public static void main(String[] args) throws Exception{
         debug=3;
         System.out.println( outline( new StringBuilder(execReadToString("netstat -an"))));
-    }
+    }*/
     
     
     static class ConnStat extends Version{

@@ -28,6 +28,18 @@ public class LdapBind extends LdapMain{
         return ls;
     }
     
+    static public LdapBind getInstance(String[] ar) throws NamingException {
+        protocol="ldap";
+        hostname="localhost";
+        port=389;
+        userdn="cn=admin";
+        userpw="";
+        filter="objectclass=*";
+        auth="simple";
+        scanner(ar,myusage);
+        return getInstance();
+    }
+    
     private LdapBind() {
         name="LdapBind";
     }
@@ -35,7 +47,7 @@ public class LdapBind extends LdapMain{
     
     private boolean b =  false;
     
-    private boolean bind() {
+    public boolean bind() {
         final String func="bind()";
         b=false;
         try {

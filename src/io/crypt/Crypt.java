@@ -121,12 +121,15 @@ public class Crypt extends Version {
     }
     
     public boolean isCrypted(byte[] b) {
-         for (int i=0; i<b.length; i++) {
+        boolean br=false;
+        for (int i=0; i<b.length; i++) {
             if ( ! Base64.isBase64(b[i]) ) {
                 return false;
             } 
-         }
-        return true;
+        } 
+        //System.out.println("br last:"+b[ b.length-1 ]);
+        if ( b[ b.length-1 ] == 61 ) { br=true; }
+        return br;
     }
     
     public String getCrypted(String txt) {

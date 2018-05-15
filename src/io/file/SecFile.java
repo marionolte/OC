@@ -57,9 +57,12 @@ public class SecFile extends ReadFile {
     public boolean replace(String line) { rFile.truncate(); return append(line); }
     
     synchronized public boolean isCrypted() {
+        final String func=getFunc("isCrypted()");
         if ( rFile.isReadableFile() ) {
             StringBuilder sw=rFile.readOut();
-            return (sw!=null && sw.length()>0 && sw.toString().endsWith("=") );
+            boolean b=(sw!=null && sw.length()>0 && sw.toString().endsWith("=") && crypt.isCrypted(sw.toString()));
+            printf(func,2,"readout =>|"+sw.toString()+"|<=  cytped:"+b);
+            return b;
         }
         return false;
     }
@@ -68,10 +71,15 @@ public class SecFile extends ReadFile {
         final String func=getFunc("crypt()");
         if ( ! rFile.isBinaryFile() )  {
               String s= rFile.readOut().toString();
+              printf(func,2,"crypt ascii =>|"+s+"|<=");
               if ( ! crypt.isCrypted(s) ) {
                      s= crypt.getCrypted(s.replaceAll("==$", "="));
-              }       
-              rFile.replace( s+((s.endsWith("="))?"":"=") );
+                     printf(func,2,"crypt ascii have (1) =>|"+s+"|<=");
+              }
+              printf(func,2,"crypt ascii have (2) =>|"+s+"|<=");
+              s=s+((s.endsWith("="))?"":"=");
+              printf(func,2,"crypt ascii replace with =>|"+s+"|<=");
+              rFile.replace( s );
         } else {
             InputStream in = getInputStream();
             StringBuilder sw = new StringBuilder("<BINARY>\n");

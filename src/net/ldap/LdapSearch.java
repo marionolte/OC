@@ -42,6 +42,17 @@ public class LdapSearch  extends LdapMain{
     static public LdapSearch getInstance() throws NamingException {
         return getInstance(protocol,hostname,port,userdn,userpw,filter,auth);
     }
+    static public LdapSearch getInstance(String[] ar) throws NamingException {
+        protocol="ldap";
+        hostname="localhost";
+        port=389;
+        userdn="cn=admin";
+        userpw="";
+        filter="objectclass=*";
+        auth="simple";
+        scanner(ar,myusage);
+        return getInstance();
+    }
     
     private LdapSearch() {  name="LdapSearch"; }
     
@@ -122,6 +133,10 @@ public class LdapSearch  extends LdapMain{
         }
         return b;
     }
+    
+    public String    getBaseDN() { return baseDN; }
+    public String    getFilter() { return filter; }
+    public ArrayList getAttrList() { return objList; }
     
     public static void main(String[] args) throws Exception{
         scanner(args,myusage);

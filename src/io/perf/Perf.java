@@ -81,6 +81,7 @@ public class Perf extends MainTask{
         int count=3;
         private final String command;
         private final String area;
+        HashMap<String, String> imap = new HashMap<String, String>();
 
         PerfTask(String area, String ar) {
             final String func=getFunc("PerfTask(String area, String ar)");
@@ -93,7 +94,12 @@ public class Perf extends MainTask{
                          time=Long.parseLong(s.substring("time:".length()))*1000L;
                      }else if ( s.startsWith("count:") ) { 
                          count=Integer.parseInt(s.substring("count:".length()));
+                     } else {
+                         String[] sp = s.split(":");
+                         String    a = (s.length()>sp[0].length()+1)?s.substring(sp[0].length()+1):"true";
+                         imap.put(sp[0], a);
                      }
+                     
                  }
             }
             
@@ -122,7 +128,7 @@ public class Perf extends MainTask{
                          printf(func,2,"command produce "+sw.capacity()+" char outcome");
                          
                          switch(area) {
-                             case "net": sw.replace(0, sw.capacity(), NetStat.outline(sw).toString()); break;
+                             case "net": NetStat.setPort(imap.get("port"));sw.replace(0, sw.capacity(), NetStat.outline(sw).toString()); break;
                              default: ;
                         }
             

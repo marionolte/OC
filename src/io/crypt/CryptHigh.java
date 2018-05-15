@@ -194,6 +194,15 @@ class CryptHigh extends Version {
         }
         return output;
     }
+    private static byte[] getBytes(byte[] b) {
+        byte[] a = b;
+        if ( b.length%16 != 0 ) {
+             a=new byte[ a.length+(16-a.length+1)  ];
+             for( int i=0;        i<b.length; i++) { a[i]=b[i]; }
+             for( int i=b.length; i<a.length; i++) { a[i]=0;    }
+        }
+        return a;
+    }
     
     private byte[] deBase64(String text) { return  Base64.decodeBase64(text); }
     private String decrypt(byte[] cipherText, String encryptionKey, String pass) {
@@ -205,6 +214,7 @@ class CryptHigh extends Version {
 		cipher.init(Cipher.DECRYPT_MODE, key,iv);
                 printf(func,3,"cipherText len:"+cipherText.length+":  mod:"+(cipherText.length%16) );
 		String s=new String(cipher.doFinal(cipherText),"UTF-8");
+                //String s=new String(cipher.doFinal(getBytes(cipherText)),"UTF-8");
                 printf(func,3,"s:"+s+":  len:"+s.length()+"  mod:"+(s.length()%16));
                 return s;
          } catch (Exception e) {

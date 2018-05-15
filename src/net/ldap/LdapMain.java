@@ -125,9 +125,9 @@ abstract public class LdapMain extends Version{
         return (s==null)?"":s;
     }
     
-    static public ArrayList getLinesFromFile(String fname) {
+    static public ArrayList<String> getLinesFromFile(String fname) {
         String line; 
-        ArrayList a = new ArrayList();
+        ArrayList<String> a = new ArrayList();
         SecFile f = new SecFile(fname);
         if  ( f.isReadableFile() ) {
              for ( String s :f.readOut().toString().split("\n") ){ a.add(s); }
@@ -136,7 +136,11 @@ abstract public class LdapMain extends Version{
         if ( a.size() == 0 ) {
             throw new RuntimeException("ERROR: problems to read from file "+fname);
         }
-        
+        if ( debug >4 ) {
+            for(String t:a) {
+                System.out.println("t:"+t+":");
+            }
+        }
         return a;
     }
     

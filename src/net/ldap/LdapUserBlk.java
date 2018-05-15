@@ -635,16 +635,23 @@ public class LdapUserBlk extends RunnableT {
      public long getCount() { return count; } 
      public long getModified() { return modified; }
      
+     public static LdapUserBlk getInstance(String[] ar) {
+         LdapUserBlk ob = new LdapUserBlk();
+                     if (ar.length == 0 ) { usage(true); }
+                     ob.scanArgs(ar);
+                     
+                     return ob;
+     }
+     
+     synchronized public void runSearch() {
+         search();
+         finishing();
+     } 
+     
      public static void main(String[] args) {
-         
-          LdapUserBlk ob = new LdapUserBlk();
-          
-            if (args.length == 0 ) { usage(true); }
-            ob.scanArgs(args);
-            ob.search();
-            ob.finishing();
-          
-            System.out.println(ob.count+" ldap entries found \tmodified:"+ob.modified);
+          LdapUserBlk ob = getInstance(args); 
+                      ob.runSearch();
+          System.out.println(ob.count+" ldap entries found \tmodified:"+ob.modified);
         
     }
 
@@ -675,9 +682,9 @@ public class LdapUserBlk extends RunnableT {
              return fa.readOut().toString();
         }
         
-        throw new RuntimeException("Error - not a reable file "+fname);
+        throw new RuntimeException("Error - not a readable file "+fname);
     }
     
-    private void log(String method, int level, String msg ) { log("LdapUserBlk", level, method+" - "+msg); }
+    //private void log(String method, int level, String msg ) { log("LdapUserBlk", level, method+" - "+msg); }
 } 
 
