@@ -18,9 +18,12 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import javax.naming.NamingException;
 import main.checker.Checker;
 import static net.ldap.LdapMain.objList;
+import static net.ldap.LdapMain.operationfile;
 import net.ldap.LdapSearch;
 import net.ldap.LdapUserBlk;
 import net.ssh.SSHpass;
@@ -208,7 +211,7 @@ public class Mos extends Updater{
                 if ( fin ) { throw new RuntimeException("closing"); }
             }
         } catch(Exception e) {
-            printf(func,1,"closing parsing with "+e.getMessage() );
+            printf(func,1,"closing parsing with "+e.getMessage(),e);
             fin=true;
         }    
         if ( fin ) { setClosed(); }
@@ -253,7 +256,14 @@ public class Mos extends Updater{
                                     break;
                 case "ldapmodify":
                                     net.ldap.LdapModify lm = net.ldap.LdapModify.getInstance(ar);
-                                    
+                                    if ( lm.operationfile != null && (new ReadFile(operationfile)).isReadableFile() ) {
+                                         lm.modify(lm.operationfile);
+                                    } else if ( lm.attrList != null ){
+                                         lm.operate();
+                                    }
+                                    //net.ldap.LdapSearch la = net.ldap.LdapSearch.getInstance(ar);
+                                    //la.printResults( la.search(la.getBaseDN(), la.getFilter(), la.getAttrList()) );
+                                    break;
                 default:
                     System.out.println("ERROR: "+foo+" not found");
                     this._exit=1;

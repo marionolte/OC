@@ -9,6 +9,7 @@ import io.crypt.Crypt;
 import io.file.SecFile;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Properties;
 import javax.naming.Context;
@@ -149,7 +150,28 @@ abstract public class LdapMain extends Version{
     static public void bind(Name name,     Object o, Attributes attr) throws NamingException { ctx.bind(name, o, attr); }
     static public void bind(String baseDN, Object o, Attributes attr) throws NamingException { ctx.bind(baseDN, o, attr); }
     
-    
+    public String getLdapContextFactory(){
+         // sun "com.sun.jndi.ldap.LdapCtxFactory"
+         // ibm "com.ibm.jndi.LDAPCtxFactory";
+         
+         String s="com.sun.jndi.ldap.LdapCtxFactory";
+         
+         if (  isAIX() ) {
+             s="com.ibm.jndi.LDAPCtxFactory";
+         }
+         
+         System.setProperty("java.naming.factory.initial", s);
+	 return s;
+     }
+     
+     public String getLdapNameingFactory() {
+        //env.put("java.naming.factory.url.pkgs", "com.ibm.jndi"); 
+        String s="com.sun.jndi";
+        if ( isAIX() ) {
+            s="com.ibm.jndi";
+        }
+        return s;
+     }
     
     static public    String protocol="ldap";
     static public    String hostname="localhost";
@@ -160,9 +182,11 @@ abstract public class LdapMain extends Version{
     static public    String auth="simple";
     static public    String baseDN=null;
     static public ArrayList objList = new ArrayList();
+    static public HashMap<String, HashMap<String,String> > attrList =null; //= new ArrayList();
     static public    String operationfile=null;
     static public   boolean usage=false;
-    
+    static              int pageSize = 10;
+     
     static Properties conn = new Properties();
     static public void scanner(String[] args,final String use) {    
         String func="scanner(Sting[] args,final String use)";
@@ -188,6 +212,27 @@ abstract public class LdapMain extends Version{
                                                                              printf(func,1,"Exception:"+io.getMessage()+" - with file"+args[i]);
                                                                          }
                 }
+                else if ( args[i].matches("-o")  && args.length>i+1 ) {
+                    if ( attrList == null ) { attrList = new HashMap<String, HashMap<String,String> >();}
+                    // -o <add|del|mod>:dn:attribute:value>
+                    String[] sp = args[++i].split(":");
+                    sp[0]=sp[0].toLowerCase();
+                    
+                    String dn  = sp[1];
+                    String attr= sp[2];
+                    String val = args[i].substring( sp[0].length()+sp[1].length()+sp[2].length()+3);
+                    
+                    printf(func,3,("operator:"+sp[0]+":\ndn:"+dn+":\nattr:"+attr+":\nval:"+val+":"));
+                    
+                    HashMap<String,String> m=attrList.get(dn);
+                    if ( m==null ) { m=new HashMap(); }
+                    int j = m.size()/2+1;
+                    //System.out.println("j:"+j+"  m"+(m.size()%2+1)+"  m1:"+(m.size()/2+1) );
+                    m.put("op"+j+"attr", attr+": "+ val);
+                    m.put("op"+j, sp[0]);
+                
+                    attrList.put(dn, m);
+                } 
                 else {                    
                     printf(func,2,"filter/objectlist for :"+args[i]+":");
                     if ( args[i].contains("=") ) {

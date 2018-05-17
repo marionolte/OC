@@ -148,7 +148,8 @@ public class Crypt extends Version {
                                     );
                           //System.out.println("crypt user sw:"+sw.toString()+":");
                           if ( sw.length() > 4 && ! sw.toString().endsWith("=") ) { sw.append("="); }
-            return "<"+user+">"+sw.toString()+"</"+user+">";
+            return "<"+user+" md5=\""+getMD5(sw.toString())+"\">"+sw.toString()+"</"+user+">";
+            //return "<"+user+">"+sw.toString()+"</"+user+">";
         }
         return txt;
     }
@@ -188,20 +189,43 @@ public class Crypt extends Version {
         return out;
     }
     private String getUnCryptedHost(String info) {
-        final String a = "<"+host+">"; final String e="</"+host+">";
+        final String a = "<"+host; final String e="</"+host+">";
         if ( info.startsWith(a) && info.endsWith(e) ) {
-           return ( cl == null )? hostch.getUnCrypted(info.substring(a.length(),info.length()-e.length())) 
-                                : hostcl.getUnCrypted(info.substring(a.length(),info.length()-e.length())); 
+                      String[] ab = info.split(">"); 
+           String f = info.substring(ab[0].length()+1,info.length()-e.length());
+           String md5 = getCryptedMD5(ab[0]);
+           if ( md5.isEmpty()  || ( ! md5.isEmpty() && md5.matches(getMD5(f)) )    )  {
+                return ( cl == null )? hostch.getUnCrypted(f) 
+                                     : hostcl.getUnCrypted(f);  
+           // return ( cl == null )? hostch.getUnCrypted(info.substring(a.length(),info.length()-e.length())) 
+           //                     : hostcl.getUnCrypted(info.substring(a.length(),info.length()-e.length())); 
+           }
         }
         return info;
     }
     private String getUnCryptedUser(String info) {
-        final String a = "<"+user+">"; final String e="</"+user+">";
+        final String a = "<"+user; final String e="</"+user+">";
         if ( info.startsWith(a) && info.endsWith(e) ) {
-           return ( cl == null )? userch.getUnCrypted(info.substring(a.length(),info.length()-e.length())) 
-                                : usercl.getUnCrypted(info.substring(a.length(),info.length()-e.length())); 
+           String[] ab = info.split(">"); 
+           String f = info.substring(ab[0].length()+1,info.length()-e.length());
+           String md5 = getCryptedMD5(ab[0]);
+           if ( md5.isEmpty()  || ( ! md5.isEmpty() && md5.matches(getMD5(f)) )    )  {
+                return ( cl == null )? userch.getUnCrypted(f) 
+                                     : usercl.getUnCrypted(f); 
+
+                //return ( cl == null )? userch.getUnCrypted(info.substring(a.length(),info.length()-e.length())) 
+                //                     : usercl.getUnCrypted(info.substring(a.length(),info.length()-e.length())); 
+           }
         }
         return info;
+    }
+    
+    synchronized private String getCryptedMD5(String info) {
+        String[] sp = info.split("\"");
+        for(int i=0; i< sp.length;i++) {
+            if ( sp[i].endsWith("md5=") && i+i < sp.length ) { return sp[++i]; }
+        }
+        return "";
     }
     
     private String getUnCryptedCust(String info) {

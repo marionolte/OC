@@ -88,14 +88,13 @@ public class LdapUserBlk extends RunnableT {
          if (b) { System.exit(0); }
      }
      
-     final private String OS = System.getProperty("os.name").toLowerCase();
      private String getLdapContextFactory(){
          // sun "com.sun.jndi.ldap.LdapCtxFactory"
          // ibm "com.ibm.jndi.LDAPCtxFactory";
          
          String s="com.sun.jndi.ldap.LdapCtxFactory";
          
-         if ( OS.indexOf("aix") > 0 ) {
+         if ( isAIX() ) {
              s="com.ibm.jndi.LDAPCtxFactory";
          }
          
@@ -106,7 +105,7 @@ public class LdapUserBlk extends RunnableT {
      private String getLdapNameingFactory() {
         //env.put("java.naming.factory.url.pkgs", "com.ibm.jndi"); 
         String s="com.sun.jndi";
-        if ( OS.indexOf("aix") > 0 ) {
+        if ( isAIX() ) {
             s="com.ibm.jndi";
         }
         return s;
