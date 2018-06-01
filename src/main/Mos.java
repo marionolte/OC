@@ -264,6 +264,9 @@ public class Mos extends Updater{
                                     //net.ldap.LdapSearch la = net.ldap.LdapSearch.getInstance(ar);
                                     //la.printResults( la.search(la.getBaseDN(), la.getFilter(), la.getAttrList()) );
                                     break;
+                case "ldapcopy":
+                                    net.ldap.LdapCopy lc = net.ldap.LdapCopy.getInstance(ar);
+                                    break;
                 default:
                     System.out.println("ERROR: "+foo+" not found");
                     this._exit=1;

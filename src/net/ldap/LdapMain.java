@@ -12,12 +12,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.naming.Context;
 import javax.naming.Name;
 import javax.naming.NamingException;
 import javax.naming.directory.Attributes;
 import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
+import net.tcp.Host;
 
 
 
@@ -188,14 +191,80 @@ abstract public class LdapMain extends Version{
     static              int pageSize = 10;
      
     static Properties conn = new Properties();
+    static HashMap<String,String> map = new  HashMap<String,String> ();
     static public void scanner(String[] args,final String use) {    
-        String func="scanner(Sting[] args,final String use)";
+        String func=name+"::scanner(Sting[] args,final String use)";
+        printf(func,3," usage |"+use+"|");
+        Pattern pa = Pattern.compile("\\]|\\[|<|>");
+        Matcher ma = pa.matcher(use);
+        int pos=0;
+        while(ma.find(pos)) {
+            String msg = use.substring(pos,ma.start());
+            printf(func,3," find |"+msg+"| pos:"+pos+" to:"+ma.start()+" "+msg.indexOf(" ") );
+            if ( msg.indexOf(" ") > 0 ) {
+                String v="true";
+                String[] sp = msg.split(" ");
+                printf(func,3," sp[0] |"+sp[0]+"|");
+                if ( sp.length>0 && sp[0].startsWith("-") ) {
+                    if ( sp.length > 1 ) { 
+                        v=use.substring(pos,ma.start()).substring(sp[0].length()+1); 
+                    }
+                    printf(func,2," save |"+sp[0]+"="+v+"|");
+                    map.put(sp[0], v);
+                }
+            } else {
+                printf(func,3," msg without spaces |"+msg+"|");
+                if ( msg.startsWith("-") ) {
+                    map.put(msg, "false");
+                }else if ( msg.equals("objectlist")) {
+                    map.put(msg, "");
+                }
+            } 
+            printf(func,3," new pos |"+ma.end()+"| of "+use.length());
+            pos=ma.end();
+        }
+        printf(func,3," end map |"+map+"|");
         if (args.length > 0) {
             for(int i=0; i<args.length; i++) {
                 printf(func,3," property:"+args[i]+":");
+                if ( args[i].startsWith("-") && ! args[i].equals("-d") ) { 
+                   if ( map.get(args[i]) != null ) {
+                        printf(func,2," map:"+args[i]+":");
+                        String p=args[i];
+                        String v="true";
+                        if ( args.length > (i+1) && ! args[i+1].startsWith("-") ) {
+                            v=args[++i];
+                        }
+                        printf(func,2," map:"+p+"="+v+":");
+                        map.put(p, v);
+                   } else {
+                       usage=true; log(use);
+                   }  
+                }
+            }
+            hostname=(map.get("-h")==null || map.get("-h").equals("hostname"))?"localhost":map.get("-h");
+              baseDN=(map.get("-b")==null || map.get("-b").equals("baseDN"))?getDefaultBaseDN():map.get("-b");
+              userdn=(map.get("-D") != null ) ?
+                         (map.get("-D").equals("adminDN") )?"cn=admin":map.get("-D")
+                      :
+                         (map.get("-a")==null || map.get("-a").equals("adminDN") )?"cn=admin":map.get("-a")
+                      ;
+              userpw=(map.get("-P")==null || map.get("-P") !=null && ! map.get("-P").equals("password") ) ? map.get("-P"):"";
+              protocol=( map.get("-ssl") != null && map.get("-ssl").equals("true") )?"ldaps":"ldap";
+                port= Integer.parseInt(
+                                        (  map.get("-p") !=null && ! map.get("-p").contains("[a-zA-Z]") )? 
+                                                 map.get("-p")
+                                                :
+                                                 ((protocol.equals("ldaps"))?"636":"389")
+                                       );
+               scope= (( map.get("-s") != null && ! map.get("-s").isEmpty() )? getScope(map.get("-s")):LdapScope.sub);
+               
+            printf(func,0,"map:"+map);
+            
+            for(int i=0; i<args.length; i++) {      
                 if      ( args[i].matches("-h")  && args.length>i+1 ) { hostname=args[++i]; printf(func,2," host:"+hostname+":"); }
-                else if ( args[i].matches("-b")  && args.length>i+1 ) {   baseDN=args[++i]; printf(func,2," baseDN:"+baseDN+":");}
-                else if ( args[i].matches("-a")  && args.length>i+1 ) {   userdn=args[++i]; printf(func,2," USER:"+userdn+":");}
+                else if ( args[i].matches("-b")  && args.length>i+1 ) {   baseDN=args[++i]; printf(func,2," baseDN:"+baseDN+":"); }
+                else if ( args[i].matches("-a")  && args.length>i+1 ) {   userdn=args[++i]; printf(func,2," USER:"+userdn+":");   }
                 else if ( args[i].matches("-D")  && args.length>i+1 ) {   userdn=args[++i]; printf(func,2," USER:"+userdn+":");}
                 else if ( args[i].matches("-P")  && args.length>i+1 ) {   userpw=args[++i]; printf(func,2," PASS:"+userpw+":"); }
                 else if ( args[i].matches("-p")  && args.length>i+1 ) {   port = Integer.parseInt(args[++i]); printf(func,2," port:"+port+":");}
@@ -233,6 +302,9 @@ abstract public class LdapMain extends Version{
                 
                     attrList.put(dn, m);
                 } 
+                else if ( args[i].startsWith("-") ){
+                    
+                }
                 else {                    
                     printf(func,2,"filter/objectlist for :"+args[i]+":");
                     if ( args[i].contains("=") ) {
@@ -245,6 +317,23 @@ abstract public class LdapMain extends Version{
         } else {
             usage=true; 
         }
+    }
+    
+    static String getDefaultBaseDN() {
+         StringBuilder sw = new StringBuilder();
+         String ho=Host.getDomainname();
+         //System.out.println("domain:"+ho);
+         String[] sp = ho.split("\\.");
+         for ( String a : sp ) {
+            if (! a.isEmpty() ) { 
+                //System.out.println("sw length:"+sw.length());
+                if ( sw.length() >0 ) { sw.append(","); } 
+                sw.append("dc=").append(a);
+            }
+         }
+         if ( sw.length()==0 ) { sw.append("dc=example,dc=com"); }
+         //System.out.println("basedn:"+sw.toString()+":");
+         return sw.toString();
     }
     
     static {

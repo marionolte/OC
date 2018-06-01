@@ -13,9 +13,9 @@ import static io.lib.IOLib.execReadToString;
  */
 public class Host extends TcpHost{
     
-    public static String getHostname() { 
+   /* public static String getHostname() { 
        try { return execReadToString("hostname"); } catch(java.io.IOException io){ return "localhost"; }
-    }
+    }*/
     
     public static String getSerial() { 
        try { return execReadToString("hostname"); } catch(java.io.IOException io){ return "localhost"; }
@@ -35,4 +35,6 @@ public class Host extends TcpHost{
           System.out.println("Hostname:"+getHostname());
           System.out.println("MacMain :"+getMainMac()+":");
     }
+
+   
 }

@@ -137,10 +137,25 @@ public abstract class TcpHost extends MainTask{
     }
     
     
-    public static String getHostname() { 
-       try { return execReadToString("hostname"); } catch(java.io.IOException io){ return "localhost"; }
+    public final static String getHostname() { 
+       String hostname = "localhost"; 
+       try { hostname = InetAddress.getLocalHost().getCanonicalHostName(); return hostname; } catch(Exception e) {}
+       try { return execReadToString("hostname"); } catch(java.io.IOException io){ return hostname; }
     }
     
+    public final static String getDomainname() { 
+       String hostname = getHostname();
+       // System.out.println("hostname:"+hostname+" index:"+hostname.indexOf('.') );
+       if ( hostname.indexOf(".") > 2 ) {
+            String[] sp = hostname.split("\\.");
+            return hostname.substring(sp[0].length()+1);
+       }
+       
+       return "";
+    }
     
+    public final static int getMinPort() { return 1; }
+
+    public final static int getMaxPort() { return 64*1024-1; }
     
 }
