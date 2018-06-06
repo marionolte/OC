@@ -6,6 +6,7 @@ package net.ldap;
 
 import general.Version;
 import io.crypt.Crypt;
+import io.file.ReadFile;
 import io.file.SecFile;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
@@ -42,7 +43,7 @@ abstract public class LdapMain extends Version{
     static public String name;
     
     static public void initialize( LdapMain ob, String protocol, String hostname, int port, String userDN, String userPWD, String filter , String auth ) throws NamingException{
-    
+        final String func=name+"::initialize( LdapMain ob, String protocol, String hostname, int port, String userDN, String userPWD, String filter , String auth )";
         ob.updateEnv(Context.INITIAL_CONTEXT_FACTORY, getInitContextFactory() );
             
         if ( filter != null ) ob.updateEnv("java.naming.ldap.attributes.binary", filter);
@@ -58,10 +59,12 @@ abstract public class LdapMain extends Version{
         String po = (port >0 && port < 65536 )? ""+port : ( pr.matches("ldap")  )? "389":"636";
         
         ob.updateEnv(Context.PROVIDER_URL,  pr+"://" + ho + ":" + po );
-        
+     
+        printf(func,4,"initialize complete");
     }
     
     static public void initialize( LdapMain ob){
+        final String func=name+";:initialize( LdapMain ob){";
         ob.updateEnv(Context.INITIAL_CONTEXT_FACTORY, getInitContextFactory() );
             
         if ( filter != null ) ob.updateEnv("java.naming.ldap.attributes.binary", filter);
@@ -77,6 +80,7 @@ abstract public class LdapMain extends Version{
         String po = (port >0 && port < 65536 )? ""+port : ( pr.matches("ldap")  )? "389":"636";
         
         ob.updateEnv(Context.PROVIDER_URL,  pr+"://" + ho + ":" + po );
+        printf(func,4,"initialize complete");
     }
     
     static public void setInitContextFactory(String con) { LdapMain.initial_context_factory=con;}
@@ -110,7 +114,10 @@ abstract public class LdapMain extends Version{
     }
     
     static public void init() throws NamingException {
-        ctx=new InitialLdapContext(env, null); 
+        final String func=name+"::init()";
+        printf(func,4,"init start");
+        ctx=new InitialLdapContext(env, null);
+        printf(func,4,"init complete "+ctx);
     }
     
     static public boolean needBind( String[] list ) {
@@ -211,6 +218,7 @@ abstract public class LdapMain extends Version{
                     }
                     printf(func,2," save |"+sp[0]+"="+v+"|");
                     map.put(sp[0], v);
+                    map.put("_default_"+sp[0], v);
                 }
             } else {
                 printf(func,3," msg without spaces |"+msg+"|");
@@ -241,27 +249,44 @@ abstract public class LdapMain extends Version{
                        usage=true; log(use);
                    }  
                 }
+                else if ( ! args[i].startsWith("-") ){
+                   printf(func,2," add object List:"+args[i]+":"); 
+                   objList.add(args[i]);  
+                }
             }
-            hostname=(map.get("-h")==null || map.get("-h").equals("hostname"))?"localhost":map.get("-h");
-              baseDN=(map.get("-b")==null || map.get("-b").equals("baseDN"))?getDefaultBaseDN():map.get("-b");
+            hostname=(map.get("-h")==null || map.get("-h").equals(map.get("_default_-h")))?"localhost":map.get("-h");
+              baseDN=(map.get("-b")==null || map.get("-b").equals(map.get("_default_-b")))?getDefaultBaseDN():map.get("-b");
               userdn=(map.get("-D") != null ) ?
-                         (map.get("-D").equals("adminDN") )?"cn=admin":map.get("-D")
+                         (map.get("-D").equals(map.get("_default_-D")) )?"cn=admin":map.get("-D")
                       :
-                         (map.get("-a")==null || map.get("-a").equals("adminDN") )?"cn=admin":map.get("-a")
+                         (map.get("-a")==null || map.get("-a").equals(map.get("_default_-a")) )?"cn=admin":map.get("-a")
                       ;
               userpw=(map.get("-P")==null || map.get("-P") !=null && ! map.get("-P").equals("password") ) ? map.get("-P"):"";
               protocol=( map.get("-ssl") != null && map.get("-ssl").equals("true") )?"ldaps":"ldap";
-                port= Integer.parseInt(
-                                        (  map.get("-p") !=null && ! map.get("-p").contains("[a-zA-Z]") )? 
-                                                 map.get("-p")
-                                                :
-                                                 ((protocol.equals("ldaps"))?"636":"389")
-                                       );
-               scope= (( map.get("-s") != null && ! map.get("-s").isEmpty() )? getScope(map.get("-s")):LdapScope.sub);
+              try {
+                            port= Integer.parseInt( map.get("-p") );
+               }catch(Exception e) {      
+                            port=((protocol.equals("ldaps"))?636:389);
+              }        
+              scope= (( map.get("-s") != null && ! map.get("-s").isEmpty() )? getScope(map.get("-s")):LdapScope.sub);
                
-            printf(func,0,"map:"+map);
+              if ( map.get("-j") != null && ! map.get("-j").isEmpty() &&  ! map.get("-j").equals("_default_-j") &&  (new ReadFile(map.get("-j")).isReadableFile())   ) {
+                    userpw=(String )getLinesFromFile(map.get("-j")).get(0);
+              }
+               
+              if ( map.get("-of") != null && ! map.get("-of").isEmpty()  &&  (new ReadFile(map.get("-of")).isReadableFile())   ) {
+                    operationfile=map.get("-f");
+              }
+              
+              if ( map.get("-f") != null && ! map.get("-f").equals(map.get("_default_-f") )   ) {
+                    filter=map.get("-f");
+              }
+
+                                 
+               
+            printf(func,2,"map:"+map);
             
-            for(int i=0; i<args.length; i++) {      
+            /*for(int i=0; i<args.length; i++) {      
                 if      ( args[i].matches("-h")  && args.length>i+1 ) { hostname=args[++i]; printf(func,2," host:"+hostname+":"); }
                 else if ( args[i].matches("-b")  && args.length>i+1 ) {   baseDN=args[++i]; printf(func,2," baseDN:"+baseDN+":"); }
                 else if ( args[i].matches("-a")  && args.length>i+1 ) {   userdn=args[++i]; printf(func,2," USER:"+userdn+":");   }
@@ -274,6 +299,8 @@ abstract public class LdapMain extends Version{
                 else if ( args[i].matches("-f")  && args.length>i+1 ) {   operationfile=args[++i];  printf(func,2," opFile:"+operationfile+":");}
                 else if ( args[i].matches("-help") || args[i].matches("--help") ) { usage=true; log(use); }
                 else if ( args[i].matches("-d")                                 ) { debug++; }
+                
+                if      ( args[i].matches("-d") ) { debug++; }
                 else if ( args[i].matches("-conn") && args.length>i+1 ){ SecFile fa=new SecFile(args[++i]);  
                                                                          
                                                                          try { conn.load( new ByteArrayInputStream(fa.readOut().toString().getBytes("UTF-8")) ); } 
@@ -313,11 +340,32 @@ abstract public class LdapMain extends Version{
                         objList.add(args[i]);
                     }
                 }
-            }
+            }*/
         } else {
             usage=true; 
         }
     }
+    
+    static String getProtocol() { protocol=(map.get("-ssl")!= null && map.get("-ssl").equals("true"))?"ldaps":"ldap"; return protocol; }
+    static String getHostname() { return (map.get("-h").equals("hostname"))?hostname:map.get("-h"); }
+    static int    getPort() {  
+    
+        String p=map.get("-p"); 
+        
+        try {
+            int i =Integer.parseInt(p);
+            if ( i > Host.getMinPort() && i <= Host.getMaxPort()) { return i;}
+        } catch(Exception e) {}
+        return (getProtocol().equals("ldaps"))?636:389;
+    }
+    static String getUserDN()   { return userdn; }
+    static String getUserPass() { return userpw; }
+    static String getAuth()     { return auth; }
+    static String getFilter()   { return filter; }
+    
+    static ArrayList getAttrList() { return objList; }
+    static String    getBaseDN()   { return baseDN; }
+    
     
     static String getDefaultBaseDN() {
          StringBuilder sw = new StringBuilder();

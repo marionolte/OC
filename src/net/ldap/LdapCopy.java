@@ -5,6 +5,7 @@
  */
 package net.ldap;
 
+import io.file.ReadFile;
 import io.file.SecFile;
 import net.tcp.Host;
 
@@ -21,6 +22,7 @@ public class LdapCopy extends LdapMain{
     private final String modbaseDN;
     private final String moduserdn;
     private final String moduserpw;
+    private final String template;
     
     private LdapCopy() {
         final String func="LdapCopy::LdapCopy()";
@@ -56,28 +58,36 @@ public class LdapCopy extends LdapMain{
         System.out.println("b :"+map.get("-b" ));
         System.out.println("bc:"+map.get("-bc" ));
         System.out.println("getDefaultBaseDN:"+getDefaultBaseDN());
-        this.baseDN=(map.get("-b" ).equals("baseDN")    )?getDefaultBaseDN():map.get("-b" );
-        this.modbaseDN=(map.get("-bc").equals("copyBaseDN"))?getDefaultBaseDN():map.get("-bc");        
+        this.baseDN=(map.get("-b" ).equals(map.get("_default_-b"))    )?getDefaultBaseDN():map.get("-b" );
+        this.modbaseDN=(map.get("-bc").equals(map.get("_default_-bc")))?getDefaultBaseDN():map.get("-bc");        
         printf(func,0,"baseDN:"+baseDN+":  modbaseDN:"+modbaseDN+":");
         
         
-           this.userdn=(map.get("-D" ).equals("adminDN"))?map.get("-D" ):"cn=admin";
-        this.moduserdn=(map.get("-modD" ).equals("copyBaseDN"))?map.get("-modD" ):"cn=admin";
+           this.userdn=(map.get("-D" ).equals("adminDN"))?"cn=admin":map.get("-D" );
+        this.moduserdn=(map.get("-modD" ).equals(map.get("_default_-modD" )))?"cn=admin":map.get("-modD" );
         printf(func,0,"userdn:"+userdn+":  moduserdn:"+moduserdn+":");
         
-        filter=(map.get("-f" ).equals("filter"))?map.get("-f" ):"objectclass=*";
+        filter=(! map.get("-f" ).equals(map.get("_default_-f")))?map.get("-f" ):"objectclass=*";
         
         
-           this.userpw=( map.get("-j"    ).equals("passwordfile")  )?  (new SecFile(  map.get("-j"   ) ).readOut().toString() ):"";
-        this.moduserpw=( map.get("-modj" ).equals("passwordfile")  )?  (new SecFile(  map.get("-modj") ).readOut().toString() ):"";
+           this.userpw=( ! map.get("-j"    ).equals(map.get("_default_-j"))    )?  (new SecFile(  map.get("-j"   ) ).readOut().toString() ):"";
+        this.moduserpw=( ! map.get("-modj" ).equals(map.get("_default_-modj")) )?  (new SecFile(  map.get("-modj") ).readOut().toString() ):"";
         auth="simple";
+        
+        this.template= ( ! map.get("-t").equals(map.get("_default_-t")))? ( new ReadFile( map.get("-t") ).readOut().toString() ):"";
         
         printf(func,0,"local:"+protocol+"://"+host+":"+port+"?"+userdn+"&"+userpw+"&"+baseDN+"&"+filter+"&\n"+
                       "remote:"+modprotocol+"://"+modhost+":"+modport+"?"+moduserdn+"&"+moduserpw+"&"+modbaseDN+"&\n"+
-                      "filter:"+filter+":   objectlist:..");
+                      "filter:"+filter+":   objectlist:"+getAttrList());
+    }
+    
+    
+    public void copy() {
+        final String func=getFunc("copy()");
+        printf(func,0,"copy dn's");
     }
 
-    static private String myusage="\nusage():\noption: [-h hostname] [-p port] [-ssl] [-D adminDN] [-j passwordfile] [-modh modifyHost] [-modp port] [-modD adminDN] [-modj passwordfile] [-modssl] [-b baseDN] [-bc copyBaseDN] [-f filter] [objectlist]\n";
+    static private String myusage="\nusage():\noption: [-h hostname] [-p port] [-ssl] [-D adminDN] [-j passwordfile] [-modh modifyHost] [-modp port] [-modD adminDN] [-modj passwordfile] [-modssl] [-b baseDN] [-bc copyBaseDN] [-f filter] [-t copytemplate] [objectlist]\n";
     
     public static LdapCopy getInstance(String[] ar) {
         scanner(ar,myusage);

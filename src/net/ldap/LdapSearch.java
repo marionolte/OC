@@ -29,6 +29,7 @@ import static net.ldap.LdapMain.userpw;
  */
 public class LdapSearch  extends LdapMain{
     static public LdapSearch getInstance( String protocol, String hostname, int port, String userDN, String userPWD, String filter , String auth ) throws NamingException {
+        //printf("getIN",0,"create instance");
         LdapSearch ls = new LdapSearch();
         printf("getInstance()",3,"initalize "+name+" with :"+protocol+":"+userDN+":"+userPWD+"//"+hostname+":"+port);
         
@@ -40,7 +41,7 @@ public class LdapSearch  extends LdapMain{
     }
     
     static public LdapSearch getInstance() throws NamingException {
-        return getInstance(protocol,hostname,port,userdn,userpw,filter,auth);
+        return getInstance(getProtocol(),hostname,port,userdn,userpw,filter,auth);
     }
     static public LdapSearch getInstance(String[] ar) throws NamingException {
         protocol="ldap";
@@ -51,7 +52,8 @@ public class LdapSearch  extends LdapMain{
         filter="objectclass=*";
         auth="simple";
         scanner(ar,myusage);
-        return getInstance();
+        //printf("aaa",0,"scanner complete"+getProtocol());
+        return getInstance(getProtocol(),getHostname(),getPort(),getUserDN(),getUserPass(),getFilter(),getAuth());
     }
     
     private LdapSearch() {  name="LdapSearch"; }
@@ -60,10 +62,15 @@ public class LdapSearch  extends LdapMain{
     
     private byte[] cookie = null;
     
+    public NamingEnumeration search() throws NamingException, IOException { 
+        final String func=getFunc("search()");
+        printf(func,2,"like to search with:"+getFilter()+": to basedn :"+getBaseDN()+": to get attributes:"+getAttrList());
+        return search(getBaseDN(),getFilter(),getAttrList());
+    }
     public NamingEnumeration search(String baseDN, String filter, ArrayList attr) throws NamingException, IOException {
         if ( getLdapContext() == null ) 
             throw new LdapException("Context not initialized");
-        final String func="search(String baseDN, String filter, ArrayList attr)";
+        final String func=getFunc("search(String baseDN, String filter, ArrayList attr)");
         
         getLdapContext().setRequestControls(new Control[] {new PagedResultsControl( getSearchSizelimit(), Control.CRITICAL) }); 
         
@@ -85,8 +92,10 @@ public class LdapSearch  extends LdapMain{
         if ( getMyScope().equals(LdapScope.base))
            ctls.setSearchScope(SearchControls.OBJECT_SCOPE);
            
-        printf(func,2,"run search against :"+baseDN);
-        NamingEnumeration results = getLdapContext().search( baseDN, getEnv("java.naming.ldap.attributes.binary") , ctls);
+        printf(func,2,"run search against :"+baseDN+" filter:"+getFilter()+":");
+        //NamingEnumeration results = getLdapContext().search( baseDN, getEnv("java.naming.ldap.attributes.binary") , ctls);
+        NamingEnumeration results = getLdapContext().search(getBaseDN(), getFilter(), ctls);
+        printf(func,2,"search returns elements:"+results.hasMore());
         
         
         
@@ -103,14 +112,16 @@ public class LdapSearch  extends LdapMain{
         //setting the cookie on the context for the next page search 
         getLdapContext().setRequestControls( new Control[] { new PagedResultsControl( getSearchSizelimit(), cookie, Control.CRITICAL) });
                 
-        
+        printf(func,3,"return results:"+results);
         return results;
         
     }
     
     
     public boolean printResults(NamingEnumeration namEnum ) throws NamingException {
+        final String func=getFunc("printResults(NamingEnumeration namEnum)");
         boolean b=false;
+        printf (func,3," print results:"+(namEnum != null && namEnum.hasMore())+" nameEnum:"+namEnum);
         while (namEnum != null && namEnum.hasMore()) {
                SearchResult entry = (SearchResult) namEnum.next();
                System.out.println("dn: "+entry.getNameInNamespace() ); b=true;
@@ -134,9 +145,6 @@ public class LdapSearch  extends LdapMain{
         return b;
     }
     
-    public String    getBaseDN() { return baseDN; }
-    public String    getFilter() { return filter; }
-    public ArrayList getAttrList() { return objList; }
     
     public static void main(String[] args) throws Exception{
         scanner(args,myusage);
