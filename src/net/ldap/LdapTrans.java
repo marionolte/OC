@@ -52,7 +52,8 @@ public class LdapTrans extends LdapMain {
                                           conn.getProperty(from+"USER"), 
                                           conn.getProperty(from+"PASS"),
                                           "objectclass=*", 
-                                          "simple"
+                                          "simple",
+                                          conn.getProperty( from+"BASEDN")
                                         );
          search.getScope("sub");
          
@@ -62,7 +63,8 @@ public class LdapTrans extends LdapMain {
                                           conn.getProperty( to+"USER"), 
                                           conn.getProperty( to+"PASS"),
                                           "objectclass=*", 
-                                          "simple"
+                                          "simple",
+                                          conn.getProperty( to+"BASEDN")
                                         );
          modsearch = LdapSearch.getInstance(
                                           conn.getProperty( to+"PROTO"), 
@@ -71,7 +73,8 @@ public class LdapTrans extends LdapMain {
                                           conn.getProperty( to+"USER"), 
                                           conn.getProperty( to+"PASS"),
                                           "objectclass=*", 
-                                          "simple"
+                                          "simple",
+                                          conn.getProperty( to+"BASEDN")
                                         );
          modsearch.getScope("sub");
          

@@ -1,8 +1,6 @@
 package net.ldap;
 
-import io.crypt.Crypt;
 import io.file.SecFile;
-import io.file.WriteFile;
 import io.thread.RunnableT;
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -25,6 +23,7 @@ import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
 import javax.naming.ldap.PagedResultsControl;
 import javax.naming.ldap.PagedResultsResponseControl;
+import static net.ldap.LdapMain.getDefaultBaseDN;
 
 
 
@@ -34,7 +33,7 @@ import javax.naming.ldap.PagedResultsResponseControl;
  * @version  1.0
  * 
  */
-public class LdapUserBlk extends RunnableT {
+public class LdapUserBlk extends RunnableT{
      private final String method;
      private final String attr;
      private final String val;
@@ -119,13 +118,13 @@ public class LdapUserBlk extends RunnableT {
      static int    portMod = -1;
      
      //credentials used for authentication
-     static String userDN = "cn=orcladmin";
+     static String userDN = "cn=admin";
      static String userPWD = "";
      static String userModDN = "";
      static String userModPWD = "";
      
           //generic search parameters 
-     static String baseDN = "cn=Users,dc=de,dc=oracle,dc=com";
+     static String baseDN = "cn=Users,"+getDefaultBaseDN();
      static String filter = "objectclass=*";
      static boolean obPWD = false;
      
@@ -673,11 +672,11 @@ public class LdapUserBlk extends RunnableT {
         return a;
     }
     
-    static private Crypt crypt=new Crypt();
+    //static private Crypt crypt=new Crypt();
     
     static String getPW(String fname) {
         SecFile fa = new SecFile(fname);
-        if ( fa .isReadableFile() ) {
+        if ( fa.isReadableFile() ) {
              return fa.readOut().toString();
         }
         

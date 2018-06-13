@@ -28,10 +28,18 @@ import static net.ldap.LdapMain.userpw;
  * @author SuMario
  */
 public class LdapSearch  extends LdapMain{
-    static public LdapSearch getInstance( String protocol, String hostname, int port, String userDN, String userPWD, String filter , String auth ) throws NamingException {
+    static public LdapSearch getInstance( String protocol, String hostname, int port, String userDN, String userPWD, String filter , String auth , String baseDN) throws NamingException {
         //printf("getIN",0,"create instance");
         LdapSearch ls = new LdapSearch();
-        printf("getInstance()",3,"initalize "+name+" with :"+protocol+":"+userDN+":"+userPWD+"//"+hostname+":"+port);
+                   ls.protocol=protocol;
+                   ls.port=port;
+                   ls.hostname=hostname;
+                   ls.userdn=userDN;
+                   ls.userpw=userPWD;
+                   ls.filter=filter;
+                   ls.auth=auth;
+                   ls.baseDN=baseDN;
+        printf("getInstance()",0,"initalize "+name+" with :"+protocol+":"+userDN+":"+userPWD+"//"+hostname+":"+port+"/"+baseDN+"?"+filter);
         
         ls.initialize(ls,  protocol,  hostname,  port,  userDN,  userPWD,  filter ,  auth);
         
@@ -41,7 +49,7 @@ public class LdapSearch  extends LdapMain{
     }
     
     static public LdapSearch getInstance() throws NamingException {
-        return getInstance(getProtocol(),hostname,port,userdn,userpw,filter,auth);
+        return getInstance(getProtocol(),hostname,port,userdn,userpw,filter,auth,getBaseDN());
     }
     static public LdapSearch getInstance(String[] ar) throws NamingException {
         protocol="ldap";
@@ -51,14 +59,18 @@ public class LdapSearch  extends LdapMain{
         userpw="";
         filter="objectclass=*";
         auth="simple";
+        baseDN=getDefaultBaseDN();
         scanner(ar,myusage);
-        //printf("aaa",0,"scanner complete"+getProtocol());
-        return getInstance(getProtocol(),getHostname(),getPort(),getUserDN(),getUserPass(),getFilter(),getAuth());
+        //printf("aaa",0,"user "+getUserDN()+" local:"+userpw+" pw:"+getUserPass()+":  map:"+map.get("-w"));
+        //printf("aaa",0,"port "+getPort()+"   local:"+port+" port:"+getPort()+":  map:"+map.get("-p"));
+        //printf("aaa",0,"filter:"+getFilter()+":");
+        
+        return getInstance(getProtocol(),getHostname(),getPort(),getUserDN(),getUserPass(),getFilter(),getAuth(),getBaseDN());
     }
     
     private LdapSearch() {  name="LdapSearch"; }
     
-    static private String myusage="\nusage():\noption: [-h hostname] [-p port] [-D adminDN ] [-j passwordfile] [-b baseDN ] [-f filter]  <attribut list>\n";
+    static private String myusage="\nusage():\noption: [-h hostname] [-p port] [-D adminDN ] [-j passwordfile] [-a <simple|>] [-b baseDN ] [-f filter]  <attribut list>\n";
     
     private byte[] cookie = null;
     
@@ -76,6 +88,8 @@ public class LdapSearch  extends LdapMain{
         
         SearchControls ctls = new SearchControls();
         
+        
+        printf(func,3," attr list:"+attr.size());
         if (attr.size()>0) {
             String[] attrIDs = new String[attr.size()]; // { "sn", "telephonenumber", "golfhandicap", "mail" };
             for(int i=0; i<attr.size();i++) { attrIDs[i] = (String) attr.get(i); }
@@ -127,12 +141,16 @@ public class LdapSearch  extends LdapMain{
                System.out.println("dn: "+entry.getNameInNamespace() ); b=true;
                
                Attributes attr = entry.getAttributes();
+               printf(func,3,"Attributes:"+attr);
                NamingEnumeration en = attr.getAll();
                while(en!= null && en.hasMore() ) {
                    Attribute at = (Attribute) en.next();
+                   printf(func,3,"Attribute:"+at);
                    String sp[]  = at.toString().substring(at.getID().length()+1).split(",");
                    for (int i=0; i<sp.length; i++) {
-                      System.out.println(at.getID()+":"+sp[i]);
+                      Object ob=at.get();
+                      String v= ( ob instanceof byte[] )? new String((byte[]) ob ):ob.toString();
+                      System.out.println(at.getID()+":"+v);
                    }
                }
                System.out.println("");
@@ -145,6 +163,28 @@ public class LdapSearch  extends LdapMain{
         return b;
     }
     
+    /*private String encryptLdapPassword(String algorithm, String _password) {
+        String sEncrypted =_password;
+        if ((_password != null) && (_password.length() > 0)) {
+            
+            boolean bMD5 = algorithm.equalsIgnoreCase("MD5");
+            boolean bSHA = algorithm.equalsIgnoreCase("SHA") || algorithm.equalsIgnoreCase("SHA1") || algorithm.equalsIgnoreCase("SHA-1");
+            if (bSHA || bMD5) {
+                String sAlgorithm = "MD5";
+                if (bSHA) {
+                    sAlgorithm = "SHA";
+                }
+                try {
+                    MessageDigest md = MessageDigest.getInstance(sAlgorithm); 
+                    md.update(_password.getBytes("UTF-8"));
+                    sEncrypted = "{" + sAlgorithm + "}" + (new BASE64Encoder()).encode(md.digest());
+                } catch (Exception e) {
+                    sEncrypted = null;
+                }
+            }
+        }
+        return sEncrypted;
+    }*/
     
     public static void main(String[] args) throws Exception{
         scanner(args,myusage);

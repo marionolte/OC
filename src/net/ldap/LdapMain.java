@@ -77,8 +77,9 @@ abstract public class LdapMain extends Version{
         
         String pr = (protocol!=null && protocol.toLowerCase().matches("ldaps"))? "ldaps":"ldap";
         String ho = ( ( hostname!=null )? hostname:"localhost" );
-        String po = (port >0 && port < 65536 )? ""+port : ( pr.matches("ldap")  )? "389":"636";
-        
+        printf(func,0,"port:"+port);
+        String po = (port >Host.getMinPort() && port < Host.getMaxPort() )? ""+port : ( pr.matches("ldap")  )? "389":"636";
+        printf(func,0,"provider url =>"+pr+"://" + ho + ":" + po);
         ob.updateEnv(Context.PROVIDER_URL,  pr+"://" + ho + ":" + po );
         printf(func,4,"initialize complete");
     }
@@ -227,7 +228,8 @@ abstract public class LdapMain extends Version{
                 }else if ( msg.equals("objectlist")) {
                     map.put(msg, "");
                 }
-            } 
+            }
+            map.put("-w", "password"); map.put("_default_-w", "password");
             printf(func,3," new pos |"+ma.end()+"| of "+use.length());
             pos=ma.end();
         }
@@ -235,24 +237,26 @@ abstract public class LdapMain extends Version{
         if (args.length > 0) {
             for(int i=0; i<args.length; i++) {
                 printf(func,3," property:"+args[i]+":");
-                if ( args[i].startsWith("-") && ! args[i].equals("-d") ) { 
-                   if ( map.get(args[i]) != null ) {
-                        printf(func,2," map:"+args[i]+":");
-                        String p=args[i];
-                        String v="true";
-                        if ( args.length > (i+1) && ! args[i+1].startsWith("-") ) {
-                            v=args[++i];
-                        }
-                        printf(func,2," map:"+p+"="+v+":");
-                        map.put(p, v);
-                   } else {
-                       usage=true; log(use);
-                   }  
-                }
-                else if ( ! args[i].startsWith("-") ){
-                   printf(func,2," add object List:"+args[i]+":"); 
-                   objList.add(args[i]);  
-                }
+                if ( ! args[i].isEmpty() ) {
+                    if ( args[i].startsWith("-") && ! args[i].equals("-d") ) { 
+                       if ( map.get(args[i]) != null ) {
+                            printf(func,2," map:"+args[i]+":");
+                            String p=args[i];
+                            String v="true";
+                            if ( args.length > (i+1) && ! args[i+1].startsWith("-") ) {
+                                v=args[++i];
+                            }
+                            printf(func,2," map:"+p+"="+v+":");
+                            map.put(p, v);
+                       } else {
+                           usage=true; log(use);
+                       }  
+                    }
+                    else if ( ! args[i].startsWith("-") ){
+                       printf(func,2," add object List:"+args[i]+":"); 
+                       objList.add(args[i]);  
+                    }
+                }   
             }
             hostname=(map.get("-h")==null || map.get("-h").equals(map.get("_default_-h")))?"localhost":map.get("-h");
               baseDN=(map.get("-b")==null || map.get("-b").equals(map.get("_default_-b")))?getDefaultBaseDN():map.get("-b");
@@ -265,14 +269,16 @@ abstract public class LdapMain extends Version{
               protocol=( map.get("-ssl") != null && map.get("-ssl").equals("true") )?"ldaps":"ldap";
               try {
                             port= Integer.parseInt( map.get("-p") );
-               }catch(Exception e) {      
+               }catch(Exception e) {     
+                      printf(func,0,"exception "+e.getMessage());
                             port=((protocol.equals("ldaps"))?636:389);
-              }        
+              }                 
               scope= (( map.get("-s") != null && ! map.get("-s").isEmpty() )? getScope(map.get("-s")):LdapScope.sub);
                
               if ( map.get("-j") != null && ! map.get("-j").isEmpty() &&  ! map.get("-j").equals("_default_-j") &&  (new ReadFile(map.get("-j")).isReadableFile())   ) {
                     userpw=(String )getLinesFromFile(map.get("-j")).get(0);
               }
+              if ( map.get("-w") != null && ! map.get("-p").equals("_default-p") ) { userpw=map.get("-w"); }
                
               if ( map.get("-of") != null && ! map.get("-of").isEmpty()  &&  (new ReadFile(map.get("-of")).isReadableFile())   ) {
                     operationfile=map.get("-f");

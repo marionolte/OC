@@ -34,18 +34,29 @@ import javax.naming.ldap.PagedResultsControl;
 public class LdapModify extends LdapMain {
  
     
-    public static LdapModify getInstance( String protocol, String hostname, int port, String userDN, String userPWD, String filter , String auth ) throws NamingException {
+    public static LdapModify getInstance( String protocol, String hostname, int port, String userDN, String userPWD, String filter , String auth , String basedn ) throws NamingException {
         LdapModify lm = new LdapModify();
-                  lm.initialize(lm,  protocol,  hostname,  port,  userDN,  userPWD,  filter ,  auth);
-                  lm.init();
+                   lm.protocol=protocol;
+                   lm.hostname=hostname;
+                   lm.port=port;
+                   lm.userdn=userDN;
+                   lm.userpw=userPWD;
+                   lm.filter=filter;
+                   lm.auth=auth;
+                   lm.baseDN=baseDN;
+                   lm.initialize(lm,  protocol,  hostname,  port,  userDN,  userPWD,  filter ,  auth);
+        
+                   lm.init();
         return lm;
+        //return getInstance(new String[] { (getProtocol().equals("ldaps"))?"-ssl":"","-h",hostname,"-p",""+port,"-D",userdn,"-w",userpw,"-f",filter,auth,"-b",basedn});
     }
     
     public static LdapModify getInstance() throws NamingException{
-        LdapModify lm = new LdapModify();
+        /*LdapModify lm = new LdapModify();
                    lm.initialize(lm);
                    lm.init();
-        return lm;
+        return lm;*/
+        return getInstance(new String[]{});
     }
     static public LdapModify getInstance(String[] ar) throws NamingException {
         protocol="ldap";
@@ -55,8 +66,9 @@ public class LdapModify extends LdapMain {
         userpw="";
         filter="objectclass=*";
         auth="simple";
+        baseDN=getDefaultBaseDN();
         scanner(ar,myusage);
-        return getInstance();
+        return getInstance(protocol,hostname,port,userdn,userpw,filter,auth,baseDN);
     }
     
     private LdapModify() {
@@ -246,7 +258,7 @@ public class LdapModify extends LdapMain {
         
         if ( ! usage ) { 
             // LdapModify ls = getInstance(); //getInstance(protocol,hostname,port,userdn,userpw,filter,auth);
-            LdapModify ls = getInstance(protocol,hostname,port,userdn,userpw,filter,auth);
+            LdapModify ls = getInstance(protocol,hostname,port,userdn,userpw,filter,auth,baseDN);
 
             if ( ls == null ) {
                 System.out.println("ERROR: doesn't create an LdapModify object");
