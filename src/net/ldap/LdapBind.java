@@ -4,6 +4,7 @@
  */
 package net.ldap;
 
+import net.ldap.main.LdapMain;
 import javax.naming.NamingException;
 
 /**
@@ -53,7 +54,7 @@ public class LdapBind extends LdapMain{
         try {
           err=null;
           initialize(this);
-          printf(func,3," init to :"+env);
+          printf(func,3," init to :"+getEnv());
           init();          
           b=true;  
         } catch(Exception e) {

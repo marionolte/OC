@@ -3,8 +3,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package net.ldap;
+package net.ldap.main;
 
+import net.ldap.main.EnumProdState;
+import net.ldap.main.LdapException;
 import java.io.IOException;
 import java.util.ArrayList;
 import javax.naming.NamingEnumeration;
@@ -14,10 +16,12 @@ import javax.naming.directory.SearchResult;
 import javax.naming.ldap.Control;
 import javax.naming.ldap.LdapContext;
 import javax.naming.ldap.PagedResultsControl;
-import static net.ldap.LdapMain.getLdapContext;
-import static net.ldap.LdapMain.getSearchSizelimit;
-import static net.ldap.LdapMain.getSearchTimeout;
-import static net.ldap.LdapMain.log;
+import net.ldap.LdapModify;
+import net.ldap.LdapSearch;
+import static net.ldap.main.LdapMain.getLdapContext;
+import static net.ldap.main.LdapMain.getSearchSizelimit;
+import static net.ldap.main.LdapMain.getSearchTimeout;
+import static net.ldap.main.LdapMain.log;
 
 /**
  *

@@ -4,6 +4,9 @@
  */
 package net.ldap;
 
+import net.ldap.main.LdapMain;
+import net.ldap.main.LdapException;
+import net.ldap.main.LdapScope;
 import static general.Version.printf;
 import io.file.ReadFile;
 import java.io.IOException;
@@ -164,21 +167,21 @@ public class LdapModify extends LdapMain {
     LdapContext ctx=null; 
     synchronized private SearchResult getDN(String dn) throws NamingException, IOException {
               String ldapURL = protocol+"://" + hostname + ":" + port;
-              env.put(Context.INITIAL_CONTEXT_FACTORY, getLdapContextFactory() );
-              env.put(Context.URL_PKG_PREFIXES,        getLdapNameingFactory() );
-              env.put(Context.SECURITY_AUTHENTICATION, "simple");
+              getEnv().put(Context.INITIAL_CONTEXT_FACTORY, getLdapContextFactory() );
+              getEnv().put(Context.URL_PKG_PREFIXES,        getLdapNameingFactory() );
+              getEnv().put(Context.SECURITY_AUTHENTICATION, "simple");
 	      if ( userdn != null ) {
-                env.put(Context.SECURITY_PRINCIPAL, userdn);
-              	env.put(Context.SECURITY_CREDENTIALS, userpw);
+                getEnv().put(Context.SECURITY_PRINCIPAL, userdn);
+              	getEnv().put(Context.SECURITY_CREDENTIALS, userpw);
 	      }
-              env.put("java.naming.ldap.attributes.binary", filter);
-              env.put(Context.PROVIDER_URL, ldapURL); 
+              getEnv().put("java.naming.ldap.attributes.binary", filter);
+              getEnv().put(Context.PROVIDER_URL, ldapURL); 
 
               //creating the JNDI context
-              ctx = new InitialLdapContext(env, null);  
+              ctx = new InitialLdapContext(getEnv(), null);  
 
               //creating the PagedResultsControl and add it to the context
-              ctx.setRequestControls(new Control[] {new PagedResultsControl( pageSize, Control.CRITICAL) }); 
+              ctx.setRequestControls(new Control[] {new PagedResultsControl( getPageSize(), Control.CRITICAL) }); 
 
               NamingEnumeration results = ctx.search( baseDN, filter, new SearchControls());
               

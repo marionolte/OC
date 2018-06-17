@@ -23,7 +23,7 @@ import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
 import javax.naming.ldap.PagedResultsControl;
 import javax.naming.ldap.PagedResultsResponseControl;
-import static net.ldap.LdapMain.getDefaultBaseDN;
+import static net.ldap.main.LdapMain.getDefaultBaseDN;
 
 
 

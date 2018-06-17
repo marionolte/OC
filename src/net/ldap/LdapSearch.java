@@ -4,6 +4,9 @@
  */
 package net.ldap;
 
+import net.ldap.main.LdapMain;
+import net.ldap.main.LdapException;
+import net.ldap.main.LdapScope;
 import java.io.IOException;
 import java.util.ArrayList;
 import javax.naming.NamingEnumeration;
@@ -15,19 +18,20 @@ import javax.naming.directory.SearchResult;
 import javax.naming.ldap.Control;
 import javax.naming.ldap.PagedResultsControl;
 import javax.naming.ldap.PagedResultsResponseControl;
-import static net.ldap.LdapMain.auth;
-import static net.ldap.LdapMain.filter;
-import static net.ldap.LdapMain.hostname;
-import static net.ldap.LdapMain.port;
-import static net.ldap.LdapMain.protocol;
-import static net.ldap.LdapMain.userdn;
-import static net.ldap.LdapMain.userpw;
+import static net.ldap.main.LdapMain.auth;
+import static net.ldap.main.LdapMain.filter;
+import static net.ldap.main.LdapMain.hostname;
+import static net.ldap.main.LdapMain.port;
+import static net.ldap.main.LdapMain.protocol;
+import static net.ldap.main.LdapMain.userdn;
+import static net.ldap.main.LdapMain.userpw;
 
 /**
  *
  * @author SuMario
  */
 public class LdapSearch  extends LdapMain{
+    
     static public LdapSearch getInstance( String protocol, String hostname, int port, String userDN, String userPWD, String filter , String auth , String baseDN) throws NamingException {
         //printf("getIN",0,"create instance");
         LdapSearch ls = new LdapSearch();
@@ -47,6 +51,10 @@ public class LdapSearch  extends LdapMain{
         printf("getInstance()",3,"return Object "+name);
         return ls;
     }
+    
+    private boolean persist=false;
+    public boolean setPersistentSearch(boolean b) { persist=b; return getPersistentSearch();}
+    public boolean getPersistentSearch() {return persist; }
     
     static public LdapSearch getInstance() throws NamingException {
         return getInstance(getProtocol(),hostname,port,userdn,userpw,filter,auth,getBaseDN());
@@ -148,9 +156,10 @@ public class LdapSearch  extends LdapMain{
                    printf(func,3,"Attribute:"+at);
                    String sp[]  = at.toString().substring(at.getID().length()+1).split(",");
                    for (int i=0; i<sp.length; i++) {
-                      Object ob=at.get();
-                      String v= ( ob instanceof byte[] )? new String((byte[]) ob ):ob.toString();
-                      System.out.println(at.getID()+":"+v);
+                       Object ob=at.get();
+                       String v= ( ob instanceof byte[] )? new String((byte[]) ob ):sp[i];
+                       System.out.println(at.getID()+": "+v);
+                       
                    }
                }
                System.out.println("");

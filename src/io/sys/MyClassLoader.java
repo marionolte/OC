@@ -169,8 +169,8 @@ public class MyClassLoader extends ClassLoader {
  
     public Hashtable classes = new Hashtable();
 
-    final private void log(String s) {
+    /*final private void log(String s) {
          //if ( debugTrace == null ) {
               System.out.println(s);
-    }
+    }*/
 }

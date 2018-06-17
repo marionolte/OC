@@ -5,9 +5,13 @@
  */
 package net.ldap;
 
+import net.ldap.main.LdapMain;
 import io.file.ReadFile;
 import io.file.SecFile;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import javax.naming.CompositeName;
 import javax.naming.Name;
 import javax.naming.NamingEnumeration;
@@ -83,8 +87,23 @@ public class LdapCopy extends LdapMain{
         auth="simple";
         
         this.template= ( ! map.get("-t").equals(map.get("_default_-t")))? ( new ReadFile( map.get("-t") ).readOut().toString() ):"";
+        for( String s: this.template.split("\n")) {
+            if ( ! s.isEmpty() ) {
+                    String[] sp = s.split(" ");
+                    String attr = sp[0].substring(0,sp[0].length()-1);
+                    printf(func,3,"attribute:"+attr);
+                    if ( tmap.get(attr) == null ) {  tmap.put(attr, new HashMap<String,String>());}
+                    HashMap<String, String> tp = tmap.get(attr);
+                    for ( int i = 1; i< sp.length; i++ ) {
+                        String[] at = sp[i].split("\\|");
+                        tp.put(at[0].toLowerCase(), (at.length <= 1)?at[0]:sp[i].substring(at[0].length()+1));
+                        printf(func,2,"attribute:"+attr+" "+at.length+" update with :"+sp[i]+":  =>"+at[0]+"="+tp.get(at[0])+"<=");
+                    }
+            }
+        }
         
-        printf(func,0,"local:"+protocol+"://"+host+":"+port+"?"+userdn+"&"+userpw+"&"+baseDN+"&"+filter+"&\n"+
+        
+        printf(func,2,"local:"+protocol+"://"+host+":"+port+"?"+userdn+"&"+userpw+"&"+baseDN+"&"+filter+"&\n"+
                       "remote:"+modprotocol+"://"+modhost+":"+modport+"?"+moduserdn+"&"+moduserpw+"&"+modbaseDN+"&\n"+
                       "filter:"+filter+":   objectlist:"+getAttrList());
     }
@@ -99,6 +118,7 @@ public class LdapCopy extends LdapMain{
         
         NamingEnumeration find = ls.search();
         if ( find != null ) {
+             checkedDN.put(map.get("-bc").toLowerCase(), "false");
              while( find.hasMore() ) {
                  SearchResult entry = (SearchResult) find.next();
                  printf(func,3,"find entry:"+entry);
@@ -107,27 +127,80 @@ public class LdapCopy extends LdapMain{
         }
     }
     private void transport(SearchResult entry) throws NamingException {
+        final String func=getFunc("transport(SearchResult entry)");
         if ( lmm == null ) {
-           lmm = LdapModify.getInstance(new String[]{ (modprotocol.equals("ldaps"))?"-ssl":"", "-h", modhost, "-p",""+modport, "-D",moduserdn, "-w",moduserpw, "-f",filter, "-a", auth, "-b", modbaseDN} );
-           lms = LdapSearch.getInstance(new String[]{ (modprotocol.equals("ldaps"))?"-ssl":"", "-h", modhost, "-p",""+modport, "-D",moduserdn, "-w",moduserpw, "-f",filter, "-a", auth, "-b", modbaseDN} );
+           lmm = LdapModify.getInstance(new String[]{ (modprotocol.equals("ldaps"))?"-ssl":"", "-h", modhost, "-p",""+modport, "-D",moduserdn, "-w",moduserpw, "-f",filter, "-a", auth, "-b", map.get("-bc") } );
+           lms = LdapSearch.getInstance(new String[]{ (modprotocol.equals("ldaps"))?"-ssl":"", "-h", modhost, "-p",""+modport, "-D",moduserdn, "-w",moduserpw, "-f",filter, "-a", auth, "-b", map.get("-bc") } );
         }
-        Name ename = new CompositeName().add( ( (entry != null)? entry.getNameInNamespace().replaceAll(map.get("-b"), map.get("-bc")):map.get("-bc")) );
+        Name ename = new CompositeName().add( ( (entry != null)? getNewDN(entry.getNameInNamespace(),map.get("-b"), map.get("-bc")):map.get("-bc")) );
         
-        System.out.println("ename:"+ename+"   entry:"+getNewDN(entry.getNameInNamespace(),map.get("-b"), map.get("-bc")) +"  base:"+map.get("-b")+":  newbase:"+map.get("-bc")+":");
+        printf(func,3,"ename:"+ename+"   entry:"+getNewDN(entry.getNameInNamespace(),map.get("-b"), map.get("-bc")) +"  base:"+map.get("-b")+":  newbase:"+map.get("-bc")+":");
+        
+        checkAllBaseDN(ename);
         
     }
+    private HashMap<String,HashMap<String,String>> tmap = new HashMap<String,HashMap<String,String>>(); 
     
     private String getNewDN(String old,String base, String newbase) {
-        System.out.println("old:"+old+" =>"+old.substring(0,old.length()-base.length()-1)+"<=");
-        String[] sp = old.substring(0,old.length()-base.length()-1).split(",");
+        final String func=getFunc("getNewDN(String old,String base, String newbase)");
+        String[] sp = old.split(",");  String[] at=base.split(",");
         StringBuilder sw = new StringBuilder();
-        for(String s:sp) {
+        HashMap<String,String> tp = tmap.get("dn");
+        if ( tp == null ) { tp= new HashMap<String,String>(); }
+        for( int i=0; i<sp.length-at.length+1;i++ ) {
             if ( sw.length() >0 ) {sw.append(","); }
-            
-            sw.append(s);
+            printf(func,3,"check:"+sp[i]+" against : "+tp.get(sp[i].toLowerCase()));
+            if ( tp.get(sp[i].toLowerCase()) != null ) { sp[i]=tp.get(sp[i].toLowerCase()); }
+            sw.append(sp[i]);
         }
         
-        return sw.toString()+newbase;
+        return sw.toString()+","+newbase;
+    }
+    
+    private HashMap<String,String> checkedDN=new HashMap<String,String>();
+    private void checkAllBaseDN(Name dn) {
+        if ( dn == null ) { return; }
+        final String func=getFunc("checkAllBaseDN(Name dn)");
+        String[] sp = dn.toString().split(",");
+        StringBuilder sw=new StringBuilder(map.get("-bc"));
+        for ( int i=sp.length-1; i>0; i--) {
+            if ( ! sp[i].toLowerCase().startsWith("dc=") && ! sp[i].toLowerCase().startsWith("o=") ) {
+                    String s = (sp[i]+","+sw.toString()).toLowerCase();
+                    if ( checkedDN.get(s) == null ) {
+                         printf(func,2,"have to check sp["+i+"]="+sp[i]+"     =>"+s);
+                         checkedDN.put(s, "false");
+                    }
+                    
+            }
+        }
+        checkBaseAreExist();
+    }
+    private boolean checkBaseAreExist(){
+        final String func=getFunc("checkBaseAreExist()");
+        boolean b=false;
+        HashMap<String,String> dns=new HashMap<String,String>();
+        Iterator<String> itter = checkedDN.keySet().iterator();
+        ArrayList ar = new ArrayList(); ar.add("dn");
+        while(itter.hasNext() ) {
+              String k = itter.next();
+              printf(func,0,"check for "+k+"="+checkedDN.get(k).equals("true"));
+              if ( checkedDN.get(k).equals("true") ) { dns.put(k, "true"); b=true; }
+              else {
+                String v= "false";  
+                try {  
+                    NamingEnumeration r = ls.search(checkedDN.get(k), "objectclas=*", ar);
+                    printf(func,0,"ldapsearch return:"+r);
+                    if ( r.hasMore() ) { b=true; v=""+b;}
+                    printf(func,0,"now checked for "+k+"="+v);
+                    if ( ! b ) { return b; }
+                } catch(Exception e) {
+                    b=false;
+                }
+                dns.put(k, v);
+              }
+        }
+        checkedDN=dns;
+        return b;
     }
 
     static private String myusage="\nusage():\noption: [-h hostname] [-p port] [-ssl] [-D adminDN] [-j passwordfile] [-modh modifyHost] [-modp port] [-modD adminDN] [-modj passwordfile] [-modssl] [-b baseDN] [-bc copyBaseDN] [-f filter] [-t copytemplate] [objectlist]\n";

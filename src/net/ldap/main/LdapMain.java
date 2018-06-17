@@ -2,13 +2,13 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package net.ldap;
+package net.ldap.main;
 
+import net.ldap.main.LdapScope;
 import general.Version;
 import io.crypt.Crypt;
 import io.file.ReadFile;
 import io.file.SecFile;
-import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -77,9 +77,9 @@ abstract public class LdapMain extends Version{
         
         String pr = (protocol!=null && protocol.toLowerCase().matches("ldaps"))? "ldaps":"ldap";
         String ho = ( ( hostname!=null )? hostname:"localhost" );
-        printf(func,0,"port:"+port);
+        printf(func,3,"port:"+port);
         String po = (port >Host.getMinPort() && port < Host.getMaxPort() )? ""+port : ( pr.matches("ldap")  )? "389":"636";
-        printf(func,0,"provider url =>"+pr+"://" + ho + ":" + po);
+        printf(func,2,"provider url =>"+pr+"://" + ho + ":" + po);
         ob.updateEnv(Context.PROVIDER_URL,  pr+"://" + ho + ":" + po );
         printf(func,4,"initialize complete");
     }
@@ -95,6 +95,8 @@ abstract public class LdapMain extends Version{
     
     static public void        setLdapContext(LdapContext ctx ) { LdapMain.ctx=ctx; }
     static public LdapContext getLdapContext(               ) { return LdapMain.ctx; }
+    
+    static public Hashtable getEnv() { return env; } 
     
     static public LdapScope getScope(String info) {
           scope = LdapScope.getId(info);          
@@ -199,7 +201,7 @@ abstract public class LdapMain extends Version{
     static              int pageSize = 10;
      
     static Properties conn = new Properties();
-    static HashMap<String,String> map = new  HashMap<String,String> ();
+    static public HashMap<String,String> map = new  HashMap<String,String> ();
     static public void scanner(String[] args,final String use) {    
         String func=name+"::scanner(Sting[] args,final String use)";
         printf(func,3," usage |"+use+"|");
@@ -352,9 +354,10 @@ abstract public class LdapMain extends Version{
         }
     }
     
-    static String getProtocol() { protocol=(map.get("-ssl")!= null && map.get("-ssl").equals("true"))?"ldaps":"ldap"; return protocol; }
-    static String getHostname() { return (map.get("-h").equals("hostname"))?hostname:map.get("-h"); }
-    static int    getPort() {  
+    static public int    getPageSize() { return pageSize; }
+    static public String getProtocol() { protocol=(map.get("-ssl")!= null && map.get("-ssl").equals("true"))?"ldaps":"ldap"; return protocol; }
+    static public String getHostname() { return (map.get("-h").equals("hostname"))?hostname:map.get("-h"); }
+    static public int    getPort() {  
     
         String p=map.get("-p"); 
         
@@ -364,16 +367,16 @@ abstract public class LdapMain extends Version{
         } catch(Exception e) {}
         return (getProtocol().equals("ldaps"))?636:389;
     }
-    static String getUserDN()   { return userdn; }
-    static String getUserPass() { return userpw; }
-    static String getAuth()     { return auth; }
-    static String getFilter()   { return filter; }
+    static public String getUserDN()   { return userdn; }
+    static public String getUserPass() { return userpw; }
+    static public String getAuth()     { return auth; }
+    static public String getFilter()   { return filter; }
     
-    static ArrayList getAttrList() { return objList; }
-    static String    getBaseDN()   { return baseDN; }
+    static public ArrayList getAttrList() { return objList; }
+    static public String    getBaseDN()   { return baseDN; }
     
     
-    static String getDefaultBaseDN() {
+    static public String getDefaultBaseDN() {
          StringBuilder sw = new StringBuilder();
          String ho=Host.getDomainname();
          //System.out.println("domain:"+ho);

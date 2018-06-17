@@ -18,12 +18,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 import javax.naming.NamingException;
 import main.checker.Checker;
-import static net.ldap.LdapMain.objList;
-import static net.ldap.LdapMain.operationfile;
 import net.ldap.LdapSearch;
 import net.ldap.LdapUserBlk;
 import net.ssh.SSHpass;
@@ -77,7 +73,7 @@ public class Mos extends Updater{
          return (ob.getCount()>0 && ob.getModified()>0);   
 
     }
-    private boolean ldap(String[] arg) {
+    /*private boolean ldap(String[] arg) {
         final String func=getFunc("ldap(String[] arg)");
         silent=true;
         String mod="usage";
@@ -112,9 +108,9 @@ public class Mos extends Updater{
             switch(mod) {
                 case "search" :
                         // getInstance( String protocol, String hostname, int port, String userDN, String userPWD, String filter , String auth )
-                        LdapSearch l = LdapSearch.getInstance( ( "ldap"+((bindSSL)?"s":"")) , bindHost, bindPort, bindDN, bindPW, filter, "");
+                        LdapSearch l = LdapSearch.getInstance( ( "ldap"+((bindSSL)?"s":"")) , bindHost, bindPort, bindDN, bindPW, filter, "", baseDN);
                         
-                                   return l.printResults( l.search(baseDN, filter, objList) );
+                                   return l.printResults( l.search(l.baseDN, l.filter, l.objList) );
                     //break;
 
                 default: 
@@ -125,7 +121,7 @@ public class Mos extends Updater{
             printf(func,1,"LDAPCommand error:"+ex.getMessage());
             return false;
         }  
-    }
+    }*/
     
     private String getPassword(String fn) {
         SecFile f = new SecFile(fn);
@@ -168,7 +164,7 @@ public class Mos extends Updater{
                 else if ( args[i].matches("-debugssl")) { System.setProperty("javax.net.debug","ssl"); }
                 else if ( args[i].matches("-sshcomm") ) { _exit = (sshCommand(getArgsLower(args,++i)))?0:1;   fin=true; printf(func,3, "INFO: sshComm parseArgs closed"); }
                 else if ( args[i].matches("-sshpass") ) { _exit = (sshScript(getArgsLower(args,++i)) )?0:1;   fin=true; printf(func,3, "INFO: sshScript parseArgs closed"); }
-                else if ( args[i].matches("-ldap")    ) { _exit = (ldap( getArgsLower(args,++i) )    )?0:1;   fin=true; }
+                //else if ( args[i].matches("-ldap")    ) { _exit = (ldap( getArgsLower(args,++i) )    )?0:1;   fin=true; }
                 else if ( args[i].matches("-ldapbulk")) { _exit = (ldapBulk( getArgsLower(args,++i) ))?0:1;   fin=true; }
                 else if ( args[i].matches("-testhttp")) { String[] ar = getArgsLower(args,++i);
                                                           printf(func,1,"testhttp - start");
@@ -259,7 +255,7 @@ public class Mos extends Updater{
                                     break;
                 case "ldapmodify":
                                     net.ldap.LdapModify lm = net.ldap.LdapModify.getInstance(ar);
-                                    if ( lm.operationfile != null && (new ReadFile(operationfile)).isReadableFile() ) {
+                                    if ( lm.operationfile != null && (new ReadFile(lm.operationfile)).isReadableFile() ) {
                                          lm.modify(lm.operationfile);
                                     } else if ( lm.attrList != null ){
                                          lm.operate();
@@ -639,7 +635,8 @@ public class Mos extends Updater{
                 + "\t\t-portscan [-host <host>] [-pmin <min port>] [-pmax <max port>]\t-\tport  scanner \n"
                 + "\n\t\t-testhttp <url> [url1,]\t-\tTest URL Connection to URL\n"
                 + "\n\t\t-checker "+Checker.usage()+"\n"
-                + "\n\t\t-ldap -D <bindDN> -j <Password File> <-h <Host>> <-p <Port>> -filter <filter> -b <baseDN>\n"
+                + getValueFromClasses("net.ldap","myusage") 
+                //+ "\n\t\t-ldap -D <bindDN> -j <Password File> <-h <Host>> <-p <Port>> -filter <filter> -b <baseDN>\n"
                 + "\n\t\t-wlsconfig "+WlsToolConfig.usage()+"\n\t\t\t\t\t-\tConfigure Wls Starting scripts in directory <dest>"
                 //+ "\n\t\t-wlsconfig [-dest <script dir [.]>] <domaindir <domaindir1...>>\n\t\t\t\t\t-\tConfigure Wls Starting scripts in directory <dest>\n"
                 + "\n\t\t-wlsinfo <domainhome> [<-server <servername>]\t-\n\t\t\t\t\tprint domain use information\n"
@@ -654,5 +651,22 @@ public class Mos extends Updater{
                 + "\n\n"
         );
         System.exit(-1);
+    }
+    
+    private String getValueFromClasses(String pack, String key) {
+        StringBuilder sw = new StringBuilder();
+        
+     /*   final ClassLoader loader = ClassLoader.getSystemClassLoader();
+        
+        Class<?> cl = loader.loadClass(pack);
+
+        for (final ClassPath.ClassInfo info : ClassPath.from(loader).getTopLevelClasses()) {
+          if (info.getName().startsWith(pack)) {
+            final Class<?> clazz = info.load();
+            // do something with your clazz
+          }
+        }*/
+        
+        return sw.toString();
     }
 }

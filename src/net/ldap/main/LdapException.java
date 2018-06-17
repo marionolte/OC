@@ -2,13 +2,13 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package net.ldap;
+package net.ldap.main;
 
 /**
  *
  * @author SuMario
  */
-class LdapException extends RuntimeException {
+public class LdapException extends RuntimeException {
 
     public LdapException(String context_not_initialized) {
         super(context_not_initialized);
