@@ -231,7 +231,9 @@ abstract public class LdapMain extends Version{
                     map.put(msg, "");
                 }
             }
-            map.put("-w", "password"); map.put("_default_-w", "password");
+            map.put("-w", "password");     map.put("_default_-w", "password");
+            map.put("-j", "passwordfile"); map.put("_default_-j", "passwordfile");
+            
             printf(func,3," new pos |"+ma.end()+"| of "+use.length());
             pos=ma.end();
         }
@@ -260,6 +262,7 @@ abstract public class LdapMain extends Version{
                     }
                 }   
             }
+            printf(func,3,"map scanned:"+map);
             hostname=(map.get("-h")==null || map.get("-h").equals(map.get("_default_-h")))?"localhost":map.get("-h");
               baseDN=(map.get("-b")==null || map.get("-b").equals(map.get("_default_-b")))?getDefaultBaseDN():map.get("-b");
               userdn=(map.get("-D") != null ) ?
@@ -277,10 +280,18 @@ abstract public class LdapMain extends Version{
               }                 
               scope= (( map.get("-s") != null && ! map.get("-s").isEmpty() )? getScope(map.get("-s")):LdapScope.sub);
                
-              if ( map.get("-j") != null && ! map.get("-j").isEmpty() &&  ! map.get("-j").equals("_default_-j") &&  (new ReadFile(map.get("-j")).isReadableFile())   ) {
+              //System.out.println("userpw:"+userpw);
+              if ( (userpw == null || userpw.isEmpty()) && map.get("-j") != null && ! map.get("-j").isEmpty() &&  ! map.get("-j").equals(map.get("_default_-j")) &&  (new ReadFile(map.get("-j")).isReadableFile())   ) {
                     userpw=(String )getLinesFromFile(map.get("-j")).get(0);
               }
-              if ( map.get("-w") != null && ! map.get("-p").equals("_default-p") ) { userpw=map.get("-w"); }
+              //System.out.println("userpw:"+userpw+"    -w:"
+              //        +((map.get("-w")!=null)?map.get("-w")+":  :"+map.get("_default_-w")+":":"NULL")
+              //        +"  -j:"+((map.get("-j")!=null)?map.get("-j")+":  :"+map.get("_default_-j")+":":"NULL")
+              //        +"-j default:"+( map.get("-j").equals(map.get("_default_-j"))) );
+              if ( map.get("-j").equals(map.get("_default_-j")) && map.get("-w") != null &&  !  map.get("-w").equals(map.get("_default_-w"))  ) { 
+                  userpw=map.get("-w"); 
+              }
+              //System.out.println("userpw:"+userpw+":");
                
               if ( map.get("-of") != null && ! map.get("-of").isEmpty()  &&  (new ReadFile(map.get("-of")).isReadableFile())   ) {
                     operationfile=map.get("-f");

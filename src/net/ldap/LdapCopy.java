@@ -38,11 +38,11 @@ public class LdapCopy extends LdapMain{
         final String func="LdapCopy::LdapCopy()";
         printf(func,4,"created");
         this.protocol   =(map.get("-ssl").equals("true"))?"ldaps":"ldap";
-        this.modprotocol=(map.get("-modssl").equals("true"))?"ldaps":"ldap";
+        this.modprotocol=(map.get("-modssl").equals("true"))?"ldaps":this.protocol;
         printf(func,3,"protocol:"+protocol+":  modprotocol:"+modprotocol+":");
         
         this.host=((map.get("-h").equals("hostname")?Host.getHostname():map.get("-h")));
-        this.modhost=(map.get("-modh").equals("modifyHost")?this.host:map.get("-modh"));
+        this.modhost=( (  map.get("-modh").equals(map.get("_default_-modh") )  )?this.host:map.get("-modh"));
         printf(func,3,"host:"+host+":  modhost:"+modhost+":");
         
         try {
@@ -66,24 +66,26 @@ public class LdapCopy extends LdapMain{
         }
         printf(func,3,"modport:"+modport+":  modhost:"+modhost+":");
         
-        this.baseDN=(map.get("-b" ).equals(map.get("_default_-b"))    )?getDefaultBaseDN():map.get("-b" );
+        //this.baseDN=(map.get("-b" ).equals(map.get("_default_-b"))    )?getDefaultBaseDN():map.get("-b" );
         this.modbaseDN=(map.get("-bc").equals(map.get("_default_-bc")))?getDefaultBaseDN():map.get("-bc");        
         printf(func,3,"baseDN:"+baseDN+":  modbaseDN:"+modbaseDN+":");
         
         
-           this.userdn=(map.get("-D" ).equals("adminDN"))?"cn=admin":map.get("-D" );
-        this.moduserdn=(map.get("-modD" ).equals(map.get("_default_-modD" )))?"cn=admin":map.get("-modD" );
+        //   this.userdn=(map.get("-D" ).equals("adminDN"))?"cn=admin":map.get("-D" );
+        this.moduserdn=(map.get("-modD" ).equals(map.get("_default_-modD" )))?this.userdn:map.get("-modD" );
         printf(func,3,"userdn:"+userdn+":  moduserdn:"+moduserdn+":");
         
         filter=(! map.get("-f" ).equals(map.get("_default_-f")))?map.get("-f" ):"objectclass=*";
         
-        
-           this.userpw=( ! map.get("-j"    ).equals(map.get("_default_-j"))    )?  (new SecFile(  map.get("-j"   ) ).readOut().toString() ):"";
+        //System.out.println("userpw1:"+userpw);
+        /*this.userpw=( ! map.get("-j"    ).equals(map.get("_default_-j"))    )?  (new SecFile(  map.get("-j"   ) ).readOut().toString() ):"";
         if ( this.userpw.isEmpty() ) {
-            this.userpw=( ! map.get("-w"    ).equals(map.get("_default_-w"))    )? map.get("-w") : "";
-        }   
-        this.moduserpw=( ! map.get("-modj" ).equals(map.get("_default_-modj")) )?  (new SecFile(  map.get("-modj") ).readOut().toString() ):"";
-        
+             System.out.println("userpw:"+userpw);
+             this.userpw=( ! map.get("-w"    ).equals(map.get("_default_-w"))    )? map.get("-w") : "";
+        }*/
+        //System.out.println("userpw2:"+userpw);
+        this.moduserpw=( ! map.get("-modj" ).equals(map.get("_default_-modj")) )?  (new SecFile(  map.get("-modj") ).readOut().toString() ):this.userpw;
+        //System.out.println("moduserpw2:"+moduserpw);
         auth="simple";
         
         this.template= ( ! map.get("-t").equals(map.get("_default_-t")))? ( new ReadFile( map.get("-t") ).readOut().toString() ):"";
@@ -108,13 +110,35 @@ public class LdapCopy extends LdapMain{
                       "filter:"+filter+":   objectlist:"+getAttrList());
     }
     
+    private String[] getAuthHash(boolean b,String f) {
+        
+        ArrayList<String> a = new ArrayList();
+             for ( int i=1; i< debug; i++) { a.add("-d"); }
+             if ( protocol.equals("ldaps") ){a.add("-ssl"); }
+             a.add("-h"); a.add(    (b)?hostname:modhost );
+             a.add("-p"); a.add(""+((b)?port:modport)   );
+             a.add("-D"); a.add(    (b)?userdn:moduserdn );
+             a.add("-w"); a.add(    (b)?userpw:moduserpw );
+     if(f.equals("search")){  
+             a.add("-f"); a.add(filter); 
+     }
+             a.add("-a"); a.add(    (b)?auth:auth);
+             a.add("-b"); a.add(    (b)?baseDN:modbaseDN );
+             
+          String[] ab = new String[ a.size() ];
+             for ( int i=0; i< ab.length; i++ ) { ab[i]=a.get(i); }
+          return ab;
+    }
+    
     LdapSearch ls  = null;
     LdapSearch lms = null;
     LdapModify lmm = null;
     synchronized public void copy() throws NamingException, IOException {
         final String func=getFunc("copy()");
         printf(func,0,"copy dn's  from "+map.get("-b")+" to "+map.get("-bc"));
-        ls = LdapSearch.getInstance(new String[]{ (   protocol.equals("ldaps"))?"-ssl":"", "-h",hostname, "-p",""+port,    "-D",   userdn, "-w",   userpw, "-f",filter, "-a", auth, "-b", baseDN});
+        
+        //ls = LdapSearch.getInstance(new String[]{ (   protocol.equals("ldaps"))?"-ssl":"", "-h",hostname, "-p",""+port,    "-D",   userdn, "-w", userpw, "-f",filter, "-a", auth, "-b", baseDN});
+        ls = LdapSearch.getInstance( getAuthHash(true, "search") );
         
         NamingEnumeration find = ls.search();
         if ( find != null ) {
@@ -129,8 +153,10 @@ public class LdapCopy extends LdapMain{
     private void transport(SearchResult entry) throws NamingException {
         final String func=getFunc("transport(SearchResult entry)");
         if ( lmm == null ) {
-           lmm = LdapModify.getInstance(new String[]{ (modprotocol.equals("ldaps"))?"-ssl":"", "-h", modhost, "-p",""+modport, "-D",moduserdn, "-w",moduserpw, "-f",filter, "-a", auth, "-b", map.get("-bc") } );
-           lms = LdapSearch.getInstance(new String[]{ (modprotocol.equals("ldaps"))?"-ssl":"", "-h", modhost, "-p",""+modport, "-D",moduserdn, "-w",moduserpw, "-f",filter, "-a", auth, "-b", map.get("-bc") } );
+            //lmm = LdapModify.getInstance(new String[]{ (modprotocol.equals("ldaps"))?"-ssl":"", "-h", modhost, "-p",""+modport, "-D",moduserdn, "-w",moduserpw, "-f",filter, "-a", auth, "-b", map.get("-bc") } );
+            lmm = LdapModify.getInstance( getAuthHash(false, "modify") );
+            //lms = LdapSearch.getInstance(new String[]{ (modprotocol.equals("ldaps"))?"-ssl":"", "-h", modhost, "-p",""+modport, "-D",moduserdn, "-w",moduserpw, "-f",filter, "-a", auth, "-b", map.get("-bc") } );
+            lms = LdapSearch.getInstance( getAuthHash(false, "search") );
         }
         Name ename = new CompositeName().add( ( (entry != null)? getNewDN(entry.getNameInNamespace(),map.get("-b"), map.get("-bc")):map.get("-bc")) );
         
@@ -183,7 +209,7 @@ public class LdapCopy extends LdapMain{
         ArrayList ar = new ArrayList(); ar.add("dn");
         while(itter.hasNext() ) {
               String k = itter.next();
-              printf(func,0,"check for "+k+"="+checkedDN.get(k).equals("true"));
+              printf(func,0,"check for "+k+":  have:"+checkedDN.get(k).equals("true"));
               if ( checkedDN.get(k).equals("true") ) { dns.put(k, "true"); b=true; }
               else {
                 String v= "false";  

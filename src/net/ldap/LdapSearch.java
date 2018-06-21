@@ -69,7 +69,7 @@ public class LdapSearch  extends LdapMain{
         auth="simple";
         baseDN=getDefaultBaseDN();
         scanner(ar,myusage);
-        //printf("aaa",0,"user "+getUserDN()+" local:"+userpw+" pw:"+getUserPass()+":  map:"+map.get("-w"));
+        printf("aaa",0,"user "+getUserDN()+" local:"+userpw+" pw:"+getUserPass()+":  map:"+map.get("-w"));
         //printf("aaa",0,"port "+getPort()+"   local:"+port+" port:"+getPort()+":  map:"+map.get("-p"));
         //printf("aaa",0,"filter:"+getFilter()+":");
         
@@ -91,6 +91,7 @@ public class LdapSearch  extends LdapMain{
         if ( getLdapContext() == null ) 
             throw new LdapException("Context not initialized");
         final String func=getFunc("search(String baseDN, String filter, ArrayList attr)");
+        printf(func,4,"start seaching event");
         
         getLdapContext().setRequestControls(new Control[] {new PagedResultsControl( getSearchSizelimit(), Control.CRITICAL) }); 
         
