@@ -217,7 +217,7 @@ public class LdapCopy extends LdapMain{
                     NamingEnumeration r = ls.search(checkedDN.get(k), "objectclas=*", ar);
                     printf(func,0,"ldapsearch return:"+r);
                     if ( r.hasMore() ) { b=true; v=""+b;}
-                    printf(func,0,"now checked for "+k+"="+v);
+                    printf(func,0,"now checked for :"+k+":  getting:"+v);
                     if ( ! b ) { return b; }
                 } catch(Exception e) {
                     b=false;
@@ -229,7 +229,8 @@ public class LdapCopy extends LdapMain{
         return b;
     }
 
-    static private String myusage="\nusage():\noption: [-h hostname] [-p port] [-ssl] [-D adminDN] [-j passwordfile] [-modh modifyHost] [-modp port] [-modD adminDN] [-modj passwordfile] [-modssl] [-b baseDN] [-bc copyBaseDN] [-f filter] [-t copytemplate] [objectlist]\n";
+    final static public String myusage="\nusage():\noption: [-h hostname] [-p port] [-ssl] [-D adminDN] [-j passwordfile] [-modh modifyHost] [-modp port] [-modD adminDN] [-modj passwordfile] [-modssl] [-b baseDN] [-bc copyBaseDN] [-f filter] [-t copytemplate] [objectlist]\n";
+    final static public String free="false";
     
     public static LdapCopy getInstance(String[] ar) {
         scanner(ar,myusage);

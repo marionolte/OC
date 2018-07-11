@@ -14,13 +14,14 @@ import io.file.ReadFile;
 import io.file.SecFile;
 import io.file.WriteFile;
 import io.java.GCFile;
+import io.lib.IOLib;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import javax.naming.NamingException;
 import main.checker.Checker;
-import net.ldap.LdapSearch;
 import net.ldap.LdapUserBlk;
 import net.ssh.SSHpass;
 import net.ssl.TestSSLServer;
@@ -30,6 +31,9 @@ import net.wls.WlsDomainLogRotation;
 import net.wls.WlsToolConfig;
 import net.wls.WlsUserEnv;
 import org.eclipselabs.garbagecat.GCMain;
+
+
+
 
 /**
  *
@@ -43,14 +47,15 @@ public class Mos extends Updater{
     private final Console console;
     private String[] args=null;
     private int _exit=-1;
+    private IOLib lib = new IOLib();
     
-    public Mos(String[] args) {
+    public Mos(String[] args) throws IOException {
         super();
         this.args=args;
         this.crypt = new Crypt();
         this.console = new Console(this);
         this.console.setRunning();
-        
+        lib.fillJarMap(jarfile);
     }
     
     private boolean testssl(String ho, String po) { return testssl(ho, Integer.parseInt(po)); }
@@ -254,12 +259,31 @@ public class Mos extends Updater{
                                                          System.out.println(lu.getCount()+" ldap entries found \tmodified:"+lu.getModified());
                                     break;
                 case "ldapmodify":
+                                    //System.out.println("init start");
                                     net.ldap.LdapModify lm = net.ldap.LdapModify.getInstance(ar);
-                                    if ( lm.operationfile != null && (new ReadFile(lm.operationfile)).isReadableFile() ) {
-                                         lm.modify(lm.operationfile);
+                                    int pa=-1;
+                                    //System.out.println("init complete");
+                                    if ( lm.operationfile != null ) {
+                                         ReadFile fa = new ReadFile(lm.operationfile);
+                                         if ( fa.isReadableFile() ) {
+                                            lm.modify(lm.operationfile);
+                                            pa=1;
+                                         }   
+                                    } else if ( lm.getLdifFile() != null  ) {
+                                         ReadFile fa = new ReadFile(lm.getLdifFile());
+                                         System.out.println("file: "+fa.isReadableFile());
+                                         if ( fa.isReadableFile() ) {
+                                            lm.modify(lm.getLdifFile());
+                                            pa=2;
+                                         }
+                                         System.out.println("fa:"+fa.isReadableFile()+" done");
                                     } else if ( lm.attrList != null ){
                                          lm.operate();
+                                         pa=3;
+                                    } else {
+                                        System.out.println("no modification operation found");
                                     }
+                                    //System.out.println("use path "+pa);
                                     //net.ldap.LdapSearch la = net.ldap.LdapSearch.getInstance(ar);
                                     //la.printResults( la.search(la.getBaseDN(), la.getFilter(), la.getAttrList()) );
                                     break;
@@ -290,8 +314,8 @@ public class Mos extends Updater{
     private void runMonitor(String[] ar) {
         io.perf.Perf p= io.perf.Perf.getInstance(ar);        
                      p.debug=debug;
-        if ( p.printUsage ) { System.out.println("usage: "+System.getProperty("prog")+" "+p.usage()); } 
-        else { p.test(); }
+                     //if ( p.printUsage ) { System.out.println("usage: "+System.getProperty("prog")+" "+p.usage()); } 
+                     p.test(); 
     }
     
     private void secureFile(String[] ar) {
@@ -613,7 +637,7 @@ public class Mos extends Updater{
         return ( fa.getMD5().matches(md5));
     }
     
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
            Mos m = new Mos(args); m.silent=true;
                m.start();
                while( (m.isRunning() && ! m.fin) || ! m.parseCompleted ) { sleep(300); }
@@ -635,7 +659,7 @@ public class Mos extends Updater{
                 + "\t\t-portscan [-host <host>] [-pmin <min port>] [-pmax <max port>]\t-\tport  scanner \n"
                 + "\n\t\t-testhttp <url> [url1,]\t-\tTest URL Connection to URL\n"
                 + "\n\t\t-checker "+Checker.usage()+"\n"
-                + getValueFromClasses("net.ldap","myusage") 
+                + getVersionString("net.ldap") 
                 //+ "\n\t\t-ldap -D <bindDN> -j <Password File> <-h <Host>> <-p <Port>> -filter <filter> -b <baseDN>\n"
                 + "\n\t\t-wlsconfig "+WlsToolConfig.usage()+"\n\t\t\t\t\t-\tConfigure Wls Starting scripts in directory <dest>"
                 //+ "\n\t\t-wlsconfig [-dest <script dir [.]>] <domaindir <domaindir1...>>\n\t\t\t\t\t-\tConfigure Wls Starting scripts in directory <dest>\n"
@@ -652,21 +676,57 @@ public class Mos extends Updater{
         );
         System.exit(-1);
     }
-    
-    private String getValueFromClasses(String pack, String key) {
+    private String getVersionString(String cl) {
+        String[] inf=getValueFromClasses(cl,"myusage").split("\n");
         StringBuilder sw = new StringBuilder();
-        
-     /*   final ClassLoader loader = ClassLoader.getSystemClassLoader();
-        
-        Class<?> cl = loader.loadClass(pack);
+        int op=0;
+        for (String g : inf) {
+            if ( g.startsWith("class:") ) {
+                 if ( sw.length() > 0 ) { sw.append("\n\n"); }
+                 String[] sp = g.split(":");  sp=sp[1].split("\\.");
+                 sw.append("\n\t\t-").append(sp[sp.length-1].toLowerCase()).append(" ");
+                 op=0;
+            }
+            else if ( op==0 && g.startsWith("usage()") ) {}
+            else if ( op==0 && g.startsWith("option:") ) {
+                sw.append(g.substring("option:".length()));
+                op=1;
+            }
+            else if ( op == 1 ) {
+                sw.append(g);
+            }
+        }
+        if ( sw.length() > 0 ) { sw.append("\n\n"); }
+        return sw.toString();
+    }
+    private String getValueFromClasses(String pack, String key) {
+        final String func=getFunc("getValueFromClasses(String pack, String key)");
+        StringBuilder sw = new StringBuilder();
+        printf(func,4,"incoming");
+        try {
+            lib.fillJarMap(jarfile);
+            String a = ("/"+pack).replaceAll("\\.", "\\/")+"/";
+            String[] cllist = lib.getClassFromPackage(pack);
+            for ( String cl : cllist ) {
+                String clret = lib.getValueFromClass(cl.replaceAll("/", "\\."),"free");
+                //printf(func,3,"cl:"+cl+": free:"+( clret == null || (clret != null && clret.equals("true")))+" =>"+( clret == null )+"||"+(clret != null && clret.equals("true"))+" ==>"+((clret !=null)?clret:"NULL" ));
+                        
+                if ( clret == null || (clret != null && clret.equals("true"))) {        
+                        clret = lib.getValueFromClass(cl.replaceAll("/", "\\."),key);
+                        if ( clret != null ) {
+                             printf(func,3,"cl:"+cl+": key:"+key+": clret:"+clret);
+                             sw.append("class:"+cl.replaceAll("/", "\\.")+": attribute:"+key+":\n");
+                             sw.append(clret).append("\n");
+                        }
+                }        
+            }
 
-        for (final ClassPath.ClassInfo info : ClassPath.from(loader).getTopLevelClasses()) {
-          if (info.getName().startsWith(pack)) {
-            final Class<?> clazz = info.load();
-            // do something with your clazz
-          }
-        }*/
+       } catch(Exception e) {
+            printf(func,1,"ERROR: "+e.getMessage(), e);
+       }     
         
+        printf(func,3,"outgoing  :"+sw.toString()+":" );
+            
         return sw.toString();
     }
 }

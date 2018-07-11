@@ -250,6 +250,9 @@ abstract public class LdapMain extends Version{
                             if ( args.length > (i+1) && ! args[i+1].startsWith("-") ) {
                                 v=args[++i];
                             }
+                            if ( p.equals("-o") && ! map.get(p).equals(map.get("_default_-o"))) {
+                                v=map.get(p)+"\n"+v;
+                            }
                             printf(func,2," map:"+p+"="+v+":");
                             map.put(p, v);
                        } else {
@@ -301,65 +304,34 @@ abstract public class LdapMain extends Version{
                     filter=map.get("-f");
               }
 
-                                 
+              //System.out.println("mod -o:"+map.get("-o")+"  "+! map.get("-o").isEmpty());
+              if ( map.get("-o") != null  && ! map.get("-o").isEmpty() && ! map.get("-o").equals(map.get("_default_-o"))  ) {
+                  //System.out.println("mao(o):"+map.get("-o"));
+                  if ( attrList == null ) { attrList = new HashMap<String, HashMap<String,String> >(); }
+                  for ( String o : map.get("-o").split("\n") ) {
+                        // -o <add|del|mod>:dn:attribute:value>
+                        String[] sp = o.split(":");
+                        sp[0]=sp[0].toLowerCase();
+
+                        String dn  = sp[1];
+                        String attr= sp[2];
+                        String val = o.substring( sp[0].length()+sp[1].length()+sp[2].length()+3);
+
+                        printf(func,3,("operator:"+sp[0]+":\ndn:"+dn+":\nattr:"+attr+":\nval:"+val+":"));
+
+                        HashMap<String,String> m=attrList.get(dn);
+                        if ( m==null ) { m=new HashMap(); }
+                        int j = m.size()/2+1;
+                        //System.out.println("j:"+j+"  m"+(m.size()%2+1)+"  m1:"+(m.size()/2+1) );
+                        m.put("op"+j+"attr", attr+": "+ val);
+                        m.put("op"+j, sp[0]);
+
+                        attrList.put(dn, m);
+                  }     
+              }                   
                
-            printf(func,2,"map:"+map);
+            printf(func,3,"map:"+map);
             
-            /*for(int i=0; i<args.length; i++) {      
-                if      ( args[i].matches("-h")  && args.length>i+1 ) { hostname=args[++i]; printf(func,2," host:"+hostname+":"); }
-                else if ( args[i].matches("-b")  && args.length>i+1 ) {   baseDN=args[++i]; printf(func,2," baseDN:"+baseDN+":"); }
-                else if ( args[i].matches("-a")  && args.length>i+1 ) {   userdn=args[++i]; printf(func,2," USER:"+userdn+":");   }
-                else if ( args[i].matches("-D")  && args.length>i+1 ) {   userdn=args[++i]; printf(func,2," USER:"+userdn+":");}
-                else if ( args[i].matches("-P")  && args.length>i+1 ) {   userpw=args[++i]; printf(func,2," PASS:"+userpw+":"); }
-                else if ( args[i].matches("-p")  && args.length>i+1 ) {   port = Integer.parseInt(args[++i]); printf(func,2," port:"+port+":");}
-                else if ( args[i].matches("-ssl")                   ) {   protocol="ldaps"; printf(func,2," SSL:"+protocol+":");}
-                else if ( args[i].matches("-s")  && args.length>i+1 ) {   scope=getScope(args[++i]); printf(func,2," scope:"+scope+":"); }
-                else if ( args[i].matches("-j")  && args.length>i+1 ) {   userpw=(String )getLinesFromFile(args[++i]).get(0); printf(func,2," PASS:"+userpw+":");}
-                else if ( args[i].matches("-f")  && args.length>i+1 ) {   operationfile=args[++i];  printf(func,2," opFile:"+operationfile+":");}
-                else if ( args[i].matches("-help") || args[i].matches("--help") ) { usage=true; log(use); }
-                else if ( args[i].matches("-d")                                 ) { debug++; }
-                
-                if      ( args[i].matches("-d") ) { debug++; }
-                else if ( args[i].matches("-conn") && args.length>i+1 ){ SecFile fa=new SecFile(args[++i]);  
-                                                                         
-                                                                         try { conn.load( new ByteArrayInputStream(fa.readOut().toString().getBytes("UTF-8")) ); } 
-                                                                         catch(java.io.IOException io) {
-                                                                             printf(func,1,"Exception:"+io.getMessage()+" - with file"+args[i]);
-                                                                         }
-                }
-                else if ( args[i].matches("-o")  && args.length>i+1 ) {
-                    if ( attrList == null ) { attrList = new HashMap<String, HashMap<String,String> >();}
-                    // -o <add|del|mod>:dn:attribute:value>
-                    String[] sp = args[++i].split(":");
-                    sp[0]=sp[0].toLowerCase();
-                    
-                    String dn  = sp[1];
-                    String attr= sp[2];
-                    String val = args[i].substring( sp[0].length()+sp[1].length()+sp[2].length()+3);
-                    
-                    printf(func,3,("operator:"+sp[0]+":\ndn:"+dn+":\nattr:"+attr+":\nval:"+val+":"));
-                    
-                    HashMap<String,String> m=attrList.get(dn);
-                    if ( m==null ) { m=new HashMap(); }
-                    int j = m.size()/2+1;
-                    //System.out.println("j:"+j+"  m"+(m.size()%2+1)+"  m1:"+(m.size()/2+1) );
-                    m.put("op"+j+"attr", attr+": "+ val);
-                    m.put("op"+j, sp[0]);
-                
-                    attrList.put(dn, m);
-                } 
-                else if ( args[i].startsWith("-") ){
-                    
-                }
-                else {                    
-                    printf(func,2,"filter/objectlist for :"+args[i]+":");
-                    if ( args[i].contains("=") ) {
-                        filter = (filter == null)?args[i]:filter+" "+args[i];
-                    }else {
-                        objList.add(args[i]);
-                    }
-                }
-            }*/
         } else {
             usage=true; 
         }
@@ -381,7 +353,7 @@ abstract public class LdapMain extends Version{
     static public String getUserDN()   { return userdn; }
     static public String getUserPass() { return userpw; }
     static public String getAuth()     { return auth; }
-    static public String getFilter()   { return filter; }
+    static public String getFilter()   { return (filter!=null)?filter:"objectclass=*"; }
     
     static public ArrayList getAttrList() { return objList; }
     static public String    getBaseDN()   { return baseDN; }

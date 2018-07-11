@@ -10,11 +10,20 @@ import main.MainTask;
 
 public class Perf extends MainTask{
     private final Properties args; 
+    private final HashMap<String,String> ops;
     private final HashMap<String,PerfTask> map;
     private final PerfMonitor pm;
 
     public Perf(String[] ar) {
         args = parseArgs(ar);
+        ops  = io.lib.IOLib.scanner(ar, myusage);
+        debug=Integer.parseInt(ops.get("_debug_"));
+        
+        if ( ops.get("_usage_").equals("true") ) { 
+            printUsage(myusage); 
+            System.exit(-1);
+        }
+        
         final String func=getFunc("Perf(String[] ar)");
         printf(func,3,"args hash:"+args);
         map=new HashMap<String,PerfTask> (); 
@@ -39,16 +48,16 @@ public class Perf extends MainTask{
         
         pm = new PerfMonitor();
         if ( ! map.isEmpty() ) pm.start();
-        else printUsage=true;
+        //else printUsage=true;
     }
     
-    public boolean printUsage=false;
+    //public boolean printUsage=false;
     
     public void test() {
         debug=4;
         final String func=getFunc("test()");
         printf(func,4,"run test()");
-        if ( printUsage ) {  return; }
+        //if ( printUsage ) {  return; }
         while(! pm.isRunning()) { sleep(300);}
         printf(func,4,"pm running");
         while ( ! pm.isClosed() ) {            
@@ -57,13 +66,14 @@ public class Perf extends MainTask{
         printf(func,4,"pm complete test()");
     }
 
+    final public static String myusage="\nusage()\n[-cpu=time=XX,count=XX] [-mem=time=XX,count=XX] [-io=time=XX,count=XX] [-net=time=XX,count=XX] ";
     
-    public String usage() {
+   /* public String usage() {
         printUsage=true;
         StringBuilder sw = new StringBuilder();
         sw.append("< [-cpu|-mem|-io|-net]=time=XX,count=XX  ..>");
         return sw.toString();
-    }
+    }*/
     
     public static Perf getInstance(String[] args) {
          Perf p = new Perf(args);          
@@ -106,6 +116,7 @@ public class Perf extends MainTask{
             switch(area) {
                 case "net": this.command="netstat -an"; break;
                 case "mem": this.command="buildin";     break;
+                case "cpu": this.command="ps -e -o uid,gid,pid,ppid,cpu,%cpu,%mem,rss,vsz,wchan,time,command=cmd ; uptime"; break;
                 default: this.command="";
             }
             printf(func,3,"area:"+area+":  command:"+this.command+":");
@@ -140,6 +151,7 @@ public class Perf extends MainTask{
                 else if ( ! this.command.isEmpty() &&  this.command.equals("buildin")  ) {
                         switch (area) {
                             case "mem":  MemInfo.outLine(); break;
+                            case "cpu":  CpuInfo.outLine(); break;
                             default: ;
                         }
                 }

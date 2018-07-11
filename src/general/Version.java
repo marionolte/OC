@@ -19,7 +19,7 @@ import net.tcp.Host;
  *
  * @author SuMario
  */
-public abstract class Version { //extends OraConst {
+public abstract class Version  { //extends OraConst {
     final public static String mhfile="OC.jar";
     final public static String mh="Opitz - MarioHelpService";
     final public static String mhservice="Opitz MHService - "+mhfile;
@@ -103,6 +103,9 @@ public abstract class Version { //extends OraConst {
               }
               logger.info(s);
          }*/
+    }
+    final public static void printUsage(String s) {
+        log(mhservice+"/"+(isBeta()?getBetaVersion():getVersion())+" - "+prodauthor+" "+s);
     }
     private String releaseVersion="";
     private String releaseMD5="";

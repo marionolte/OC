@@ -11,7 +11,7 @@ import io.thread.RunnableT;
  *
  * @author SuMario
  */
-public abstract class Updater extends RunnableT {
+public abstract class Updater extends RunnableT{
     
     private static String serviceHost="www.macmario.de";
     private static int    servicePort=443;

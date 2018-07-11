@@ -14,8 +14,8 @@ import java.util.HashMap;
  * @author SuMario
  */
 class MemInfo {
-    private static Runtime rt;
-    private static MemRuntime mr;
+    private static final Runtime rt;
+    private static final MemRuntime mr;
     static {
         rt = Runtime.getRuntime();
         mr = new MemRuntime();

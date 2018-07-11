@@ -57,7 +57,7 @@ public class Checker extends Version {
     }
     public static String usage(){
         return (" [-f <pattern file>] [-i <include pattern>] [-b <begin time>] [-e <end time>] <FILE|Directory>\n"
-               +"       format time: DAY-MONTH-YEAR HH:MIN:SEC - exampe to use '01-MAR-2013 10:12:45' ");
+               +"       format time: DAY-MONTH-YEAR HH:MIN:SEC - example to use '01-MAR-2013 10:12:45' ");
     }
     
     public Checker(String[] args) {

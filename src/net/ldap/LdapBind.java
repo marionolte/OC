@@ -68,7 +68,7 @@ public class LdapBind extends LdapMain{
     
     private String err=null;
     public String getErrorMsg() { return err; }
-    static private String myusage="\nusage():\noption: [-h hostname] [-p port] [-D adminDN ] [-j passwordfile] [-b baseDN ]";
+    static public String myusage="\nusage():\noption: [-h hostname] [-p port] [-D adminDN ] [-j passwordfile] [-b baseDN ]";
     
     public static void main(String[] args) throws Exception {
         scanner(args,myusage);

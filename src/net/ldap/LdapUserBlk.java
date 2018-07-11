@@ -1,5 +1,6 @@
 package net.ldap;
 
+import general.MyVersion;
 import io.file.SecFile;
 import io.thread.RunnableT;
 import java.util.ArrayList;
@@ -40,6 +41,7 @@ public class LdapUserBlk extends RunnableT{
      private boolean started=false;
      private boolean finished=false;
      private boolean search=true;
+     private MyVersion v = new MyVersion();
 
      
     
@@ -62,13 +64,15 @@ public class LdapUserBlk extends RunnableT{
          close=true; if(!this.started){ this.finished=true; } 
      }
      
-     public static void usage(boolean b){
-         System.out.println("\n\n"
-                          + "option: [-h hostname <def:localhost>] [-p port <def:389>] [-a adminDN <def:cn=orcladmin> "
+     static public String myusage="usage():\noption: [-h hostname <def:localhost>] [-p port <def:389>] [-a adminDN <def:cn=orcladmin> "
                           + "[-j passwordfile] [-b baseDN ] [-f filter] [-ssl <set ldaps schema>] [-o ldapCheck ] [ -of ldapCheckFile ] [-create]"
                           + " [-modh <hostname for modificaction>] [-modp <port for ldapserver modification> ] [ -modssl <set ldaps for modification>]" 
-                          + "| [-help <used per default>]\n"
-                          + "\t\t\t ldap     :\t"+proto+"://"+hostname+":"+port+"  \n"
+                          + "| [-help <used per default>]";
+                          
+     public static void usage(boolean b){
+         System.out.println("\n\n"
+                          + "LdapUserBlk::"+myusage
+                          + "˜n\t\t\t ldap     :\t"+proto+"://"+hostname+":"+port+"  \n"
                           + "\t\t\t account  :\t"+userDN+"/"+userPWD+" \n"
                           + "\t\t\t baseDN   :\t"+baseDN+"  \n"
                           + "\t\t\t filter   :\t"+filter+"  \n\n"
@@ -88,7 +92,7 @@ public class LdapUserBlk extends RunnableT{
      }
      
      private String getLdapContextFactory(){
-         // sun "com.sun.jndi.ldap.LdapCtxFactory"
+         // sun "com.sun.jndi.lqqdap.LdapCtxFactory"
          // ibm "com.ibm.jndi.LDAPCtxFactory";
          
          String s="com.sun.jndi.ldap.LdapCtxFactory";

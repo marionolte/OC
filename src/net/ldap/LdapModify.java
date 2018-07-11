@@ -22,6 +22,7 @@ import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.BasicAttribute;
 import javax.naming.directory.BasicAttributes;
+import javax.naming.directory.DirContext;
 import javax.naming.directory.ModificationItem;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
@@ -55,10 +56,6 @@ public class LdapModify extends LdapMain {
     }
     
     public static LdapModify getInstance() throws NamingException{
-        /*LdapModify lm = new LdapModify();
-                   lm.initialize(lm);
-                   lm.init();
-        return lm;*/
         return getInstance(new String[]{});
     }
     static public LdapModify getInstance(String[] ar) throws NamingException {
@@ -82,6 +79,7 @@ public class LdapModify extends LdapMain {
         String[] sp = s.split(";");
         if      ( sp[0].equalsIgnoreCase("add")    ){ sp[0]="add";    }
         else if ( sp[0].equalsIgnoreCase("delete") ){ sp[0]="delete"; }
+        else if ( sp[0].equalsIgnoreCase("del")    ){ sp[0]="delete"; }
         else if ( sp[0].equalsIgnoreCase("insert") ){ sp[0]="add";    }
         else if ( sp[0].equalsIgnoreCase("mod")    ){ sp[0]="modify"; }
         else if ( sp[0].equalsIgnoreCase("modify") ){ sp[0]="modify"; }
@@ -95,40 +93,92 @@ public class LdapModify extends LdapMain {
         final String func=getFunc("modify(String op, String dn, String attr, String val)");
         NamingEnumeration<SearchResult> entry = null;
         boolean opdone=false;
+        printf(func,4,"income");
         try { 
+            
             entry = search(dn);
+            if ( entry == null ) { throw new NamingException("dn: "+dn+" not found" ); }
             printf(func,3,"search dn:"+dn+": results with entry:"+entry);
             
             while(entry.hasMore()) {
                   SearchResult sr = entry.next();
-                  printf(func,2," find entry to modify ");
+                  printf(func,2," find entry to modify "+sr.getNameInNamespace()+" "+attr+"="+val+"|");
+                  ModificationItem[] mods = new ModificationItem[1];
+                  Name nam = new CompositeName().add( sr.getNameInNamespace() ); 
+                  if ( op.matches("delete")) {
+                     mods[0] =new ModificationItem(DirContext.REMOVE_ATTRIBUTE, new BasicAttribute(attr) );
+                  } else if ( op.matches("insert") ) {
+                        insert=true;
+                        BasicAttributes ent = imap.get(dn);
+                        if ( ent == null ) {
+                            imap.put(dn, new BasicAttributes());
+                            ent = imap.get(dn);
+                        }        
+                        ent.put( new  BasicAttribute(attr,val) ); 
+                        mods[0]=null;  
+                  } else {
+                     mods[0] =new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute(attr, val) );
+                  }   
+                  
+                  printf(func,2,"perform entry modification to "+nam);
+                  //Perform the requested modifications on the named object
+                  if (mods[0] != null ) { getLdapContext().modifyAttributes(nam, mods); }
             }
             opdone=true;
         } 
         catch( NamingException ne ) {
+            
             printf(func,1,"ERROR: message "+ne.getMessage(),ne);
-            if ( ! op.matches("insert") ) { throw new LdapException(ne.getMessage()); }
+            if ( ! op.matches("insert") ) { 
+                System.out.println("ERROR: operation on dn "+dn+" not possible - "+ne.getExplanation());
+                throw new LdapException(ne.getMessage()); 
+            }
         } 
         catch(IOException io ) {
             printf(func,1,"ERROR: message "+io.getMessage(),io);
         }
         
-        if (op.matches("insert") ) {
-            
-        }
+        
         
         if ( ! opdone ) { }
+        
+        printf(func,4,"outgoing");
     }
+    
+    public  String  getLdifFile() { return ( map.get("-lf").equals( map.get("_default_lf") ) )?null:map.get("-lf"); }
+    private boolean insert = false;
+    private HashMap<String, BasicAttributes> imap =  new HashMap();
+    private void insertMod() {
+        final String func=getFunc("insertMod()"); 
+        Iterator<String> itter = imap.keySet().iterator();
+        while( itter.hasNext() ) {
+            try {
+                String dn = itter.next();
+                
+                Name nam = new CompositeName().add( dn ); 
+                BasicAttributes ent = imap.get(dn);
+                getLdapContext().createSubcontext(nam, ent);  
+            } catch(NamingException ne) {
+                printf(func,1,"ERROR: message "+ne.getMessage(),ne);
+            }    
+        }        
+    }
+    
     private NamingEnumeration<SearchResult> search(String dn) throws NamingException, IOException {
         final String func=getFunc("search(String dn)");
-        printf(func,2,"run search against :"+dn);
+        printf(func,3,"run search against :"+dn);
+        
         
         getLdapContext().setRequestControls(new Control[] {new PagedResultsControl( getSearchSizelimit(), Control.CRITICAL) }); 
+        
+        printf(func,3,"set search  controls :"+dn);
         
         SearchControls ctls = new SearchControls();
                        ctls.setReturningAttributes(new String[]{"objectclass"});
         if ( getSearchTimeout() > 0)
                        ctls.setTimeLimit(getSearchTimeout());
+        
+        printf(func,3,"set search scope :"+dn);
         
         
         if ( getMyScope().equals(LdapScope.sub))
@@ -138,30 +188,110 @@ public class LdapModify extends LdapMain {
         if ( getMyScope().equals(LdapScope.base))
            ctls.setSearchScope(SearchControls.OBJECT_SCOPE);
         
+        printf(func,3,"search now :"+dn);
         
-        NamingEnumeration<SearchResult> results = getLdapContext().search( dn, getEnv("java.naming.ldap.attributes.binary") , ctls);
-        
+        Name nam =  new CompositeName().add( dn ) ;
+        //NamingEnumeration<SearchResult> results = getLdapContext().search( dn, getEnv("java.naming.ldap.attributes.binary") , ctls);
+       
+        NamingEnumeration<SearchResult> results = getLdapContext().search( nam, getFilter() , ctls);
+
+        printf(func,3,"search done for :"+dn+":   result:"+((results!=null)?results:"NULL" ));
+
         return results;
         
     }
     
     synchronized public void modify(String file) {
+        final String func=getFunc("modify(String file)");
         ReadFile f = new ReadFile(file);
+        Name nam = null;  ArrayList<ModificationItem> ar=null;
+        int op=DirContext.REPLACE_ATTRIBUTE;
+        String dn="";
                if ( f.isReadableFile() ) {
+                    printf(func,2,"file "+file+" is readable");
+                    boolean _ldif=false; String ops="";
                     for ( String s: f.readOut().toString().split("\n") ) {
-                         if ( ! s.isEmpty() ) {
-                            String[] sp = validate(s);
-                            if ( sp[0].matches("unknown") ) {
-                                throw new LdapException("unkown ldapmodify operation provided");
+                        if ( s.startsWith("dn:")) { _ldif=true; }
+                        if ( ! _ldif ) {
+                            if ( ! s.isEmpty()  && ! s.startsWith("\\#") ) {
+                               printf(func,2,"unkown operation :"+s+":");
+                               String[] sp = validate(s);
+                               if ( sp[0].matches("unknown") ) {
+                                   
+                                   if ( ! _ldif ) {
+                                      printf(func,2,"unkown operation :"+sp[0]+":");
+                    
+                                      throw new LdapException("unkown ldapmodify operation provided");
+                                   }   
+                               }
+                               printf(func,2,"operation :"+sp[0]+":");
+                               if ( sp.length == 4) {
+                                       modify(sp[0],sp[1],sp[2], sp[3]);
+                               } else {
+                                       modify(sp[0],sp[1],null,null); 
+                               }  
                             }
-                            if ( sp.length == 4) {
-                                modify(sp[0],sp[1],sp[2], sp[3]);
-                            } else {
-                                modify(sp[0],sp[1],null,null); 
+                        } else {
+                            printf(func,3," ldif operation  for:"+s);
+                            try {
+                                String[] sp = s.split(" ");
+                                if ( sp[0].equals("dn:") ) {
+                                     dn  = sp[ sp.length -1 ];
+                                     nam = new CompositeName().add( dn );
+                                     ar = new ArrayList(); ops=""; 
+                                     op = DirContext.REPLACE_ATTRIBUTE;
+                                } else if ( sp[0].equals("") || sp[0].equals("-")) {
+                                    if ( nam != null ) {
+                                        modify(dn,ar);
+                                    }
+                                } else if ( sp[0].toLowerCase().equals("changetype")) {
+                                      String[] at = s.split(":");
+                                      at[1]=at[1].replaceAll(" ", "").toLowerCase();
+                                      switch(at[1]) {
+                                          case "add"    : op=DirContext.ADD_ATTRIBUTE    ; break;
+                                          case "delete" : op=DirContext.REMOVE_ATTRIBUTE ; break;
+                                          default       : op=DirContext.REPLACE_ATTRIBUTE; break;
+                                      }
+                                } else if ( sp[0].toLowerCase().equals("replace") || sp[0].toLowerCase().equals("add") ||  sp[0].toLowerCase().equals("delete") ){
+                                      String[] at = s.split(":");
+                                      at[0]=at[0].replaceAll(" ", "").toLowerCase();
+                                      switch(at[0]) {
+                                          case "add"    : op=DirContext.ADD_ATTRIBUTE    ; break;
+                                          case "delete" : op=DirContext.REMOVE_ATTRIBUTE ; break;
+                                          default       : op=DirContext.REPLACE_ATTRIBUTE; break;
+                                      }      
+                                } else {
+                                    String[] at = s.split(":");
+                                    String attr = at[0]; 
+                                    String val=s.substring(at[0].length()+2);
+                                    ar.add(new ModificationItem(op, new BasicAttribute(attr, val) ) );
+                                }
+                            } catch(NamingException ne){
+                                printf(func,1,"ERROR: message "+ne.getMessage()+" ",ne);
+                    
                             }    
-                         }
+                        }    
                     } 
+                    if ( ar.size() > 0 ) {
+                        try {
+                            modify(dn,ar);
+                        } catch(NamingException ne) {
+                            
+                        }    
+                    }
+               }else {
+                   System.out.println("ERROR: file "+f.getFQDNName()+" is not a readable file");
                }
+               if ( insert ) { this.insertMod(); }
+    }
+    
+    private void modify(String dn, ArrayList<ModificationItem> ar) throws InvalidNameException, NamingException {
+        final String func=getFunc("modify(String dn, ArrayList<ModificationItem> ar)");
+        Name nam = new CompositeName().add( dn );
+        ModificationItem[] mods = new ModificationItem[ar.size()];
+        for ( int i=0; i<ar.size(); i++ ) {mods[i] = ar.get(i); }
+        
+        //getLdapContext().modifyAttributes(nam, mods);
     }
     
     LdapContext ctx=null; 
@@ -233,29 +363,41 @@ public class LdapModify extends LdapMain {
     synchronized public void operate() {
         final String func=getFunc("operate()");
         //System.out.println("attrLIst:"+lm.attrList);
+        int sav=debug;
+        //debug=4;
         if ( attrList != null ) {
-            printf(func,3,"entries to modify exist :"+attrList);
+           printf(func,3,"entries to modify exist :"+attrList);
            Iterator<String> itter = attrList.keySet().iterator();
            while(itter.hasNext()) {
                  String dn = itter.next(); 
                  printf(func,2,"like to modify dn:"+dn);
                  HashMap<String,String> m = attrList.get(dn);
+                 printf(func,2,"found for modify on:"+dn+":  hash =>"+m);
                  
-                 int j = m.size()/2+1;
+                 int j = (m!=null && m.size()>0)?m.size()/2+1:0;
+                 printf(func,2,"found for modify on:"+dn+":  hash =>"+m+" j:"+j);
+                 
                  for ( int i=0; i<=j ; i++) {
-                     String[] sp = m.get("op"+i+"attr").split(": ");
-                     printf(func,1,"call modify :"+m.get("op"+i)+": :"+dn+": :"+sp[0]+": :"+m.get("op"+i+"attr").substring(sp[0].length()+2)+":");
-        
-                     modify(m.get("op"+i),dn,sp[0],m.get("op"+i+"attr").substring(sp[0].length()+2));
+                    if ( m.get("op"+i+"attr") != null ) { 
+                        String[] sp = m.get("op"+i+"attr").split(": ");
+                        printf(func,1,"call modify :"+m.get("op"+i)+": :"+dn+": :"+sp[0]+": :"+m.get("op"+i+"attr").substring(sp[0].length()+2)+":");
+
+                        modify(m.get("op"+i),dn,sp[0],m.get("op"+i+"attr").substring(sp[0].length()+2));
+                    } 
                  }
            }
-        }                                
-    }
-    synchronized public void singlemodify(String op, String dn, String attr, String val) {
-        
+        } else {
+            printf(func,3,"no Attributelist exist");
+        } 
+        if ( insert ) { this.insertMod(); }
+        debug=sav;
     }
     
-    static private String myusage="\nusage():\noption: [-h hostname] [-p port] [-D adminDN ] [-j passwordfile] <-f <file for operation>|-o <add|del|mod>:dn:attribute:value>\n";
+    //synchronized public void singlemodify(String op, String dn, String attr, String val) {
+    //    
+    //}
+    
+    static public String myusage="\nusage():\noption: [-h hostname] [-p port] [-D adminDN ] [-j passwordfile] [[-f <file for operation of -o>] [-o <add|del|mod>:dn:attribute:value>] [-lf ldiffile] ]\n";
     public static void main(String[] args) throws Exception {
         scanner(args,myusage);
         

@@ -43,7 +43,7 @@ public class LdapSearch  extends LdapMain{
                    ls.filter=filter;
                    ls.auth=auth;
                    ls.baseDN=baseDN;
-        printf("getInstance()",0,"initalize "+name+" with :"+protocol+":"+userDN+":"+userPWD+"//"+hostname+":"+port+"/"+baseDN+"?"+filter);
+        printf("getInstance()",2,"initalize "+name+" with :"+protocol+":"+userDN+":"+userPWD+"//"+hostname+":"+port+"/"+baseDN+"?"+filter);
         
         ls.initialize(ls,  protocol,  hostname,  port,  userDN,  userPWD,  filter ,  auth);
         
@@ -69,7 +69,7 @@ public class LdapSearch  extends LdapMain{
         auth="simple";
         baseDN=getDefaultBaseDN();
         scanner(ar,myusage);
-        printf("aaa",0,"user "+getUserDN()+" local:"+userpw+" pw:"+getUserPass()+":  map:"+map.get("-w"));
+        //printf("aaa",0,"user "+getUserDN()+" local:"+userpw+" pw:"+getUserPass()+":  map:"+map.get("-w"));
         //printf("aaa",0,"port "+getPort()+"   local:"+port+" port:"+getPort()+":  map:"+map.get("-p"));
         //printf("aaa",0,"filter:"+getFilter()+":");
         
@@ -78,7 +78,7 @@ public class LdapSearch  extends LdapMain{
     
     private LdapSearch() {  name="LdapSearch"; }
     
-    static private String myusage="\nusage():\noption: [-h hostname] [-p port] [-D adminDN ] [-j passwordfile] [-a <simple|>] [-b baseDN ] [-f filter]  <attribut list>\n";
+    static public String myusage="\nusage():\noption: [-h hostname] [-p port] [-D adminDN ] [-j passwordfile] [-a <simple|>] [-b baseDN ] [-f filter]  <attribut list>\n";
     
     private byte[] cookie = null;
     

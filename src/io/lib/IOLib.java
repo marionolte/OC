@@ -5,8 +5,29 @@
  */
 package io.lib;
 
+import general.MyVersion;
+import general.Version;
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 public class IOLib {
+   private static MyVersion v;
+   private static  ClassLoader loader;
+   
+   static {
+       v      = new MyVersion();
+       loader = ClassLoader.getSystemClassLoader();
+   } 
+   
    static public String execReadToString(String execCommand) throws java.io.IOException {
             Process proc = Runtime.getRuntime().exec(execCommand);
             StringBuilder sw=new StringBuilder();
@@ -22,5 +43,148 @@ public class IOLib {
             }
             return sw.toString();
    }
+   
+   private static final HashMap<String, String> _zipmap = new HashMap<String, String>();
+   
+   static public void fillJarMap(String  f) throws IOException { fillJarMap(new ZipFile(f)); }
+   static public void fillJarMap(File    f) throws IOException { fillJarMap(new ZipFile(f.toString())); }
+   static public void fillJarMap(ZipFile f) {
+       final String func=getFunc("fillJarMap(ZipFile f)");
+       Enumeration<? extends ZipEntry> e = f.entries();
+       v.printf(func,4,"read Zip:"+f.getName());
+       while(e.hasMoreElements()) {
+           String fn = f.getName();
+           ZipEntry en = e.nextElement();
+           _zipmap.put(en.toString(), fn);
+       }
+       v.printf(func,3,"_zipmap:"+_zipmap);
+   }
+   
+   static public boolean isPackageExist(String pack) {
+       String  a = (pack).replaceAll("\\.", "\\/"); if( ! a.endsWith("/") ) { a +="/"; }
+       boolean b = (_zipmap.get(a) != null ||  _zipmap.get("/"+a) != null);
+       v.printf(getFunc("isPackageExist(String pack)"),2," check pack:"+pack+": check with a:"+a+": return:"+b+" "+_zipmap.size()+" "+_zipmap.get(a));
+       return b;
+   }
+   static public String[] getClassFromPackage(String pack) {
+       int save=v.debug;
+       //v.debug=2;
+       final String func=getFunc("getClassFromPackage(String pack)");
+       v.printf(func,4,"income for pack:"+pack);
+       ArrayList<String> ar = new ArrayList();
+       if (isPackageExist(pack)) {
+            String[] at = pack.split("\\."); 
+            v.printf(func,3,"is in pack :"+pack+":");
+            String  a = (pack).replaceAll("\\.", "\\/"); if( ! a.endsWith("/") ) { a +="/"; }
+            Iterator<String> itter = _zipmap.keySet().iterator();
+            while( itter.hasNext() ){
+                String ef = itter.next();
+                v.printf(func,3,"check ef:"+ef+":");
+                if( ef.startsWith(a) || ef.startsWith("/"+a) ) {
+                      String[] sp = ef.split("/");
+                      if ( at.length+1 == sp.length && ef.endsWith("class")) {
+                          v.printf(func,2,"ef:"+ef+ at.length+"=="+sp.length);
+                          ar.add(ef.substring(0, ef.length()-6));
+                      }
+                }
+            }
+       } else {
+           v.printf(func,3,"pack:"+pack+" not exist");
+       }
+       String[] sp = new String[ar.size()];  for(int i=0; i<sp.length; i++){ sp[i]=ar.get(i); }
+       v.printf(func,3,"outgoing for pack:"+pack+":    return:"+sp.length+" elements");
+       v.debug=save;
+       return sp;
+   }
+   
+   static public String getFunc(String func){  return "IOLib::"+func;}
+
+    public String getValueFromClass(String cl, String key) {
+        try {
+          return getIno(loader.loadClass(cl), key);
+        } catch (Exception e) { return (String) null;}  
+   }
+    
+    private  String getIno(Class<?> cl, String name) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException  {
+        
+        Field f = cl.getDeclaredField(name); 
+        return (String) ""+f.get(f);
+    }
+    
+    static public HashMap<String,String> scanner(String[] args,final String use) {    
+        String func=getFunc("::scanner(Sting[] args,final String use)");
+        v.printf(func,3," usage |"+use+"|");
+        Pattern pa = Pattern.compile("\\]|\\[|<|>");
+        Matcher ma = pa.matcher(use);
+        int pos=0;
+        HashMap<String,String> map = new HashMap();
+        while(ma.find(pos)) {
+            String msg = use.substring(pos,ma.start());
+            v.printf(func,3," find |"+msg+"| pos:"+pos+" to:"+ma.start()+" "+msg.indexOf(" ") );
+            if ( msg.indexOf(" ") > 0 ) {
+                String va="true";
+                String[] sp = msg.split(" ");
+                v.printf(func,3," sp[0] |"+sp[0]+"|");
+                if ( sp.length>0 && sp[0].startsWith("-") ) {
+                    if ( sp.length > 1 ) { 
+                        va=use.substring(pos,ma.start()).substring(sp[0].length()+1); 
+                    }
+                    v.printf(func,2," save |"+sp[0]+"="+v+"|");
+                    map.put(sp[0], va);
+                    map.put("_default_"+sp[0], va);
+                }
+            } else {
+                v.printf(func,3," msg without spaces |"+msg+"|");
+                if ( msg.startsWith("-") ) {
+                    map.put(msg, "false");
+                }else if ( msg.equals("objectlist")) {
+                    map.put(msg, "");
+                }
+            }
+            //map.put("-w", "password");     map.put("_default_-w", "password");
+            //map.put("-j", "passwordfile"); map.put("_default_-j", "passwordfile");
+            
+            v.printf(func,3," new pos |"+ma.end()+"| of "+use.length());
+            pos=ma.end();
+        }
+        v.printf(func,3," end map |"+map+"|");
+        map.put("_usage_", "false");  map.put("_debug_", "0");
+        if (args.length > 0) {
+            for(int i=0; i<args.length; i++) {
+                v.printf(func,3," property:"+args[i]+":");
+                if ( ! args[i].isEmpty() ) {
+                    if ( args[i].equals("--help") ) {
+                        map.put("_usage_", "true");
+                    } else if ( args[i].equals("-d") ) { 
+                       map.put("_debug_", ""+(Integer.parseInt(map.get("_debug_"))+1));
+                    } else if ( args[i].startsWith("-") ) { 
+                       if ( map.get(args[i]) != null ) {
+                            v.printf(func,2," map:"+args[i]+":");
+                            String p=args[i];
+                            String va="true";
+                            if ( args.length > (i+1) && ! args[i+1].startsWith("-") ) {
+                                va=args[++i];
+                            }
+                            if ( p.equals("-o") && ! map.get(p).equals(map.get("_default_-o"))) {
+                                va=map.get(p)+"\n"+v;
+                            }
+                            v.printf(func,2," map:"+p+"="+v+":");
+                            map.put(p, va);
+                       } else {
+                           map.put("_usage_", "true");
+                       }  
+                    }
+                    else if ( ! args[i].startsWith("-") ){
+                       v.printf(func,2," add object List:"+args[i]+":"); 
+                       map.put("_objlist_", map.get("_objlist_")+"_@@_"+args[i]);
+                    }
+                }   
+            }
+       } else {
+            map.put("_usage_", "true"); 
+       }     
+       return map;     
+     }
+       
 }   
 
