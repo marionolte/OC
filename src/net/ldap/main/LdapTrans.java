@@ -5,8 +5,6 @@
  */
 package net.ldap.main;
 
-import net.ldap.main.EnumProdState;
-import net.ldap.main.LdapException;
 import java.io.IOException;
 import java.util.ArrayList;
 import javax.naming.NamingEnumeration;
@@ -18,10 +16,6 @@ import javax.naming.ldap.LdapContext;
 import javax.naming.ldap.PagedResultsControl;
 import net.ldap.LdapModify;
 import net.ldap.LdapSearch;
-import static net.ldap.main.LdapMain.getLdapContext;
-import static net.ldap.main.LdapMain.getSearchSizelimit;
-import static net.ldap.main.LdapMain.getSearchTimeout;
-import static net.ldap.main.LdapMain.log;
 
 /**
  *
@@ -45,6 +39,7 @@ public class LdapTrans extends LdapMain {
         }
         this.userlist = ul;
     }
+    private LdapTrans() { super(); }
     
     private LdapSearch search;
     private LdapModify mod;
@@ -158,7 +153,8 @@ public class LdapTrans extends LdapMain {
 
     static private String myusage="\nusage():\noption: -conn <connection-file> -from <PROD|QA|TEST> -to <QA|TEST> -u <user1<,user2...>>";
     public static void main(String[] args) {
-        scanner(args, myusage);
+        LdapTrans ls = new LdapTrans();
+        //scanner(args, myusage);
         
         StringBuilder userlist=new StringBuilder();
         String from="";
@@ -169,8 +165,8 @@ public class LdapTrans extends LdapMain {
             else if ( args[i].matches("-to")   ) {   to=args[++i];}
         }
         
-        if ( usage || args == null || conn.isEmpty() ) {
-             if ( ! usage ) { System.out.println(myusage); }
+        if ( ls.usage || args == null || ls.conn.isEmpty() ) {
+             if ( ! ls.usage ) { System.out.println(myusage); }
              System.exit(1);
         } 
         

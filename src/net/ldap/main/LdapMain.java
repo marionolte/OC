@@ -4,7 +4,6 @@
  */
 package net.ldap.main;
 
-import net.ldap.main.LdapScope;
 import general.Version;
 import io.crypt.Crypt;
 import io.file.ReadFile;
@@ -30,19 +29,19 @@ import net.tcp.Host;
  * @author SuMario
  */
 abstract public class LdapMain extends Version{
-    static public  int error_code=0; 
-    static         Hashtable env;
-    static private LdapContext ctx;
-    static private String initial_context_factory="com.sun.jndi.ldap.LdapCtxFactory"; 
-    static private String initial_auth="simple";
-    static private LdapScope scope=LdapScope.base;
-    static private int timeout=0;
-    static private int size=1024;
-    static private Crypt crypt = new Crypt();
+     public  int error_code=0; 
+             Hashtable env;
+     private LdapContext ctx;
+     private String initial_context_factory="com.sun.jndi.ldap.LdapCtxFactory"; 
+     private String initial_auth="simple";
+     private LdapScope scope=LdapScope.base;
+     private int timeout=0;
+     private int size=1024;
+     private Crypt crypt = new Crypt();
     
-    static public String name;
+     public String name;
     
-    static public void initialize( LdapMain ob, String protocol, String hostname, int port, String userDN, String userPWD, String filter , String auth ) throws NamingException{
+     public void initialize( LdapMain ob, String protocol, String hostname, int port, String userDN, String userPWD, String filter , String auth ) throws NamingException{
         final String func=name+"::initialize( LdapMain ob, String protocol, String hostname, int port, String userDN, String userPWD, String filter , String auth )";
         ob.updateEnv(Context.INITIAL_CONTEXT_FACTORY, getInitContextFactory() );
             
@@ -63,7 +62,7 @@ abstract public class LdapMain extends Version{
         printf(func,4,"initialize complete");
     }
     
-    static public void initialize( LdapMain ob){
+     public void initialize( LdapMain ob){
         final String func=name+";:initialize( LdapMain ob){";
         ob.updateEnv(Context.INITIAL_CONTEXT_FACTORY, getInitContextFactory() );
             
@@ -84,46 +83,46 @@ abstract public class LdapMain extends Version{
         printf(func,4,"initialize complete");
     }
     
-    static public void setInitContextFactory(String con) { LdapMain.initial_context_factory=con;}
-    static public String getInitContextFactory() { return LdapMain.initial_context_factory; }
+     public void setInitContextFactory(String con) { initial_context_factory=con;}
+     public String getInitContextFactory() { return initial_context_factory; }
     
-    static public void   setInitAuth(String auth) { if ( auth!=null && ! auth.isEmpty() ) { LdapMain.initial_auth=auth;}}
-    static public String getInitAuth(           ) { return LdapMain.initial_auth; }
+     public void   setInitAuth(String auth) { if ( auth!=null && ! auth.isEmpty() ) { initial_auth=auth;}}
+     public String getInitAuth(           ) { return initial_auth; }
     
-    static public void      setInitEnv(Hashtable env ) { if (env!= null && !env.isEmpty() ) {LdapMain.env=env; } }
-    static public Hashtable getInitEnv(              ) { return LdapMain.env; }
+     public void      setInitEnv(Hashtable env ) { if (env!= null && !env.isEmpty() ) {this.env=env; } }
+     public Hashtable getInitEnv(              ) { return env; }
     
-    static public void        setLdapContext(LdapContext ctx ) { LdapMain.ctx=ctx; }
-    static public LdapContext getLdapContext(               ) { return LdapMain.ctx; }
+     public void        setLdapContext(LdapContext ctx ) { ctx=ctx; }
+     public LdapContext getLdapContext(               ) { return ctx; }
     
-    static public Hashtable getEnv() { return env; } 
+     public Hashtable getEnv() { return env; } 
     
-    static public LdapScope getScope(String info) {
+     public LdapScope getScope(String info) {
           scope = LdapScope.getId(info);          
           return scope;
     }
     
-    static public void setSearchTimeout(int t){ if(t>=0) timeout=0; }
-    static public int  getSearchTimeout(){ return timeout; }
+     public void setSearchTimeout(int t){ if(t>=0) timeout=0; }
+     public int  getSearchTimeout(){ return timeout; }
     
-    static public void setSearchSizelimit(int t) { if (t>=0) size=t; }
-    static public int getSearchSizelimit() { return size; }
+     public void setSearchSizelimit(int t) { if (t>=0) size=t; }
+     public int getSearchSizelimit() { return size; }
     
-    static public LdapScope getMyScope() { return scope; }
+     public LdapScope getMyScope() { return scope; }
     
-    static public void updateEnv(String attr, String val){ 
+     public void updateEnv(String attr, String val){ 
         if (env == null ) { env = new Hashtable(); }
         env.put(attr, val);
     }
     
-    static public void init() throws NamingException {
+     public void init() throws NamingException {
         final String func=name+"::init()";
         printf(func,4,"init start");
         ctx=new InitialLdapContext(env, null);
         printf(func,4,"init complete "+ctx);
     }
     
-    static public boolean needBind( String[] list ) {
+     public boolean needBind( String[] list ) {
         if ( list.length > 0 ) {
             for( int i=0; i<list.length; i++ ) {
                 if ( env.get( list[i] ) != null ) { return true; }
@@ -133,13 +132,13 @@ abstract public class LdapMain extends Version{
     }
     
     
-    static public String getEnv(String attribute) {
+     public String getEnv(String attribute) {
         if ( env == null ) { return ""; }
         String s=(String) env.get(attribute);
         return (s==null)?"":s;
     }
     
-    static public ArrayList<String> getLinesFromFile(String fname) {
+     public ArrayList<String> getLinesFromFile(String fname) {
         String line; 
         ArrayList<String> a = new ArrayList();
         SecFile f = new SecFile(fname);
@@ -158,10 +157,10 @@ abstract public class LdapMain extends Version{
         return a;
     }
     
-    static public void bind(String baseDN, Object o                 ) throws NamingException { ctx.bind(baseDN, o);}
-    static public void bind(Name name,     Object o                 ) throws NamingException { ctx.bind(name, o); }
-    static public void bind(Name name,     Object o, Attributes attr) throws NamingException { ctx.bind(name, o, attr); }
-    static public void bind(String baseDN, Object o, Attributes attr) throws NamingException { ctx.bind(baseDN, o, attr); }
+     public void bind(String baseDN, Object o                 ) throws NamingException { ctx.bind(baseDN, o);}
+     public void bind(Name name,     Object o                 ) throws NamingException { ctx.bind(name, o); }
+     public void bind(Name name,     Object o, Attributes attr) throws NamingException { ctx.bind(name, o, attr); }
+     public void bind(String baseDN, Object o, Attributes attr) throws NamingException { ctx.bind(baseDN, o, attr); }
     
     public String getLdapContextFactory(){
          // sun "com.sun.jndi.ldap.LdapCtxFactory"
@@ -186,23 +185,23 @@ abstract public class LdapMain extends Version{
         return s;
      }
     
-    static public    String protocol="ldap";
-    static public    String hostname="localhost";
-    static public    int    port=389;
-    static public    String userdn=null;
-    static public    String userpw=null;
-    static public    String filter=null;
-    static public    String auth="simple";
-    static public    String baseDN=null;
-    static public ArrayList objList = new ArrayList();
-    static public HashMap<String, HashMap<String,String> > attrList =null; //= new ArrayList();
-    static public    String operationfile=null;
-    static public   boolean usage=false;
-    static              int pageSize = 10;
+     public    String protocol="ldap";
+     public    String hostname="localhost";
+     public    int    port=389;
+     public    String userdn=null;
+     public    String userpw=null;
+     public    String filter=null;
+     public    String auth="simple";
+     public    String baseDN=null;
+     public ArrayList objList = new ArrayList();
+     public HashMap<String, HashMap<String,String> > attrList =null; //= new ArrayList();
+     public    String operationfile=null;
+     public   boolean usage=false;
+                  int pageSize = 10;
      
-    static Properties conn = new Properties();
-    static public HashMap<String,String> map = new  HashMap<String,String> ();
-    static public void scanner(String[] args,final String use) {    
+     Properties conn = new Properties();
+     public HashMap<String,String> map = new  HashMap<String,String> ();
+     public void scanner(String[] args,final String use) {    
         String func=name+"::scanner(Sting[] args,final String use)";
         printf(func,3," usage |"+use+"|");
         Pattern pa = Pattern.compile("\\]|\\[|<|>");
@@ -337,10 +336,10 @@ abstract public class LdapMain extends Version{
         }
     }
     
-    static public int    getPageSize() { return pageSize; }
-    static public String getProtocol() { protocol=(map.get("-ssl")!= null && map.get("-ssl").equals("true"))?"ldaps":"ldap"; return protocol; }
-    static public String getHostname() { return (map.get("-h").equals("hostname"))?hostname:map.get("-h"); }
-    static public int    getPort() {  
+     public int    getPageSize() { return pageSize; }
+     public String getProtocol() { protocol=(map.get("-ssl")!= null && map.get("-ssl").equals("true"))?"ldaps":"ldap"; return protocol; }
+     public String getHostname() { return (map.get("-h").equals("hostname"))?hostname:map.get("-h"); }
+     public int    getPort() {  
     
         String p=map.get("-p"); 
         
@@ -350,16 +349,16 @@ abstract public class LdapMain extends Version{
         } catch(Exception e) {}
         return (getProtocol().equals("ldaps"))?636:389;
     }
-    static public String getUserDN()   { return userdn; }
-    static public String getUserPass() { return userpw; }
-    static public String getAuth()     { return auth; }
-    static public String getFilter()   { return (filter!=null)?filter:"objectclass=*"; }
+     public String getUserDN()   { return userdn; }
+     public String getUserPass() { return userpw; }
+     public String getAuth()     { return auth; }
+     public String getFilter()   { return (filter!=null)?filter:"objectclass=*"; }
     
-    static public ArrayList getAttrList() { return objList; }
-    static public String    getBaseDN()   { return baseDN; }
+     public ArrayList getAttrList() { return objList; }
+     public String    getBaseDN()   { return baseDN; }
     
     
-    static public String getDefaultBaseDN() {
+     public String getDefaultBaseDN() {
          StringBuilder sw = new StringBuilder();
          String ho=Host.getDomainname();
          //System.out.println("domain:"+ho);
@@ -377,6 +376,6 @@ abstract public class LdapMain extends Version{
     }
     
     static {
-       name="LdapMain";
+       //name="LdapMain";
     }
 }

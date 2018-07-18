@@ -30,15 +30,17 @@ public class LdapBind extends LdapMain{
     }
     
     static public LdapBind getInstance(String[] ar) throws NamingException {
-        protocol="ldap";
-        hostname="localhost";
-        port=389;
-        userdn="cn=admin";
-        userpw="";
-        filter="objectclass=*";
-        auth="simple";
-        scanner(ar,myusage);
-        return getInstance();
+        LdapBind ls = new LdapBind();
+        ls.protocol="ldap";
+        ls.hostname="localhost";
+        ls.port=389;
+        ls.userdn="cn=admin";
+        ls.userpw="";
+        ls.filter="objectclass=*";
+        ls.auth="simple";
+        ls.scanner(ar,myusage);
+        ls.initialize(ls);
+        return ls;
     }
     
     private LdapBind() {
@@ -71,10 +73,10 @@ public class LdapBind extends LdapMain{
     static public String myusage="\nusage():\noption: [-h hostname] [-p port] [-D adminDN ] [-j passwordfile] [-b baseDN ]";
     
     public static void main(String[] args) throws Exception {
-        scanner(args,myusage);
+        LdapBind lb = getInstance(args);  // scanner(args,myusage);
         
-        if ( ! usage ) {
-            LdapBind lb = getInstance(); //proto,hostname,port,userdn,userpw,filter,auth);
+        if ( ! lb.usage ) {
+            //proto,hostname,port,userdn,userpw,filter,auth);
             System.out.println("bind "+((lb.bind())?"successful":"failed"));
             System.exit(lb.error_code);
         } else {

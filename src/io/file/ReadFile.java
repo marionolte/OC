@@ -45,7 +45,7 @@ public class ReadFile extends Version {
     }
 
     public ReadFile(String nfile){
-        this( new File(nfile) );
+        this( new File(nfile.replaceAll("^~", System.getProperty("user.home")+File.separator)) );
     }
 
     public ReadFile(File file) {
@@ -53,6 +53,8 @@ public class ReadFile extends Version {
          this.filer= ( b )? getCanonical(file):file;
          this.file = ( b )? file.getName():file.toString();
          this.dir  = ( b )? file.getParent():getPar(file.toString());
+         
+         //System.out.println("file:"+filer.toString());
     }
 
     private String getPar(String f) {

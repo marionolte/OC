@@ -112,7 +112,7 @@ public class IOLib {
     }
     
     static public HashMap<String,String> scanner(String[] args,final String use) {    
-        String func=getFunc("::scanner(Sting[] args,final String use)");
+        String func=getFunc("scanner(Sting[] args,final String use)");
         v.printf(func,3," usage |"+use+"|");
         Pattern pa = Pattern.compile("\\]|\\[|<|>");
         Matcher ma = pa.matcher(use);
@@ -128,6 +128,11 @@ public class IOLib {
                 if ( sp.length>0 && sp[0].startsWith("-") ) {
                     if ( sp.length > 1 ) { 
                         va=use.substring(pos,ma.start()).substring(sp[0].length()+1); 
+                    }
+                    if( use.substring(ma.end()-1, ma.end()).equals("<") ) {
+                        pos=ma.end(); ma.find(pos);
+                        va=use.substring(pos,ma.start());
+                        v.printf(func,2,"msg after char <  =>:"+va+":");
                     }
                     v.printf(func,2," save |"+sp[0]+"="+v+"|");
                     map.put(sp[0], va);

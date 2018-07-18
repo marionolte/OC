@@ -197,6 +197,7 @@ public class SSHshell  extends RunnableT {
         printf(func,4,"setSession return");
     }
     
+    public void setKeyFile(File k) { this.keyFile=k;}
     public boolean login(){
         if( isLogin() ) { return isLogin(); }
         
@@ -331,10 +332,10 @@ public class SSHshell  extends RunnableT {
                 setSession(); 
             } catch(Exception io) { 
                 printf(func,1,"user "+ user + " session creation fails with:"+io.getMessage());
-            }
-            printf(func,2,"user "+ user + " is logged in - send "+comm);*/
+            }*/
+            printf(func,2,"user "+ user + " is logged in - send =>|"+comm+"<=");
             if ( send(comm+"\n") ) {
-               sw.append(getFullResponse().toString());
+               sw.append(getFullResponse().toString().replaceAll("\\e\\[[\\d;]*[^\\d;]", ""));
                _success=true;
             } else { 
                 printf(func,2,"ERROR - sending command :"+comm+":");
@@ -452,7 +453,7 @@ public class SSHshell  extends RunnableT {
                 if ( len == sw.length()) {
                      sleep(300);
                 } else {                    
-                    String[] sp = sw.toString().split("\n");
+                    String[] sp = sw.toString().replaceAll("\\e\\[[\\d;]*[^\\d;]", "").split("\n");
                     if ( sp[ sp.length-1].equals(lastLine)) { notComplete=true; }
                     if (debug >0) log(func+"complete:"+notComplete+"  lastLine|"+lastLine+"|"+sp[ sp.length-1]+"|");
                 }

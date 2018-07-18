@@ -24,7 +24,6 @@ import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
 import javax.naming.ldap.PagedResultsControl;
 import javax.naming.ldap.PagedResultsResponseControl;
-import static net.ldap.main.LdapMain.getDefaultBaseDN;
 
 
 
@@ -128,7 +127,7 @@ public class LdapUserBlk extends RunnableT{
      static String userModPWD = "";
      
           //generic search parameters 
-     static String baseDN = "cn=Users,"+getDefaultBaseDN();
+     static String baseDN = "cn=Users,"+(LdapBind.getInstance()).getDefaultBaseDN();
      static String filter = "objectclass=*";
      static boolean obPWD = false;
      

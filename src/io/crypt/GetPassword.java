@@ -114,6 +114,8 @@ public class GetPassword {
     
     public static String getStringPassword(int len) {  return getNext( (len<MIN_STRONG_LENGTH)?MIN_STRONG_LENGTH:len, PasswordTyp.STRONG);  }
     public static String getStrongPassword() { return getStringPassword(MIN_STRONG_LENGTH); }
+    public static String getMediumPassword() { return getNext(MIN_LENGTH,PasswordTyp.MEDIUM); }
+    public static String getEasyPassword()   { return getNext(6,PasswordTyp.EASY);}
     public static String getPassword(int length, PasswordTyp typ) { return getNext(length, typ); }
     
     public static String getPassword(PasswordTyp typ) { return getNext(MIN_LENGTH, typ); }

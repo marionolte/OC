@@ -9,6 +9,7 @@ import net.ssh.SSHshell;
 import general.Updater;
 import io.Console;
 import io.crypt.Crypt;
+import io.crypt.GetPassword;
 import io.file.ReadDir;
 import io.file.ReadFile;
 import io.file.SecFile;
@@ -204,20 +205,31 @@ public class Mos extends Updater{
                 else if ( args[i].startsWith("-ldap")  ){ this.runLdap(args[i].substring(1),getArgsLower(args,++i));  fin=true; }
                 else if ( args[i].matches("-d")        ){ } // needs empty - run in pre-scan
                 else if ( args[i].matches("-monitor")  ){ this.runMonitor(getArgsLower(args,++i));       fin=true; }
+                else if ( args[i].matches("-newpass")  ){ this.getNewPassword(getArgsLower(args,++i));   fin=true; }
                 else if ( args[i].matches("-version")  ){ this.version(); _exit=0;                       fin=true; donemsg=false; }
                 else {
                     usage(); sleep(300); _exit=1; throw new RuntimeException("force closing - unknown argument"); 
                 }
                 printf(func,4,"parse loop ["+i+"/"+args.length+"] ends");
-                if ( fin ) { throw new RuntimeException("closing"); }
+                if ( fin ) {  setClosed(); return; } // throw new RuntimeException("closing"); }
             }
         } catch(Exception e) {
             printf(func,1,"closing parsing with "+e.getMessage(),e);
             fin=true;
-        }    
-        if ( fin ) { setClosed(); }
-        parseCompleted=true;
-        return; 
+        }   finally { 
+            parseCompleted=true;
+        }
+        if ( fin ) { setClosed(); } 
+        return;
+   }
+    
+   private void getNewPassword(String[] ar) {
+      
+       System.out.println("password : "+GetPassword.getStrongPassword( )+" :" 
+                                       +" "+GetPassword.getMediumPassword() +" :"
+                                       +" "+GetPassword.getEasyPassword() );
+                                       
+                                                  
    }
     
     private void checkGCFile(String[] ar) {
@@ -289,6 +301,7 @@ public class Mos extends Updater{
                                     break;
                 case "ldapcopy":
                                     net.ldap.LdapCopy lc = net.ldap.LdapCopy.getInstance(ar);
+                                                      lc.debug=debug;
                                                       lc.copy();
                                     break;
                 default:
@@ -521,8 +534,8 @@ public class Mos extends Updater{
     
     private boolean sshScript(String[] args ) {
         final String func=getFunc("sshScript(String[] args )");
-         printf(func,2,"sshScript start");
-         
+         printf(func,2,"sshScript start - "+args.length );
+         if ( args.length == 0 ) { args = new String[]{"--help"};}
          SSHpass.debug=debug;
          SSHpass ssh = SSHpass.getInstance(args);        
                  ssh.runScript();

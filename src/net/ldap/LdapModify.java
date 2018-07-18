@@ -47,7 +47,7 @@ public class LdapModify extends LdapMain {
                    lm.userpw=userPWD;
                    lm.filter=filter;
                    lm.auth=auth;
-                   lm.baseDN=baseDN;
+                   lm.baseDN=basedn;
                    lm.initialize(lm,  protocol,  hostname,  port,  userDN,  userPWD,  filter ,  auth);
         
                    lm.init();
@@ -59,16 +59,17 @@ public class LdapModify extends LdapMain {
         return getInstance(new String[]{});
     }
     static public LdapModify getInstance(String[] ar) throws NamingException {
-        protocol="ldap";
-        hostname="localhost";
-        port=389;
-        userdn="cn=admin";
-        userpw="";
-        filter="objectclass=*";
-        auth="simple";
-        baseDN=getDefaultBaseDN();
-        scanner(ar,myusage);
-        return getInstance(protocol,hostname,port,userdn,userpw,filter,auth,baseDN);
+        LdapModify lm = new LdapModify();
+        lm.protocol="ldap";
+        lm.hostname="localhost";
+        lm.port=389;
+        lm.userdn="cn=admin";
+        lm.userpw="";
+        lm.filter="objectclass=*";
+        lm.auth="simple";
+        lm.baseDN=lm.getDefaultBaseDN();
+        lm.scanner(ar,myusage);
+        return getInstance(lm.protocol,lm.hostname,lm.port,lm.userdn,lm.userpw,lm.filter,lm.auth,lm.baseDN);
     }
     
     private LdapModify() {
@@ -399,24 +400,25 @@ public class LdapModify extends LdapMain {
     
     static public String myusage="\nusage():\noption: [-h hostname] [-p port] [-D adminDN ] [-j passwordfile] [[-f <file for operation of -o>] [-o <add|del|mod>:dn:attribute:value>] [-lf ldiffile] ]\n";
     public static void main(String[] args) throws Exception {
-        scanner(args,myusage);
+        LdapModify ls = LdapModify.getInstance(args);
+                   //ls.scanner(args,myusage);
         
-        if ( ! usage ) { 
+        if ( ! ls.usage ) { 
             // LdapModify ls = getInstance(); //getInstance(protocol,hostname,port,userdn,userpw,filter,auth);
-            LdapModify ls = getInstance(protocol,hostname,port,userdn,userpw,filter,auth,baseDN);
+            //LdapModify ls = getInstance(protocol,hostname,port,userdn,userpw,filter,auth,baseDN);
 
             if ( ls == null ) {
                 System.out.println("ERROR: doesn't create an LdapModify object");
-                error_code=-1;
+                ls.error_code=-1;
             } else {
-               if ( operationfile != null && (new ReadFile(operationfile)).isReadableFile() ) { 
-                    ls.modify(operationfile);
+               if ( ls.operationfile != null && (new ReadFile(ls.operationfile)).isReadableFile() ) { 
+                    ls.modify(ls.operationfile);
                } else {
                     ls.operate();
                }
             }
         }    
-        System.exit(error_code);
+        System.exit(ls.error_code);
     }
     
 }

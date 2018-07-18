@@ -7,11 +7,13 @@ package net.ssh;
 
 import general.Version;
 import io.crypt.Crypt;
+import io.crypt.GetPassword;
 import io.file.ReadFile;
-import io.file.WriteFile;
+import io.file.SecFile;
 import static io.lib.IOLib.execReadToString;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.util.HashMap;
 import java.util.Properties;
 
 /**
@@ -21,34 +23,167 @@ import java.util.Properties;
 public class SSHpass extends Version{
     private int exit=255;
     private SSHshell ssh=null;
+    private String rprescript="";
+    private String rpostscript="";
+    private String rrollback="";
+    private boolean postexec;
+    private boolean preexec;
     
     public boolean connect() { return connect(host,port,user,pass); }
     public boolean connect(String host, int port, String user, String pass) {
         if ( ssh != null ) {}  //disconnect 
         
-        (ssh = new SSHshell(host,port,user,pass,false)).start();
+        ssh = new SSHshell(host,port,user,pass,false);
+        ssh.setProxy();
+        ssh.setKeyFile(kFile);
+        ssh.start();
         return ssh.login();
     }
     
     
+
+    
     public int runScript() {
         final String func=getFunc("runScript()");
+        int step=-1;
+        completeOK=true;
+        if ( ! prescript.isEmpty() ) {
+             step=1;
+             completeOK=runPreScript();
+             if ( ! completeOK ) { rollback(step); return step; }
+        }
+        
+        connect();
+        if ( ! ssh.isLogin() ) {
+               if ( step >0 ) { rollback(step); }
+               return 0;
+        } else {
+               step=2;
+        }
+        
+        if ( ! rprescript.isEmpty() ) {
+            step=3;
+            completeOK=runRemotePreScript();
+            if ( ! completeOK ) { rollback(step); return step; }
+        }
+        if ( ! script.isEmpty() ) {
+             step=3;
+             completeOK=runWorkScript();
+             if ( ! completeOK ) { rollback(step); return step; }
+        }
+        if ( ! rpostscript.isEmpty() ) {
+             step=4;
+             completeOK=runRemotePostScript();
+             if ( ! completeOK ) { rollback(step); return step; }
+        }
+        if ( ! postscript.isEmpty() ) {
+             step=5;
+             completeOK=runPostScript();
+             if ( ! completeOK ) { rollback(step); return step; }
+        }
+        step=6;
+        
+        return step;
+    }
+    
+    
+    private boolean runRemotePostScript() {
+    StringBuilder sw = new StringBuilder(ssh.sendSingleCommand(this.rpostscript+"\n"));
+        for( String s : sw.toString().split("\n")) {
+            if ( s.startsWith("ERROR") ) { return false;}
+        }
+        return true;
+    }
+
+    private boolean runPostScript() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    private boolean runWorkScript() {
+       String sep = File.separator;
+       StringBuilder sw = new StringBuilder();
+       if ( this.script     != null && ! script.isEmpty() ) {
+            
+            if ( sw.length() == 0 && ! script.contains(" ") ) {
+               sw.append(ssh.sendSingleCommand(script));
+            } else {
+               String f =  sep+"tmp"+ sep +  GetPassword.getMediumPassword();
+               ssh.send("echo '"+sw.toString()+"' > " + f+"\n");
+               ssh.sendSingleCommand("chmod 755 "+f +"\n");
+               
+               sw= ssh.sendSingleCommand(f+"\n");
+               ssh.sendSingleCommand("echo remove "+f+" && rm "+f+" 2>&1\n");
+            }   
+            return checkError(sw);
+       } else { return false; }
+      
+    }
+
+    private boolean runRemotePreScript() {
+        StringBuilder sw = new StringBuilder(ssh.sendSingleCommand(this.rprescript+"\n"));
+        return checkError(sw);
+    }
+
+    private boolean runPreScript() {
+        return this.runLocalScript(this.prescript);
+    }
+
+    private void rollback(int step) {
+        String f = "";
+        switch(step) {
+            
+        }
+    }
+
+    private boolean runLocalScript(String sfile) {
+       final String func=getFunc("runLocalScript(String sfile)");
+       try {
+            StringBuilder sw = new StringBuilder( execReadToString(sfile) );
+            return checkError(sw);
+       }catch(java.io.IOException io) {
+            printf(func,1,"prescript runs in error "+io.getMessage(),io);
+            return false;  
+       }     
+       
+    } 
+    
+    private boolean checkError(StringBuilder sw) {
+        for( String s : sw.toString().split("\n")) {
+            if ( s.startsWith("ERROR") ) { return false;}
+        }
+        return true;
+}   
+
+    public int runScript1() {
+        final String func=getFunc("runScript()");
        completeOK=false; 
-       if ( prescript != null && ! prescript.isEmpty() ) {
+       StringBuilder asw = new StringBuilder();
+       if ( prescript != null && ! prescript.isEmpty() && script != null && ! script.isEmpty() ) {
            printf(func,3,"run pre script:"+prescript);
            try {
-                execReadToString(prescript);
-            } catch (Exception e) {
+                asw.append(execReadToString("cat "+script+" | "+ prescript));
+           } catch (Exception e) {
                 printf(func,1,"prescript runs in error "+e.getMessage(),e);
                 return 1;
-            }  
+           }  
        }
+       
        connect();
+       String sep = File.separator;
+       StringBuilder sw = new StringBuilder();
        if ( script     != null && ! script.isEmpty() ) {
-            ssh.send(script);
-            ssh.sendSingleCommand("chmod 755 "+File.separator+"tmp"+script );
-            StringBuilder sw= ssh.sendSingleCommand(File.separator+"tmp"+script);
-            ssh.sendSingleCommand("rm "+File.separator+"tmp"+script + " 2>/dev/null");
+            
+            if ( asw.length() == 0 && ! script.contains(" ") ) {
+               sw.append(ssh.sendSingleCommand(script));
+            } else {
+               String f =  sep+"tmp"+ sep +  GetPassword.getMediumPassword();
+               ssh.send("echo '"+asw.toString()+"' > " + f+"\n");
+               ssh.sendSingleCommand("chmod 755 "+f +"\n");
+               
+               sw= ssh.sendSingleCommand(f+"\n");
+               ssh.sendSingleCommand("echo remove "+f+" && rm "+f+" 2>&1\n");
+            }   
+            
        }
        if ( postscript != null && ! postscript.isEmpty() ) {
             printf(func,3,"run post script:"+postscript);
@@ -81,23 +216,42 @@ public class SSHpass extends Version{
         System.exit(s.exit);
     }
     
+    final public static String myusage="usage() sshpass\n [-conn <connection file>] [-script <sciptfile>] [-pre <preaction script>] [-rpre <remote preaction script>] [-post <postaction script>] [-rpost <remote postaction script>] [-roll <local rollback script>] [-rroll <local rollback script>]\n";
+    
     private static void usage() {
-        System.out.println("sshpass -conn <connection file> -script <sciptfile> [-pre <preaction script>] [-post <postaction script>]\n"
-                         + "\t\t connection file - hold the crypted account information \n"
-                         + "\t\t script file \t- are the script which are runs remote\n\n"
-                         + "\t\t preaction  script \t- are a local script, which runs before the script on this system\n"
-                         + "\t\t postaction script \t- are a local script, which runs after the script on this system\n");
+        System.out.println(myusage
+                         + "\t\t connection file \t- hold the crypted account information \n"
+                         + "\t\t\t\t\tformat:\n"
+                         + "\t\t\t\t\t\tUSER=<USERNAME>\n"
+                         + "\t\t\t\t\t\tPASS=<PASSWORD or PASSWORDFILE>\n"
+                         + "\t\t\t\t\t\tHOST=<HOSTNAME>\n"
+                         + "\t\t\t\t\t\tPORT=<PORT>\n"
+                         + "\t\t\t\t\t\tKEY=<ssh keyfile>\n\n"
+                         + "\t\t script file \t\t- are the script which are runs remote\n"
+                         + "\t\t preaction  script \t- are a local script, which runs before the script runs on local system\n"
+                         + "\t\t\t\t\t   (ends the scriptname the script file will regenerated with the pre scripti - only local)\n"
+                         + "\t\t remote preaction  script - are a remote  tool/script, which runs before the script runs on the remote system\n"
+                         + "\t\t postaction script \t- are a local script, which runs after the script on local system\n"
+                         + "\t\t remote postaction script - are a remote tool/script, which runs after the script runs on the remote system\n"
+                         + "\t\t\t\t\t   (ends the template than the outcome of the script will passt throw the postfile - only local)\n"
+                         + "\t\t rollback script \t- are called, when a outcome line starts with the key ERROR: \n"
+                         + "\t\t remote rollback script - are called, when a outcome line starts with the key ERROR: and the script/remote prescript are called\n"
+                                 
+                         + "\t\t\t\t\t"
+                       );
     }
     
-    private String script;
-    private String prescript;
-    private String postscript;
+    private String script="";
+    private String prescript="";
+    private String postscript="";
+    private String rollback="";
     private Properties prop;
    
     private String host="";
     private int    port=-1;
     private String user="";
     private String pass="";
+    private File kFile=null;
     
     public static SSHpass getInstance(String[] args) {
         try {
@@ -112,36 +266,89 @@ public class SSHpass extends Version{
     private SSHpass(String[] args) throws Exception {
         boolean config=false;
         Crypt cr=new Crypt();
-        for ( int i=0; i< args.length; i++ ) {
-            if ( args[i].matches("-conn") ) { 
-                WriteFile f= new WriteFile(args[++i]);
-                if ( ! f.isReadableFile() ) { throw new RuntimeException(f.getFileName()+" is not a readable file"); }
-                StringBuilder sw=new StringBuilder(f.readOut().toString().trim());
-                if ( sw.capacity() > 0 && ! sw.toString().endsWith("=") ) {
-                        f.delete();
-                        f.append( cr.getCrypted(sw.toString()),true);
-                } else {
-                        sw.replace(0, sw.capacity(), cr.getUnCrypted(sw.toString()));
-                }
-                
-                printf("SSHpass","SSHpass",2,"sw:"+sw.toString());
-                prop = new Properties();
-                prop.load( new ByteArrayInputStream(sw.toString().getBytes("UTF-8")) );
-            
-                host = prop.getProperty("HOST");  if (host==null) { host="localhost"; }
-                port = Integer.parseInt(prop.getProperty("PORT")); 
-                user = prop.getProperty("USER");
-                pass = prop.getProperty("PASS");
+        HashMap<String, String> imap = io.lib.IOLib.scanner(args, myusage);
+        
+        if ( ! imap.get("--help").equals(imap.get("_default_--help") ) ) {
+            usage();
+            return;
+        }   
+        
+        if ( ! imap.get("-conn").equals( imap.get("_default_-conn") ) ){
+            SecFile f= new SecFile(imap.get("-conn"));
+            if ( ! f.isReadableFile() ) { throw new RuntimeException(f.getFileName()+" is not a readable file"); }
+            StringBuilder sw=new StringBuilder(f.readOut().toString().trim());
+            printf("SSHpass","SSHpass",2,"sw:"+sw.toString());
+            prop = new Properties();
+            prop.load( new ByteArrayInputStream(sw.toString().getBytes("UTF-8")) );
+                //System.out.println("host:"+prop.getProperty("HOST"));
+            host = prop.getProperty("HOST");  if (host==null) { host="localhost"; }
+            try{ port=Integer.parseInt(prop.getProperty("PORT")); }catch(Exception e) { port = 22; }
+            user = prop.getProperty("USER");  if ( user == null ) { user=System.getProperty("user.name"); }
+            pass = prop.getProperty("PASS");
+            if ( pass != null ) {
+                    ReadFile fp = new ReadFile(pass);
+                    if ( fp.isReadableFile() ) {
+                         f = new SecFile(pass);
+                         pass=f.readOut().toString();
+                    }
+            } else { pass=""; }
+            if ( prop.getProperty("KEY") != null ) {
+                    ReadFile fp = new ReadFile(prop.getProperty("KEY"));
+                    if ( fp.isReadableFile() ) {
+                            kFile=fp.getFile();
+                    } else {
+                        System.out.println("ERROR: key file "+prop.getProperty("KEY")+" is not a readable file");
+                        throw new RuntimeException("key file "+prop.getProperty("KEY")+" is not a readable file");
+                    }        
             }
-            else if ( args[i].matches("-script") ) { this.script=((new ReadFile(args[++i])).readOut()).toString(); }
-            else if ( args[i].matches("-pre")    ) { this.prescript=((new ReadFile(args[++i])).readOut()).toString(); }
-            else if ( args[i].matches("-post")   ) { this.postscript=((new ReadFile(args[++i])).readOut()).toString(); }
-            else if ( args[i].matches("\\-d")      ) { debug++; }
-            else {
-                printf("SSHpass","SSHpass",1,"unknown :"+args[i]+":");
-            }
-            
-        }       
+        } else {
+            System.out.println("ERROR: key file "+prop.getProperty("KEY")+" is not a readable file");
+            throw new RuntimeException("key file "+prop.getProperty("KEY")+" is not a readable file");
+        }    
+    
+        
+        if ( ! imap.get("-script").equals(imap.get("_default_-script") ) ) { 
+            this.script=imap.get("-script");
+            //        ((new ReadFile(args[++i])).readOut()).toString(); 
+        } else {
+            System.out.println("WARNING: no script to execute - return");
+            return;
+        }
+        
+        if ( ! imap.get("-pre").equals(imap.get("_default:-pre") ) ) { 
+           this.prescript=imap.get("-pre");
+           this.preexec=true;
+           if ( this.prescript.equals("\\.template")) {
+                this.prescript=(new ReadFile(this.prescript).readOut()).toString(); 
+                this.preexec=false;
+           } 
+        }
+        
+        if ( ! imap.get("-rpre").equals(imap.get("_default:-rpre") ) ) { 
+           this.rprescript=imap.get("-rpre");
+        }
+        
+        if ( ! imap.get("-post").equals(imap.get("_default:-post") ) ) { 
+           this.postscript=imap.get("-post");
+           this.postexec=true;
+           if ( this.postscript.equals("\\.template")) {
+                this.postscript=(new ReadFile(this.postscript).readOut()).toString(); 
+                this.postexec=false;
+           } 
+        }
+        
+        if ( ! imap.get("-rpost").equals(imap.get("_default:-rpost") ) ) { 
+           this.rprescript=imap.get("-rpost");
+        }
+         
+        if ( ! imap.get("-roll").equals(imap.get("_default:-roll") ) ) { 
+           this.rollback=imap.get("-roll");
+        }
+        
+        if ( ! imap.get("-rroll").equals(imap.get("_default:-rroll") ) ) { 
+           this.rrollback=imap.get("-rroll");
+        }
+        
         
         printf("SSHpass","SSHpass",3," host:"+host+": port:"+port+": user:"+user+": pass:"+( (pass!=null && !pass.isEmpty() )?"SET":"NULL")+":"+pass+":");
         
@@ -154,6 +361,7 @@ public class SSHpass extends Version{
         if ( ! config ) { throw new RuntimeException("sshpass could not run without connection file");}
     }
 
+    
     
     
 }

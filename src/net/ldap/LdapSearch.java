@@ -18,13 +18,7 @@ import javax.naming.directory.SearchResult;
 import javax.naming.ldap.Control;
 import javax.naming.ldap.PagedResultsControl;
 import javax.naming.ldap.PagedResultsResponseControl;
-import static net.ldap.main.LdapMain.auth;
-import static net.ldap.main.LdapMain.filter;
-import static net.ldap.main.LdapMain.hostname;
-import static net.ldap.main.LdapMain.port;
-import static net.ldap.main.LdapMain.protocol;
-import static net.ldap.main.LdapMain.userdn;
-import static net.ldap.main.LdapMain.userpw;
+
 
 /**
  *
@@ -43,12 +37,12 @@ public class LdapSearch  extends LdapMain{
                    ls.filter=filter;
                    ls.auth=auth;
                    ls.baseDN=baseDN;
-        printf("getInstance()",2,"initalize "+name+" with :"+protocol+":"+userDN+":"+userPWD+"//"+hostname+":"+port+"/"+baseDN+"?"+filter);
+        ls.printf("getInstance()",2,"initalize "+ls.name+" with :"+ls.protocol+":"+ls.userdn+":"+ls.userpw+"//"+ls.hostname+":"+ls.port+"/"+ls.baseDN+"?"+ls.filter);
         
         ls.initialize(ls,  protocol,  hostname,  port,  userDN,  userPWD,  filter ,  auth);
         
         ls.init();
-        printf("getInstance()",3,"return Object "+name);
+        ls.printf("getInstance()",3,"return Object "+ls.name);
         return ls;
     }
     
@@ -57,23 +51,33 @@ public class LdapSearch  extends LdapMain{
     public boolean getPersistentSearch() {return persist; }
     
     static public LdapSearch getInstance() throws NamingException {
-        return getInstance(getProtocol(),hostname,port,userdn,userpw,filter,auth,getBaseDN());
+        LdapSearch ls = new LdapSearch();
+        ls.protocol="ldap";
+        ls.hostname="localhost";
+        ls.port=389;
+        ls.userdn="cn=admin";
+        ls.userpw="";
+        ls.filter="objectclass=*";
+        ls.auth="simple";
+        ls.baseDN=ls.getDefaultBaseDN();
+        return getInstance(ls.getProtocol(),ls.hostname,ls.port,ls.userdn,ls.userpw,ls.filter,ls.auth,ls.getBaseDN());
     }
     static public LdapSearch getInstance(String[] ar) throws NamingException {
-        protocol="ldap";
-        hostname="localhost";
-        port=389;
-        userdn="cn=admin";
-        userpw="";
-        filter="objectclass=*";
-        auth="simple";
-        baseDN=getDefaultBaseDN();
-        scanner(ar,myusage);
+        LdapSearch ls = new LdapSearch();
+        ls.protocol="ldap";
+        ls.hostname="localhost";
+        ls.port=389;
+        ls.userdn="cn=admin";
+        ls.userpw="";
+        ls.filter="objectclass=*";
+        ls.auth="simple";
+        ls.baseDN=ls.getDefaultBaseDN();
+        ls.scanner(ar,myusage);
         //printf("aaa",0,"user "+getUserDN()+" local:"+userpw+" pw:"+getUserPass()+":  map:"+map.get("-w"));
         //printf("aaa",0,"port "+getPort()+"   local:"+port+" port:"+getPort()+":  map:"+map.get("-p"));
         //printf("aaa",0,"filter:"+getFilter()+":");
         
-        return getInstance(getProtocol(),getHostname(),getPort(),getUserDN(),getUserPass(),getFilter(),getAuth(),getBaseDN());
+        return getInstance(ls.getProtocol(),ls.getHostname(),ls.getPort(),ls.getUserDN(),ls.getUserPass(),ls.getFilter(),ls.getAuth(),ls.getBaseDN());
     }
     
     private LdapSearch() {  name="LdapSearch"; }
@@ -197,23 +201,23 @@ public class LdapSearch  extends LdapMain{
     }*/
     
     public static void main(String[] args) throws Exception{
-        scanner(args,myusage);
+        LdapSearch ls = getInstance(args); //scanner(args,myusage);
         
-        if ( ! usage ) { 
+        if ( ! ls.usage ) { 
             
-            LdapSearch ls = getInstance(); //getInstance(protocol,hostname,port,userdn,userpw,filter,auth);
+             //getInstance(protocol,hostname,port,userdn,userpw,filter,auth);
 
             if ( ls == null ) {
                 System.out.println("ERROR: doesn't create an LdapSearch object");
-                error_code=-1;
+                ls.error_code=-1;
             } else {
                 do {
-                    ls.printResults( ls.search(baseDN, filter, objList) );
+                    ls.printResults( ls.search(ls.baseDN, ls.filter, ls.objList) );
 
                 } while ( ls.cookie != null ); 
             }
         }
-        System.exit(error_code);
+        System.exit(ls.error_code);
     }
 
     
