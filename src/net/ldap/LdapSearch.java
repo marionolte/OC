@@ -9,6 +9,8 @@ import net.ldap.main.LdapException;
 import net.ldap.main.LdapScope;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
@@ -29,6 +31,7 @@ public class LdapSearch  extends LdapMain{
     static public LdapSearch getInstance( String protocol, String hostname, int port, String userDN, String userPWD, String filter , String auth , String baseDN) throws NamingException {
         //printf("getIN",0,"create instance");
         LdapSearch ls = new LdapSearch();
+                   ls.getScope("sub");
                    ls.protocol=protocol;
                    ls.port=port;
                    ls.hostname=hostname;
@@ -52,6 +55,7 @@ public class LdapSearch  extends LdapMain{
     
     static public LdapSearch getInstance() throws NamingException {
         LdapSearch ls = new LdapSearch();
+        ls.getScope("sub");
         ls.protocol="ldap";
         ls.hostname="localhost";
         ls.port=389;
@@ -61,9 +65,11 @@ public class LdapSearch  extends LdapMain{
         ls.auth="simple";
         ls.baseDN=ls.getDefaultBaseDN();
         return getInstance(ls.getProtocol(),ls.hostname,ls.port,ls.userdn,ls.userpw,ls.filter,ls.auth,ls.getBaseDN());
+        //return ls;
     }
     static public LdapSearch getInstance(String[] ar) throws NamingException {
         LdapSearch ls = new LdapSearch();
+        ls.getScope("sub");
         ls.protocol="ldap";
         ls.hostname="localhost";
         ls.port=389;
@@ -75,14 +81,19 @@ public class LdapSearch  extends LdapMain{
         ls.scanner(ar,myusage);
         //printf("aaa",0,"user "+getUserDN()+" local:"+userpw+" pw:"+getUserPass()+":  map:"+map.get("-w"));
         //printf("aaa",0,"port "+getPort()+"   local:"+port+" port:"+getPort()+":  map:"+map.get("-p"));
-        //printf("aaa",0,"filter:"+getFilter()+":");
+        //printf("aaa",0,"filter:"+ls.getFilter()+":  scope:"+ls.getMyScope()+":"+ls.getScope()+":");
         
-        return getInstance(ls.getProtocol(),ls.getHostname(),ls.getPort(),ls.getUserDN(),ls.getUserPass(),ls.getFilter(),ls.getAuth(),ls.getBaseDN());
+        LdapSearch lm=getInstance(ls.getProtocol(),ls.getHostname(),ls.getPort(),ls.getUserDN(),ls.getUserPass(),ls.getFilter(),ls.getAuth(),ls.getBaseDN());
+                   lm.objList=ls.getAttrList();
+                   lm.getScope(ls.getScope());
+       return lm;
     }
     
     private LdapSearch() {  name="LdapSearch"; }
     
-    static public String myusage="\nusage():\noption: [-h hostname] [-p port] [-D adminDN ] [-j passwordfile] [-a <simple|>] [-b baseDN ] [-f filter]  <attribut list>\n";
+    static public String myusage="\nusage():\noption: [-h hostname] [-p port] [-D adminDN ] [-j passwordfile] [-a <simple|>] "
+            + "[-scope <sub|one|base>] [-sizelimit <SearchSizeLimit>] [-pg <ldap lookup entry page>] [-b baseDN ] [-f filter]  <attribut list>\n";
+    
     
     private byte[] cookie = null;
     
@@ -91,33 +102,39 @@ public class LdapSearch  extends LdapMain{
         printf(func,2,"like to search with:"+getFilter()+": to basedn :"+getBaseDN()+": to get attributes:"+getAttrList());
         return search(getBaseDN(),getFilter(),getAttrList());
     }
+    
+    SearchControls ctls = null; 
     public NamingEnumeration search(String baseDN, String filter, ArrayList attr) throws NamingException, IOException {
         if ( getLdapContext() == null ) 
             throw new LdapException("Context not initialized");
         final String func=getFunc("search(String baseDN, String filter, ArrayList attr)");
         printf(func,4,"start seaching event");
         
-        getLdapContext().setRequestControls(new Control[] {new PagedResultsControl( getSearchSizelimit(), Control.CRITICAL) }); 
+        getLdapContext().setRequestControls(new Control[] {new PagedResultsControl( getPageSize(), Control.CRITICAL) }); 
         
-        SearchControls ctls = new SearchControls();
+        ctls = new SearchControls();
         
         
+        /*
+        // remove filter local
         printf(func,3," attr list:"+attr.size());
         if (attr.size()>0) {
             String[] attrIDs = new String[attr.size()]; // { "sn", "telephonenumber", "golfhandicap", "mail" };
             for(int i=0; i<attr.size();i++) { attrIDs[i] = (String) attr.get(i); }
             ctls.setReturningAttributes(attrIDs);
-        }
+        }*/
         if ( getSearchTimeout() > 0)
             ctls.setTimeLimit(getSearchTimeout());
         
-        
-        if ( getMyScope().equals(LdapScope.sub))
+        printf(func,2,"search my scope:"+getMyScope());
+        //if ( getMyScope().equals(LdapScope.sub))
            ctls.setSearchScope(SearchControls.SUBTREE_SCOPE);
-        if ( getMyScope().equals(LdapScope.one))
+        if ( getMyScope().equals(LdapScope.one)) {
            ctls.setSearchScope(SearchControls.ONELEVEL_SCOPE);
-        if ( getMyScope().equals(LdapScope.base))
+        }   
+        if ( getMyScope().equals(LdapScope.base)) {
            ctls.setSearchScope(SearchControls.OBJECT_SCOPE);
+        }   
            
         printf(func,2,"run search against :"+baseDN+" filter:"+getFilter()+":");
         //NamingEnumeration results = getLdapContext().search( baseDN, getEnv("java.naming.ldap.attributes.binary") , ctls);
@@ -137,36 +154,104 @@ public class LdapSearch  extends LdapMain{
                       }
         }  
         //setting the cookie on the context for the next page search 
-        getLdapContext().setRequestControls( new Control[] { new PagedResultsControl( getSearchSizelimit(), cookie, Control.CRITICAL) });
+        getLdapContext().setRequestControls( new Control[] { new PagedResultsControl( getPageSize(), cookie, Control.CRITICAL) });
                 
         printf(func,3,"return results:"+results);
         return results;
         
     }
     
+    public NamingEnumeration trysearch() throws NamingException, IOException { 
+        final String func=getFunc("trysearch()");
+        printf(func,2,"like to search again");
+        
+        if (ctls == null ) { throw new IOException("invalid operation - not searched before");}
+        
+        NamingEnumeration results = getLdapContext().search(getBaseDN(), getFilter(), ctls);
+        printf(func,2,"search returns elements:"+results.hasMore());
+        
+        //process the returned controls to get the cookie 
+        Control[] controls = getLdapContext().getResponseControls();
+        if (controls != null) {
+                     for (int i = 0; i < controls.length; i++) {
+                           if (controls[i] instanceof PagedResultsResponseControl) {
+                              PagedResultsResponseControl prrc = (PagedResultsResponseControl) controls[i];
+                              cookie = prrc.getCookie();
+                           }
+                      }
+        }  
+        //setting the cookie on the context for the next page search 
+        getLdapContext().setRequestControls( new Control[] { new PagedResultsControl( getPageSize(), cookie, Control.CRITICAL) });
+        
+        return results;
+    }
+    public boolean couldSearchAgain() { return (cookie !=null); }
+    
     
     public boolean printResults(NamingEnumeration namEnum ) throws NamingException {
         final String func=getFunc("printResults(NamingEnumeration namEnum)");
         boolean b=false;
         printf (func,3," print results:"+(namEnum != null && namEnum.hasMore())+" nameEnum:"+namEnum);
+        HashMap<String, ArrayList<String>> imp = new HashMap<String, ArrayList<String>>();
         while (namEnum != null && namEnum.hasMore()) {
                SearchResult entry = (SearchResult) namEnum.next();
-               System.out.println("dn: "+entry.getNameInNamespace() ); b=true;
+               ArrayList<String> ar = new ArrayList<String>(); ar.add(entry.getNameInNamespace());
+               imp.put("dn", ar);
+               //System.out.println("dn: "+entry.getNameInNamespace() ); 
+               b=true;
+               
                
                Attributes attr = entry.getAttributes();
                printf(func,3,"Attributes:"+attr);
                NamingEnumeration en = attr.getAll();
                while(en!= null && en.hasMore() ) {
                    Attribute at = (Attribute) en.next();
+                   ar = new ArrayList<String>();
                    printf(func,3,"Attribute:"+at);
-                   String sp[]  = at.toString().substring(at.getID().length()+1).split(",");
+                   String id=at.getID().toLowerCase();
+                   printf(func,3,"id:"+id+":  :"+at.toString().substring(at.getID().length()+2)+":");
+                   String sp[]  = at.toString().substring(at.getID().length()+2).split(",");
                    for (int i=0; i<sp.length; i++) {
+                       printf(func,4,"i="+i+":   sp[]=:"+sp[i]+":");
                        Object ob=at.get();
-                       String v= ( ob instanceof byte[] )? new String((byte[]) ob ):sp[i];
-                       System.out.println(at.getID()+": "+v);
+                       
+                       String v= (( ob instanceof byte[] )? new String((byte[]) ob ):sp[i]).replaceAll("^ ", "");
+                       printf(func,4,id+": "+v);
+                       ar.add(v);
+                       
                        
                    }
+                   printf(func,3,"put list  for:"+id);
+                   imp.put(id, ar);
                }
+               
+               
+               System.out.println("dn: "+(imp.get("dn")).get(0));
+               ArrayList<String> a = super.getAttrList();
+               if ( debug >= 0 ) {
+                   printf(func,1,"objList is Empty ? :"+a.isEmpty()+":  ");
+                   for(String s: a ) {
+                       printf(func,1,"print attribut :"+s+":  "+a.contains(s));
+                   }
+               }
+               ar = imp.get("objectclass");
+               for ( int i=0; i<ar.size() ; i++ ) {
+                   String o = ar.get(i);
+                   if ( a.isEmpty() || a.contains("objectclass") ) System.out.println("objectclass: "+o);
+               }
+               //System.out.println("a");
+               Iterator<String> itter = imp.keySet().iterator(); 
+               while ( itter.hasNext() ) {
+                   String f = itter.next();
+                   if ( ! f.isEmpty() && ! f.equals("dn") && ! f.equals("objectclass")) {
+                       ar = imp.get(f);
+                       for(int i=0; i<ar.size(); i++) {
+                           if ( a.isEmpty() || a.contains(f) ) { System.out.println(f+": "+ar.get(i)); }
+                       }
+
+                   }
+               }
+               
                System.out.println("");
                //NamingEnumeration en=at.getIDs();
                ///for (int i=0; i<at.size(); i++ ) {
@@ -212,7 +297,7 @@ public class LdapSearch  extends LdapMain{
                 ls.error_code=-1;
             } else {
                 do {
-                    ls.printResults( ls.search(ls.baseDN, ls.filter, ls.objList) );
+                    ls.printResults( ls.search(ls.getBaseDN(), ls.getFilter(), ls.getAttrList()) );
 
                 } while ( ls.cookie != null ); 
             }

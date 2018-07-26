@@ -257,6 +257,9 @@ public class Mos extends Updater{
                                     printf(func,4,"Ldap Search instance created ");
                                     //ls.printResults( ls.search(ls.getBaseDN(), ls.getFilter(), ls.getAttrList()) );
                                     ls.printResults( ls.search() );
+                                    while( ls.couldSearchAgain() ) {
+                                        ls.printResults( ls.trysearch() );
+                                    }
                                     this._exit = ls.error_code;
                                     break;
                 case "ldapbind"   : 
@@ -302,7 +305,9 @@ public class Mos extends Updater{
                 case "ldapcopy":
                                     net.ldap.LdapCopy lc = net.ldap.LdapCopy.getInstance(ar);
                                                       lc.debug=debug;
-                                                      lc.copy();
+                                                      if ( ! lc.usage ) {
+                                                            lc.copy();
+                                                      }      
                                     break;
                 default:
                     System.out.println("ERROR: "+foo+" not found");

@@ -11,15 +11,20 @@ package net.ldap.main;
 public enum LdapScope {
     base, sub, one;
     
-    static private LdapScope ls=LdapScope.base;
+    static private LdapScope ls=base;
     
     static public LdapScope getId(String info) {
-        if      ( info.toLowerCase().matches("base") ) { return LdapScope.base; }
-        else if ( info.toLowerCase().matches("sub")  ) { return LdapScope.sub; }
-        else if ( info.toLowerCase().matches("one")  ) { return LdapScope.one; }
+        if      ( info.isEmpty() || info.toLowerCase().matches("sub")  ) { ls=LdapScope.sub;  return ls;  }
+        else if (                   info.toLowerCase().matches("base") ) { ls=LdapScope.base; return ls; }
+        else if (                   info.toLowerCase().matches("one")  ) { ls=LdapScope.one; return ls;  }
         throw new LdapScopeException("not supported scope");
     }
     
+    static public String get() {
+        if      ( ls.equals(one) ) { return "one";  }
+        else if ( ls.equals(base)) { return "base"; }
+        return "sub";
+    }
     static public void setId(LdapScope scope) { ls=scope;}
     
     static public boolean compare(LdapScope comp) {

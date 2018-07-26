@@ -89,7 +89,7 @@ public class LdapTrans extends LdapMain {
             throw new LdapException("Context not initialized");
         final String func="search(String baseDN, String filter, ArrayList attr)";
         
-        ctx.setRequestControls(new Control[] {new PagedResultsControl( getSearchSizelimit(), Control.CRITICAL) }); 
+        ctx.setRequestControls(new Control[] {new PagedResultsControl( getPageSize(), Control.CRITICAL) }); 
         
         
         SearchControls ctls = new SearchControls();

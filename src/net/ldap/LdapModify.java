@@ -170,7 +170,7 @@ public class LdapModify extends LdapMain {
         printf(func,3,"run search against :"+dn);
         
         
-        getLdapContext().setRequestControls(new Control[] {new PagedResultsControl( getSearchSizelimit(), Control.CRITICAL) }); 
+        getLdapContext().setRequestControls(new Control[] {new PagedResultsControl( getPageSize(), Control.CRITICAL) }); 
         
         printf(func,3,"set search  controls :"+dn);
         

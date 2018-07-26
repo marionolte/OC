@@ -36,7 +36,6 @@ abstract public class LdapMain extends Version{
      private String initial_auth="simple";
      private LdapScope scope=LdapScope.base;
      private int timeout=0;
-     private int size=1024;
      private Crypt crypt = new Crypt();
     
      public String name;
@@ -97,17 +96,20 @@ abstract public class LdapMain extends Version{
     
      public Hashtable getEnv() { return env; } 
     
+     public String getScope() { return scope.get(); }
      public LdapScope getScope(String info) {
           scope = LdapScope.getId(info);          
           return scope;
-    }
+     }
+     
     
      public void setSearchTimeout(int t){ if(t>=0) timeout=0; }
      public int  getSearchTimeout(){ return timeout; }
     
-     public void setSearchSizelimit(int t) { if (t>=0) size=t; }
-     public int getSearchSizelimit() { return size; }
+     public void setSearchSize(int t){ if(t>=0) searchlimit=0; }
+     public int  getSearchSize(){ return searchlimit; }
     
+     
      public LdapScope getMyScope() { return scope; }
     
      public void updateEnv(String attr, String val){ 
@@ -193,11 +195,12 @@ abstract public class LdapMain extends Version{
      public    String filter=null;
      public    String auth="simple";
      public    String baseDN=null;
-     public ArrayList objList = new ArrayList();
+     public ArrayList<String> objList = new ArrayList();
      public HashMap<String, HashMap<String,String> > attrList =null; //= new ArrayList();
      public    String operationfile=null;
      public   boolean usage=false;
                   int pageSize = 10;
+     private      int searchlimit=1024; 
      
      Properties conn = new Properties();
      public HashMap<String,String> map = new  HashMap<String,String> ();
@@ -255,12 +258,14 @@ abstract public class LdapMain extends Version{
                             printf(func,2," map:"+p+"="+v+":");
                             map.put(p, v);
                        } else {
+                           System.out.println("unknown argument "+args[i]);
                            usage=true; log(use);
                        }  
                     }
                     else if ( ! args[i].startsWith("-") ){
-                       printf(func,2," add object List:"+args[i]+":"); 
-                       objList.add(args[i]);  
+                       printf(func,3," add object to list:"+args[i]+":"); 
+                       addAttrList(args[i]);
+                       printf(func,3,"object list contains:"+getAttrList().size()+" elements");
                     }
                 }   
             }
@@ -281,6 +286,7 @@ abstract public class LdapMain extends Version{
                             port=((protocol.equals("ldaps"))?636:389);
               }                 
               scope= (( map.get("-s") != null && ! map.get("-s").isEmpty() )? getScope(map.get("-s")):LdapScope.sub);
+              //System.out.println("scope="+scope);
                
               //System.out.println("userpw:"+userpw);
               if ( (userpw == null || userpw.isEmpty()) && map.get("-j") != null && ! map.get("-j").isEmpty() &&  ! map.get("-j").equals(map.get("_default_-j")) &&  (new ReadFile(map.get("-j")).isReadableFile())   ) {
@@ -298,6 +304,7 @@ abstract public class LdapMain extends Version{
               if ( map.get("-of") != null && ! map.get("-of").isEmpty()  &&  (new ReadFile(map.get("-of")).isReadableFile())   ) {
                     operationfile=map.get("-f");
               }
+              
               
               if ( map.get("-f") != null && ! map.get("-f").equals(map.get("_default_-f") )   ) {
                     filter=map.get("-f");
@@ -327,15 +334,52 @@ abstract public class LdapMain extends Version{
 
                         attrList.put(dn, m);
                   }     
-              }                   
-               
-            printf(func,3,"map:"+map);
+              }   
+              
+              String f=getFromMap("-pg");
+              if ( ! f.isEmpty() && ! f.equals("true") ){
+                    int si=this.getPageSize();
+                    try {
+                        printf(func,3,"check search size limit update with "+f);
+                          si=Integer.parseInt(f);
+                    } catch (NumberFormatException e){
+                    }
+                    this.setPageSize(si);
+              }   
+              
+              f=getFromMap("-sizelimit");
+              if ( ! f.isEmpty() && ! f.equals("true") ){
+                    int si=this.getSearchSize();
+                    try {
+                        printf(func,3,"check search size limit update with "+f);
+                          si=Integer.parseInt(f);
+                    } catch (NumberFormatException e){
+                    }
+                    this.setSearchSize(si);
+              }
+              getScope(getFromMap("-scope")); 
+           
+              printf(func,3,"map:"+map);
+              if ( debug > 0 ) {
+                  ArrayList<String> a = getAttrList();
+                  for(String s: a) {
+                      printf(func,1,"attribut list contains:"+s+":   "+a.contains(s) );
+                  }
+              }
             
         } else {
+            printf(func,1,"no arguments provided");
             usage=true; 
         }
     }
+     
+     private String getFromMap(String k) {
+         String f=map.get("k");
+         String v=( ( f != null && ! f.isEmpty() && ! f.equals( map.get("_default_"+k) ) )?f:"");
+         return v;
+     }
     
+     public void   setPageSize(int t) { if (t>0){ pageSize=t; }}
      public int    getPageSize() { return pageSize; }
      public String getProtocol() { protocol=(map.get("-ssl")!= null && map.get("-ssl").equals("true"))?"ldaps":"ldap"; return protocol; }
      public String getHostname() { return (map.get("-h").equals("hostname"))?hostname:map.get("-h"); }
@@ -352,9 +396,10 @@ abstract public class LdapMain extends Version{
      public String getUserDN()   { return userdn; }
      public String getUserPass() { return userpw; }
      public String getAuth()     { return auth; }
-     public String getFilter()   { return (filter!=null)?filter:"objectclass=*"; }
+     public String getFilter()   { return (filter!=null&& ! filter.isEmpty() )?filter:"objectclass=*"; }
     
      public ArrayList getAttrList() { return objList; }
+     public void      addAttrList(String s) {  if ( ! objList.contains(s)) { objList.add(s); } }
      public String    getBaseDN()   { return baseDN; }
     
     
