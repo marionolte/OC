@@ -148,6 +148,7 @@ public class IOLib {
             }
             //map.put("-w", "password");     map.put("_default_-w", "password");
             //map.put("-j", "passwordfile"); map.put("_default_-j", "passwordfile");
+            map.put("--help", "help page");  map.put("_default_--help", map.get("--help"));
             
             v.printf(func,3," new pos |"+ma.end()+"| of "+use.length());
             pos=ma.end();
@@ -159,7 +160,7 @@ public class IOLib {
                 v.printf(func,3," property:"+args[i]+":");
                 if ( ! args[i].isEmpty() ) {
                     if ( args[i].equals("--help") ) {
-                        map.put("_usage_", "true");
+                        map.put(args[i], "true");
                     } else if ( args[i].equals("-d") ) { 
                        map.put("_debug_", ""+(Integer.parseInt(map.get("_debug_"))+1));
                     } else if ( args[i].startsWith("-") ) { 
@@ -190,6 +191,16 @@ public class IOLib {
        }     
        return map;     
      }
-       
+    
+    static public String getMappedValue(final String use, final HashMap<String,String> map) {    
+        String func=getFunc("getMappedValue(final String use,HashMap<String,String> map)");
+        final String f=map.get(use);
+        if ( f != null && ! f.equals(map.get("_default_"+use)) ) {
+            return f;
+        }
+        return "";
+    }
+    
+     
 }   
 

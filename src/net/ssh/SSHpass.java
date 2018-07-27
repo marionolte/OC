@@ -264,16 +264,18 @@ public class SSHpass extends Version{
     }
     
     private SSHpass(String[] args) throws Exception {
+        final String func=getFunc("SSHpass(String[] args)");
         boolean config=false;
         Crypt cr=new Crypt();
         HashMap<String, String> imap = io.lib.IOLib.scanner(args, myusage);
         
-        if ( ! imap.get("--help").equals(imap.get("_default_--help") ) ) {
+        printf(func,3,"help:"+io.lib.IOLib.getMappedValue("--help",imap)+":"+imap.get("_default_--help")+":");
+        if ( ! io.lib.IOLib.getMappedValue("--help",imap).isEmpty() ) {
             usage();
             return;
         }   
         
-        if ( ! imap.get("-conn").equals( imap.get("_default_-conn") ) ){
+        if ( ! io.lib.IOLib.getMappedValue("-conn",imap).isEmpty()  ){
             SecFile f= new SecFile(imap.get("-conn"));
             if ( ! f.isReadableFile() ) { throw new RuntimeException(f.getFileName()+" is not a readable file"); }
             StringBuilder sw=new StringBuilder(f.readOut().toString().trim());
