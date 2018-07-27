@@ -205,7 +205,7 @@ abstract public class LdapMain extends Version{
      Properties conn = new Properties();
      public HashMap<String,String> map = new  HashMap<String,String> ();
      public void scanner(String[] args,final String use) {    
-        String func=name+"::scanner(Sting[] args,final String use)";
+        String func=name+"::scanner(String[] args,final String use)";
         printf(func,3," usage |"+use+"|");
         Pattern pa = Pattern.compile("\\]|\\[|<|>");
         Matcher ma = pa.matcher(use);
@@ -233,8 +233,12 @@ abstract public class LdapMain extends Version{
                     map.put(msg, "");
                 }
             }
-            map.put("-w", "password");     map.put("_default_-w", "password");
-            map.put("-j", "passwordfile"); map.put("_default_-j", "passwordfile");
+            if ( map.get("-w") == null ) { map.put("-w", "password");     map.put("_default_-w", "password");      }
+            if ( map.get("-j") == null ) { map.put("-j", "passwordfile"); map.put("_default_-j", "passwordfile");  }
+            if ( map.get("-a") == null ) { map.put("-a", "authtype");     map.put("_default_-a", "authtype");      }
+            
+            if ( map.get("-help") == null ) { map.put("-help", "usage");  map.put("_default_-help", "usage");      }   
+            
             
             printf(func,3," new pos |"+ma.end()+"| of "+use.length());
             pos=ma.end();
@@ -269,6 +273,11 @@ abstract public class LdapMain extends Version{
                     }
                 }   
             }
+            
+            if(  ! getMapValue("-help").isEmpty() ) {
+                 usage=true; log(use);
+            }
+            
             printf(func,3,"map scanned:"+map);
             hostname=(map.get("-h")==null || map.get("-h").equals(map.get("_default_-h")))?"localhost":map.get("-h");
               baseDN=(map.get("-b")==null || map.get("-b").equals(map.get("_default_-b")))?getDefaultBaseDN():map.get("-b");
@@ -282,7 +291,7 @@ abstract public class LdapMain extends Version{
               try {
                             port= Integer.parseInt( map.get("-p") );
                }catch(Exception e) {     
-                      printf(func,0,"exception "+e.getMessage());
+                      printf(func,3,"exception "+e.getMessage());
                             port=((protocol.equals("ldaps"))?636:389);
               }                 
               scope= (( map.get("-s") != null && ! map.get("-s").isEmpty() )? getScope(map.get("-s")):LdapScope.sub);
@@ -419,6 +428,13 @@ abstract public class LdapMain extends Version{
          //System.out.println("basedn:"+sw.toString()+":");
          return sw.toString();
     }
+     
+    public String getMapValue(String a){
+        if ( a != null ) {
+            if ( map.get(a) != null && ! map.get(a).equals(map.get("_default_"+a))) { return map.get(a); }
+        }
+        return "";
+    } 
     
     static {
        //name="LdapMain";

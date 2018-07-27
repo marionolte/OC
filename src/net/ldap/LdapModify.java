@@ -398,7 +398,7 @@ public class LdapModify extends LdapMain {
     //    
     //}
     
-    static public String myusage="\nusage():\noption: [-h hostname] [-p port] [-D adminDN ] [-j passwordfile] [[-f <file for operation of -o>] [-o <add|del|mod>:dn:attribute:value>] [-lf ldiffile] ]\n";
+    static public String myusage="\nusage():\noption: [-h hostname] [-p port] [-D adminDN ] [-j passwordfile] [[-f <file for operation of -o>] [-o <add|del|mod>:dn:attribute:value>] [-lf ldiffile]\n";
     public static void main(String[] args) throws Exception {
         LdapModify ls = LdapModify.getInstance(args);
                    //ls.scanner(args,myusage);

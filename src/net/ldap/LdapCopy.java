@@ -15,12 +15,19 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.naming.CompositeName;
+import javax.naming.InvalidNameException;
 import javax.naming.Name;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
+import javax.naming.directory.BasicAttribute;
+import javax.naming.directory.BasicAttributes;
+import javax.naming.directory.DirContext;
+import javax.naming.directory.ModificationItem;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
 import javax.naming.ldap.Control;
@@ -145,8 +152,8 @@ public class LdapCopy extends LdapMain{
     private String[] getAuthHash(boolean b,String f) {
         
         ArrayList<String> a = new ArrayList();
-             for ( int i=1; i< debug; i++) { a.add("-d"); }
-             if ( protocol.equals("ldaps") ){a.add("-ssl"); }
+             for ( int i=1; i<= debug; i++) { a.add("-d"); }
+     if ( protocol.equals("ldaps") ){ a.add("-ssl"); }
              a.add("-h"); a.add(    (b)?hostname:modhost );
              a.add("-p"); a.add(""+((b)?port:modport)   );
              a.add("-D"); a.add(    (b)?userdn:moduserdn );
@@ -154,9 +161,10 @@ public class LdapCopy extends LdapMain{
      if(f.equals("search")){  
              a.add("-f"); a.add(filter); 
              a.add("-pg");a.add(""+this.getPageSize());
+             a.add("-b"); a.add(    (b)?baseDN:modbaseDN );
      }
              a.add("-a"); a.add(    (b)?auth:auth);
-             a.add("-b"); a.add(    (b)?baseDN:modbaseDN );
+             
              
           String[] ab = new String[ a.size() ];
              for ( int i=0; i< ab.length; i++ ) { ab[i]=a.get(i); }
@@ -183,10 +191,13 @@ public class LdapCopy extends LdapMain{
         printf(func,4,"copy dn's  from "+map.get("-b")+" to "+map.get("-bc"));
         this.searchRun=true;
         printf(func,3,"start LdapCopySearch");
+        ReadOK.clear(); 
+        ReadNOK.clear();
         lcs = new LdapCopySearch(this); lcs.start();
         lcm = new LdapCopyModify(this); lcm.start();
         printf(func,3,"start LdapCopySearch completed");
         byte[] cookie = null;
+        Name ename=null;    
         try {
             //ls = LdapSearch.getInstance(new String[]{ (   protocol.equals("ldaps"))?"-ssl":"", "-h",hostname, "-p",""+port,    "-D",   userdn, "-w", userpw, "-f",filter, "-a", auth, "-b", baseDN});
             ls = LdapSearch.getInstance( getAuthHash(true, "search") );
@@ -195,14 +206,8 @@ public class LdapCopy extends LdapMain{
             lss = LdapSearch.getInstance( getAuthHash(true, "search") );
             lss.getLdapContext().setRequestControls(new Control[] {new PagedResultsControl( getPageSize(), Control.CRITICAL) });
             
-            
-            Name baseName = new CompositeName().add( map.get("-b") );
-            Name copyName = new CompositeName().add( map.get("-bc") );
-           
-            /*SearchControls ctls = new SearchControls();
-                           ctls.setReturningAttributes(new String[]{"ALL"});
-                           ctls.setSearchScope(SearchControls.SUBTREE_SCOPE);
-            */
+                     
+             
             long loop=0;
             do {
                 printf(func,3,"perform search to "+getBaseDN()+" with :"+getFilter()+":");
@@ -212,7 +217,7 @@ public class LdapCopy extends LdapMain{
                 printf(func,3,"result from search:"+results);
                 
                 checkedDN.put(map.get("-bc").toLowerCase(), "false");
-                boolean b=true;        
+                boolean b=true; 
                 while (results != null && results.hasMore()) {
                         
                         
@@ -227,9 +232,10 @@ public class LdapCopy extends LdapMain{
                         if ( ent != null ) {
                             
                             printf(func,3,"found entry "+ent+"   dn:"+ent.getNameInNamespace()+":");
-                            Name ename = new CompositeName().add( (ent.getNameInNamespace() ) );
+                            ename = new CompositeName().add( (ent.getNameInNamespace() ) );
                             printf(func,3,"user entries for dn:"+ename+"   =>"); 
                             rbuf.push(ename);
+                            LookupOK.add(ename);
                             
                         } else {
                           printf(func,1,"break - not found");  
@@ -252,175 +258,46 @@ public class LdapCopy extends LdapMain{
             
         } catch (IOException io ) {
           printf(func,1,"transport entries to ends with io error "+io.getMessage());
+          LookupNOK.add(ename);
         } catch ( NamingException ne ) {
-          printf(func,1,"transport entries to ends with naming error "+ne.getMessage());        
+          printf(func,1,"transport entries to ends with naming error "+ne.getMessage());   
+          LookupNOK.add(ename);
         }    
         
         this.searchRun=false;
         printf(func,4, "wait until rbuf is not empty");
         while( ! rbuf.isEmpty() || ! mbuf.isEmpty() ) { sleep(300);}
+        System.out.println("Copy Update status");
+          System.out.println("\tLookUp      \t\tOK:"+LookupOK.size()+"\t\tNOT OK:"+LookupNOK.size());
+        if ( LookupNOK.size() > 0) {  
+          System.out.println("\t\tLookup Errors:");
+         for(int i=0; i< LookupNOK.size();i++) {
+          System.out.println("\t\t\t"+LookupNOK.get(i));    
+         }
+        }            
+          System.out.println("\tRead for Update\t\tOK:"+  ReadOK.size()+"\t\tNOT OK:"+  ReadNOK.size());
+        if ( ReadNOK.size() > 0) {  
+          System.out.println("\t\tRead Errors:");
+         for(int i=0; i< ReadNOK.size();i++) {
+          System.out.println("\t\t\t"+ReadNOK.get(i));    
+         }
+        }  
+          System.out.println("\tModification\t\tOK:"+   ModOK.size()+"\t\tNOT OK:"+   ModNOK.size());
+        if ( ModNOK.size() > 0) {  
+          System.out.println("\t\tModification Errors:");
+         for(int i=0; i< ModNOK.size();i++) {
+          System.out.println("\t\t\t"+ModNOK.get(i));    
+         }
+        }
         printf(func,4,"copy complete");
     }
     
-    synchronized public void copy1() throws NamingException, IOException {
-        final String func=getFunc("copy()");
-        printf(func,4,"copy dn's  from "+map.get("-b")+" to "+map.get("-bc"));
-        
-        byte[] cookie = null;
-        try {
-            //ls = LdapSearch.getInstance(new String[]{ (   protocol.equals("ldaps"))?"-ssl":"", "-h",hostname, "-p",""+port,    "-D",   userdn, "-w", userpw, "-f",filter, "-a", auth, "-b", baseDN});
-            ls = LdapSearch.getInstance( getAuthHash(true, "search") );
-            
-            ls.getLdapContext().setRequestControls(new Control[] {new PagedResultsControl( getPageSize(), Control.CRITICAL) });
-            Name baseName = new CompositeName().add( map.get("-b") );
-            Name copyName = new CompositeName().add( map.get("-bc") );
-           
-            SearchControls ctls = new SearchControls();
-                           ctls.setReturningAttributes(new String[]{"ALL"});
-                           ctls.setSearchScope(SearchControls.SUBTREE_SCOPE);
-            
-            long loop=0;
-            do {
-                printf(func,3,"perform search to "+getBaseDN()+" with :"+getFilter()+":");
-                //performing the search
-                NamingEnumeration results = ls.getLdapContext().search( getBaseDN(), getFilter(), ctls);
-                                            
-                printf(func,3,"result from search:"+results);
-                
-                checkedDN.put(map.get("-bc").toLowerCase(), "false");
-                boolean b=true;        
-                while (results != null && results.hasMore()) {
-                        
-                        
-                        SearchResult ent = (SearchResult) results.next();
-                        printf(func,3,"read entry "+ent);
-                        
-                        if ( ent != null ) {
-                            printf(func,3,"found entry "+ent+"   dn:"+ent.getName()+","+map.get("-b"));
-                            Name ename = new CompositeName().add( (ent.getName()+","+map.get("-b")) );
-                            printf(func,2,"found entry "+ent+"  goes to name:"+ename );
-                            if ( ename != null && ! ename.startsWith(baseName) && ! ename.startsWith(copyName) ) {
-                                transport(ent);
-                            } else {
-                               printf(func,3,"do not copy base "); 
-                            }
-                        } else {
-                          printf(func,1,"break - not found");  
-                          b=false;
-                        }
-                        
-                        if (b) {
-                            Control[] controls = ls.getLdapContext().getResponseControls();
-                            if (controls != null) {
-                                for (int i = 0; i < controls.length; i++) {
-                                      if (controls[i] instanceof PagedResultsResponseControl) {
-                                         PagedResultsResponseControl prrc = (PagedResultsResponseControl) controls[i];
-                                         cookie = prrc.getCookie();
-                                      }
-                                 }
-                            }  
-                        }      
-                }  
-            } while (cookie != null);   
-            
-        } catch (IOException io ) {
-          printf(func,1,"transport entries to ends with "+io.getMessage());
-        }
-        
-        printf(func,4,"copy complete");
-    }
-    private void transport(SearchResult entry) throws NamingException, IOException {
-        final String func=getFunc("transport(SearchResult entry)");
-        printf(func,4,"transport start");
-        ArrayList<String> atlist= new ArrayList<String>(); atlist.add("ALL");
-        if ( lmm == null ) {
-            //lmm = LdapModify.getInstance(new String[]{ (modprotocol.equals("ldaps"))?"-ssl":"", "-h", modhost, "-p",""+modport, "-D",moduserdn, "-w",moduserpw, "-f",filter, "-a", auth, "-b", map.get("-bc") } );
-            lmm = LdapModify.getInstance( getAuthHash(false, "modify") );
-            //lms = LdapSearch.getInstance(new String[]{ (modprotocol.equals("ldaps"))?"-ssl":"", "-h", modhost, "-p",""+modport, "-D",moduserdn, "-w",moduserpw, "-f",filter, "-a", auth, "-b", map.get("-bc") } );
-            lms = LdapSearch.getInstance( getAuthHash(false, "search") );
-        }
-        
-        Name ename = new CompositeName().add( ( (entry != null)? getNewDN(entry.getNameInNamespace(),map.get("-b"), map.get("-bc")):map.get("-bc")) );
-        
-        printf(func,3,"ename:"+ename+"   entry:"+getNewDN(entry.getNameInNamespace(),map.get("-b"), map.get("-bc")) +"  base:"+map.get("-b")+":  newbase:"+map.get("-bc")+":");
-        
-        checkAllBaseDN(ename);
-        printf(func,3,"checkAllBaseDN completed ");
-        
-        
-        NamingEnumeration fnew = lms.search(ename.toString(), "objectclass=*", atlist );
-        NamingEnumeration fold = lms.search(entry.getNameInNamespace(), "objectclass=*", atlist );
-        
-        while (fold.hasMore() ) {
-            System.out.println("fold next:"+fold.next()+":");
-        }
-        printf(func,3,"check old:"+fold+":  new:"+fnew);
-        
-        if ( entry != null ) {
-            printf(func,3,"entry "+ename+" has attributes: "+entry.getAttributes()+" entry:"+entry);
-            HashMap<String, ArrayList<String>> ip = new HashMap();
-            Iterator<String> itter = tmap.keySet().iterator();
-            while(itter.hasNext() ) {
-                String f = itter.next();
-                if ( ! f.startsWith("#")) {
-                    HashMap<String, String> h = tmap.get(f);
-                    ArrayList<String> mp = new ArrayList();
-                    Iterator<String> it = h.keySet().iterator();
-                    while(it.hasNext()) { mp.add( h.get(it.next())); }
-                    ip.put(f.toLowerCase(), mp);
-                    printf(func,3,"add attribute(strict:"+this.restiktCopy+") k="+f+":    value:"+tmap.get(f));
-                }    
-            }
-            if( ename != null ){ //ip.get("dn") == null ) {
-                ArrayList<String> mp = new ArrayList(); mp.add(ename.toString());
-                ip.put("dn", mp);
-            }
-            if( ip.get("objectclass") == null ) {
-                ArrayList<String> mp = new ArrayList(); mp.add("top");
-                ip.put("objectclass", mp);
-            }
-            printf(func,3,"entry check start  ");
-            Attributes at = entry.getAttributes();
-            printf(func,3,"attributes are :"+at);
-            NamingEnumeration<? extends Attribute> attrs = at.getAll();
-            if ( attrs != null ) {
-                while ( attrs.hasMore() ) {
-                    Attribute f = attrs.next();
-                    NamingEnumeration<?> c = f.getAll();
-                    printf(func,3,"mod attr  f=>"+f+"<=  id:"+((f!=null)?f.getID():"NULL")+":");
-                    ArrayList<String> mp = modAttr(f.getID(), c);
-                    if ( ! mp.isEmpty() ) {
-                        ip.put(f.getID(),mp);
-                    }
-                }
-            }
-            printf(func,3,"entry check completed ");
-            if ( debug >= 3 ) { printEntry(ip); }
-        }
-        printf(func,4,"transport done");
-        
-    }
-    
-    private void printEntry(HashMap<String, ArrayList<String>> ip) {
-        final String func=getFunc("printEntry(HashMap<String, ArrayList<String>> ip)");
-        printf(func,3,"dn: "+ip.get("dn").get(0));
-        
-        String k = "objectclass";
-        ArrayList<String> v = ip.get(k);
-        for ( int i=0; i< v.size(); i++) {
-            printf(func,3,k+": "+v.get(i));
-        }
-        Iterator<String> itter = ip.keySet().iterator();
-        while ( itter.hasNext() ) {
-            String a = itter.next();
-            if ( ! a.equals("dn") && ! a.equals(k) ) {
-                v = ip.get(a);
-                for ( int i=0; i< v.size(); i++) {
-                    printf(func,3,a+": "+v.get(i));
-                }
-            }    
-        }
-    }
+    private ArrayList<Name> ReadOK    = new ArrayList();
+    private ArrayList<Name> ReadNOK   = new ArrayList();
+    private ArrayList<Name> ModOK     = new ArrayList();
+    private ArrayList<Name> ModNOK    = new ArrayList();
+    private ArrayList<Name> LookupOK  = new ArrayList();
+    private ArrayList<Name> LookupNOK = new ArrayList();
     
     private HashMap<String,HashMap<String,String>> tmap = new HashMap<String,HashMap<String,String>>(); 
     
@@ -445,145 +322,32 @@ public class LdapCopy extends LdapMain{
         return f;
     }
     
-    private HashMap<String,String> checkedDN=new HashMap<String,String>();
-    private void checkAllBaseDN(Name dn) {
-        if ( dn == null ) { return; }
-        final String func=getFunc("checkAllBaseDN(Name dn)");
-        String[] sp = dn.toString().split(",");
-        StringBuilder sw=new StringBuilder(map.get("-bc"));
-        for ( int i=sp.length-1; i>0; i--) {
-            if ( ! sp[i].toLowerCase().startsWith("dc=") && ! sp[i].toLowerCase().startsWith("o=") ) {
-                    String s = (sp[i]+","+sw.toString()).toLowerCase();
-                    if ( checkedDN.get(s) == null ) {
-                         printf(func,2,"have to check sp["+i+"]="+sp[i]+"     =>"+s);
-                         checkedDN.put(s, "false");
-                    }
-                    
-            }
-        }
-        printf(func,3,"have to check some "+sp.length);
-                         
-        if ( ! checkBaseAreExist() ) { 
-            
-            Iterator<String> itter = checkedDN.keySet().iterator();
-            while ( itter.hasNext() ) {
-               String s= itter.next();
-               printf(func,2,"have to check =>"+s+"<=");
-                         
-               if ( s != null && ! s.isEmpty() && checkedDN.get(s).equals("false") ) {
-                   try { 
-                        Name nam = new CompositeName().add( s );
-                        printf(func,1,"like to create for =>"+s+"<= ");
-                        //createDN(nam); 
-                   } catch(NamingException ne) {
-                       printf(func,1,"ERROR: for =>"+s+"<=  "+ne.getMessage());
-                         
-                   }     
-               }     
-            }   
-        } else {
-          printf(func,2,"INFO: all base entries are exist");
-        }
-    }
+    final private HashMap<String,String> checkedDN=new HashMap<String,String>();
     
-    
-    private boolean createDN(Name dn, HashMap<String,String> mp) {
-        final String func=getFunc("createDN(Name dn)");
-        ArrayList<String> ar = new ArrayList(); ar.add("ALL");
-        try {
-            NamingEnumeration sr = ls.search(dn.toString(), "obajectclass=*", ar);
-            while ( sr.hasMore() ) {
-                 Object o = sr.next();
-                 printf(func,0,"have for =>"+dn.toString()+"<=  object ->|"+o+"]<-");
-            }
-            
-            return true;
-        } catch(NamingException ne) {
-            printf(func,1,"ERROR: for =>"+dn.toString()+"<=  "+ne.getMessage());
-        } catch (IOException io ) {
-            printf(func,1,"ERROR: for =>"+dn.toString()+"<=  "+io.getMessage());
-        }  
-        return false;
-    }
-    
-    private ArrayList<String> modAttr(String attr, NamingEnumeration<?> ar) throws NamingException {
-         final String func=getFunc("modAttr(String attr, NamingEnumeration<?> ar)");
-         final ArrayList<String> mp = new ArrayList();
-         HashMap<String,String> tp = tmap.get(attr.toLowerCase());
-         if ( this.restiktCopy && tp == null ) {
-             printf(func,3,"strict copy are set and attribute :"+attr+": not found in template");
-             return mp;
-         }
-         printf(func,3,"like to check "+((attr==null)?"NULL":attr)+" for mod "+((tp==null)?"NULL":tp));
-         if ( tp != null  ) {
-             boolean b=false;
-             Iterator<String> itter = tp.keySet().iterator();
-             while ( itter.hasNext() ) {
-                String v=itter.next();
-                if ( ! v.equals("*")) {
-                    mp.add(v);
-                    printf(func,3,"attr:"+attr+":  v:"+mp.get(mp.size()-1)+": ");
-                } else { b=true; }    
-             }
-             if ( b ) {
-                printf(func,3,"attr:"+attr+":  from ar:"+ar);
-                while( ar.hasMore() ) {
-                    String f=(String)ar.next();
-                    if (  ! mp.contains(f) ) {
-                        mp.add(f);
-                        printf(func,2,"add with    modification :"+mp.get(mp.size()-1)+":");
-                    }    
-                }
-             }   
-               
-         } else {
-             while(ar.hasMore()) {
-                String f = (String)ar.next(); 
-                if ( ! this.restiktCopy ) {
-                    mp.add(f);
-                    printf(func,2,"add without modification :"+mp.get(mp.size()-1)+":");
-                }    
-             }
-         }
-         printf(func,4,"return");
-         return mp;
-    }
-    
-    private boolean checkBaseAreExist(){
-        final String func=getFunc("checkBaseAreExist()");
-        boolean b=false;
-        HashMap<String,String> dns=new HashMap<String,String>();
-        try {
-            Iterator<String> itter = checkedDN.keySet().iterator();
-            ArrayList ar = new ArrayList(); ar.add("ALL");
-            while(itter.hasNext() ) {
-                  String k = itter.next();
-                  printf(func,4,"check for "+k+":  have:"+checkedDN.get(k).equals("true"));
-                  if ( checkedDN.get(k).equals("true") ) { b=true; ; dns.put(k, ""+b ); }
-                  else {
-                    String v= "false";  
-                    try {  
-                        NamingEnumeration r = lms.search(checkedDN.get(k), "objectclas=*", ar);
-                        printf(func,3,"ldapsearch return:"+r);
-                        if ( r.hasMore() ) { b=true; v=""+b;}
-                        printf(func,2,"checked for :"+k+":  getting:"+v);
-                        if ( ! b ) { return b; }
-                    } catch(Exception e) {
-                        b=false;
-                    }
-                    dns.put(k, v);
-                  }
-            }
-        } catch(Exception e ) {
-            printf(func,1,"checked bases runs in error :"+e.getMessage(),e);
-        }    
-        checkedDN=dns;
-        printf(func,4,"return with "+b);
-        return b;
-    }
-
-    final static public String myusage="\nusage():\noption: [-h hostname] [-p port] [-ssl] [-D adminDN] [-j passwordfile] [-modh modifyHost] [-modp port] [-modD adminDN] [-modj passwordfile] [-modssl] [-b baseDN] [-bc copyBaseDN] [-f filter] [-t copytemplate] [-pg <page-sizelimit>] [objectlist]\n";
-    final static public String free="false";
+    final static public String myusage="\nusage():\noption: [-h hostname] [-p port] [-ssl] [-D adminDN] [-j passwordfile] [-modh modifyHost] [-modp port] [-modD adminDN] [-modj passwordfile] [-modssl] [-b baseDN] [-bc copyBaseDN] [-f filter] [-t copytemplate] [-pg <page-sizelimit>] [objectlist]\n"
+            + "\n\t\texample template file:\n"
+            + "\t\t\t\t#template: strict\n" 
+            + "\t\t\t\tdn: ou=People|ou=Users\n" 
+            + "\t\t\t\tobjectClass: top person posixAccount inetOrgPerson\n" 
+            + "\t\t\t\tgidNumber: 1000\n" 
+            + "\t\t\t\tsn:\n" 
+            + "\t\t\t\tgivenname:\n" 
+            + "\t\t\t\tmail: __givenname__.__sn__@example.com\n" 
+            + "\t\t\t\tuid: __givenname(0,1)__sn(0,5)__\n" 
+            + "\t\t\t\tuidnumber: {autoinc(1000)}\n" 
+            + "\t\t\t\tloginShell: /bin/bash\n" 
+            + "\t\t\t\thomeDirectory: /home/__uid__\n" 
+            + "\t\t\t\tcn: __uid__\n" 
+            + "\t\t\t\tuserpassword: 1234\n"
+            + "\n"
+            + " \tInformation to the template:\n"
+            + " \t\t__ \t\t\tbefore and after will take a value from a ldap attribute\n"
+            + " \t\t(0,5)  \t\t\ttake a substring from 0 to 5 \n"
+            + " \t\tou=People|ou=Users \treplace  in the dn the ou=People part with ou=Users\n"
+            + " \t\tautoinc(1000) \twill generate an auto integer incrimental value starting with the base 1000\n"
+            + " \t\tstrict in the #template\tthis with take over only the names attributes\n"
+            + "\n";
+    final static public String free="true";
     
     public static LdapCopy getInstance(String[] ar) {
        return new LdapCopy(ar); 
@@ -598,6 +362,45 @@ public class LdapCopy extends LdapMain{
     
     private RingBuffer<Name> rbuf = new RingBuffer(this.getPageSize());
     private RingBuffer<HashMap<String, ArrayList<String>>> mbuf = new RingBuffer<HashMap<String, ArrayList<String>>>(this.getPageSize());
+    
+    private HashMap<String, ArrayList<String>> getLdapHash(SearchResult entry) {
+       final String func=getFunc("getLdapHash(SearchResult entry)"); 
+       printf(func,4,"incoming");
+       HashMap<String, ArrayList<String>> imp = new HashMap<String, ArrayList<String>>();
+                        
+       ArrayList<String> ar = new ArrayList<String>(); ar.add(entry.getNameInNamespace());
+       imp.put("dn", ar);
+       printf(func,3,"dn: "+entry.getNameInNamespace() +" entry:"+entry); 
+                               
+       try {
+            Attributes attr = entry.getAttributes();
+            printf(func,3,"Attributes:"+attr);
+            NamingEnumeration en = attr.getAll();
+            while(en!= null && en.hasMore() ) {
+                 Attribute at = (Attribute) en.next();
+                 ar = new ArrayList<String>();
+                 printf(func,3,"Attribute:"+at);
+                 String id=at.getID().toLowerCase();
+                 printf(func,3,"id:"+id+":  :"+at.toString().substring(at.getID().length()+2)+":");
+                 String sp[]  = at.toString().substring(at.getID().length()+2).split(",");
+                 for (int i=0; i<sp.length; i++) {
+                          printf(func,4,"i="+i+":   sp[]=:"+sp[i]+":");
+                          Object ob=at.get();
+
+                          String v= (( ob instanceof byte[] )? new String((byte[]) ob ):sp[i]).replaceAll("^ ", "");
+                          printf(func,4,id+": "+v);
+                          ar.add(v);
+                 }
+                 printf(func,3,"put list  for:"+id);
+                 imp.put(id, ar);
+            }
+       } catch(NamingException ne) {
+           printf(func,1,"readout entry ends with error "+ne.getMessage(),ne);
+       }
+       printf(func,4,"closing");
+       return imp;
+    } 
+    
     private class LdapCopySearch extends RunnableT{
 
         private final LdapCopy lc;
@@ -622,47 +425,21 @@ public class LdapCopy extends LdapMain{
                         printf(func,3,"res:"+namEnum);
                         
                         while (namEnum != null && namEnum.hasMore()) {
-                               HashMap<String, ArrayList<String>> imp = new HashMap<String, ArrayList<String>>();
-                        
-                               SearchResult entry = (SearchResult) namEnum.next();
-                               ArrayList<String> ar = new ArrayList<String>(); ar.add(entry.getNameInNamespace());
-                               imp.put("dn", ar);
-                               printf(func,3,"dn: "+entry.getNameInNamespace() +" entry:"+entry); 
-                               
-
-                               Attributes attr = entry.getAttributes();
-                               printf(func,3,"Attributes:"+attr);
-                               NamingEnumeration en = attr.getAll();
-                               while(en!= null && en.hasMore() ) {
-                                   Attribute at = (Attribute) en.next();
-                                   ar = new ArrayList<String>();
-                                   printf(func,3,"Attribute:"+at);
-                                   String id=at.getID().toLowerCase();
-                                   printf(func,3,"id:"+id+":  :"+at.toString().substring(at.getID().length()+2)+":");
-                                   String sp[]  = at.toString().substring(at.getID().length()+2).split(",");
-                                   for (int i=0; i<sp.length; i++) {
-                                       printf(func,4,"i="+i+":   sp[]=:"+sp[i]+":");
-                                       Object ob=at.get();
-
-                                       String v= (( ob instanceof byte[] )? new String((byte[]) ob ):sp[i]).replaceAll("^ ", "");
-                                       printf(func,4,id+": "+v);
-                                       ar.add(v);
-
-
-                                   }
-                                   printf(func,3,"put list  for:"+id);
-                                   imp.put(id, ar);
-                               }
-                               mbuf.push(imp);
+                              final SearchResult entry = (SearchResult) namEnum.next();
+                              final String n = entry.getNameInNamespace();
+                              printf(func,3,"dn: "+n+" entry:"+entry); 
+                              final HashMap<String, ArrayList<String>> imp = lc.getLdapHash(entry);
+                              printf(func,3,"dn: "+n+" ldap hah generated"); 
+                              ReadOK.add(o);
+                              mbuf.push(imp);
                         }    
-
-        
                         
                     } catch(NamingException ne) {
                         printf(func,1,"lookup error for "+o+" - reason "+ne.getMessage(),ne);
+                        ReadNOK.add(o);
                     } catch(IOException io) {
-                            printf(func,1,"lookup error for "+o+" - reason "+io.getMessage(),io);
-                    
+                        printf(func,1,"lookup error for "+o+" - reason "+io.getMessage(),io);
+                        ReadNOK.add(o);
                     }   
              
                     printf(func,3,"pop name:"+o+":");
@@ -695,10 +472,8 @@ public class LdapCopy extends LdapMain{
                 
                 if ( ! lc.mbuf.isEmpty() ) {
                     HashMap<String, ArrayList<String>> imp = (HashMap<String, ArrayList<String>>) lc.mbuf.popObject();
-                    printHash(imp);
-                    modifyHash(imp);
-                    //printHash(imp);
-                    
+                    if ( debug > 2 ) printHash(imp);
+                    try { modifyHash(imp); } catch(InvalidNameException ine) {}
                 } else {
                     sleep(300);
                 }
@@ -710,7 +485,9 @@ public class LdapCopy extends LdapMain{
         }
         
         
-        private boolean modifyHash(HashMap<String, ArrayList<String>> imp) {
+       
+        
+        private boolean modifyHash(HashMap<String, ArrayList<String>> imp) throws InvalidNameException {
             final String func=getFunc("modifyHash(HashMap<String, ArrayList<String>> imp)"); 
             HashMap<String, ArrayList<String>> mp = new HashMap<String, ArrayList<String>>();
             ArrayList<String> ar = new ArrayList();
@@ -720,31 +497,175 @@ public class LdapCopy extends LdapMain{
                                ar = new ArrayList();
             ArrayList<String> iar = imp.get("objectclass");
                               if ( iar == null ) { 
-                                  printf(func,1,"iar map missing ->"+mp );
+                                  printf(func,1,"iar map fpr objectclass missing ->"+mp );
                                   return false; 
                               }
                               String f = iar.toString().toLowerCase();
-                              if ( f.contains("organization")) {
+                              if ( f.contains("organization") && ! f.contains("person") && ! f.contains("account") ) {
+                                  printf(func,3," organization found - do not modify - add direct");
                                   for ( String s: iar ) {
                                       if (! s.isEmpty()) ar.add(s);
                                   }
                               } else {
+                                  printf(func,1," people other entry found - add after modify");
                                   for ( String s: iar ) {
                                       if (! s.isEmpty()) { 
-                                          if ( f.contains("*") || f.contains(s.toLowerCase()) ) {
+                                          if ( f.contains("\\*") || f.contains(s.toLowerCase()) ) {
                                               ar.add(s);
+                                          } else {
+                                              printf(func,3,"objectclass "+s+"not needed");
                                           }
                                       }
                                   }
+                                  
+                                  HashMap<String, String> oc = lc.tmap.get("objectclass");
+                                  if ( oc != null ) {
+                                        Iterator<String> itter = oc.keySet().iterator();
+                                        while ( itter.hasNext() ) {
+                                             String sf = itter.next();
+                                             if ( ! sf.isEmpty() ) {
+                                                printf(func,3,"check object :"+sf+":");
+                                                boolean found=true;
+                                                for(int i=0; i< ar.size(); i++) {
+                                                    String m = ar.get(i);
+                                                    printf(func,3,"check ar["+i+"]="+m+"| with value s:"+sf+":");
+                                                    if ( m.equals(sf.toLowerCase()) ) { 
+                                                        printf(func,3,"found ar["+i+"]="+m+"| with value s:"+sf+":");
+                                                        found=false; i=ar.size(); 
+                                                    }
+                                                }
+                                                if ( found ) { 
+                                                    printf(func,2,"add value s:"+sf+":");
+                                                    ar.add(sf); 
+                                                }
+                                             }  
+                                        }
+                                        if ( lc.restiktCopy ) {
+                                            ArrayList<String> arm = new ArrayList();
+                                            while ( ar.size() > 0 ) {
+                                                String sf = ar.remove(0);
+                                                if ( oc.get(sf) != null) { arm.add(sf); }
+                                            }
+                                            ar=arm;
+                                        }
+                                  }      
                               }
-                              
-                              
                               mp.put("objectclass", ar);
-            //Iterator<String> itter = lc.attrList.keySet().iterator();
+                              
+                              Iterator<String> itter = lc.tmap.keySet().iterator();
+                              while (itter.hasNext() ) {
+                                    String o = itter.next();
+                                    if ( ! o.isEmpty() && ! o.equals("dn") && ! o.equals("objectclass") ) {
+                                        ArrayList<String> v = imp.get(o.toLowerCase());
+                                        ArrayList<String> n = new ArrayList<String>();
+                                        if ( v != null ) {
+                                            for ( int i=0; i<v.size(); i++) {
+                                                String a = this.updateValue(v.get(i),lc.tmap.get(o),imp,mp,o);
+
+                                                n.add(a);
+                                            }
+                                        } else {
+                                            if ( ! o.startsWith("#")) {
+                                                printf(func,3,"new attribute :"+o+":");
+                                                HashMap<String, String> mm = lc.tmap.get(o);
+                                                String a ="";
+                                                       Iterator<String> itt = mm.keySet().iterator();
+                                                       while(itt.hasNext()) { String s=itt.next(); if (!s.isEmpty()){ a=s;}}
+                                                       a = this.updateValue(a,mm,imp,mp,o);
+                                                       
+                                                n.add(a);
+                                            }    
+                                        }   
+                                        mp.put(o.toLowerCase(), n);
+                                    }
+                              }
             
-            printHash(mp);
+                              if ( imp.get("uid") != null && mp.get("uid") !=null && imp.get("uid").get(0) != mp.get("uid").get(0) ) {
+                                  ar = mp.get("dn");
+                                  ar.add( ar.remove(0).replaceAll(imp.get("uid").get(0), mp.get("uid").get(0)) );
+                                  mp.put("dn", ar);
+                              }
+                              Name e = new CompositeName().add( mp.get("dn").get(0) );
+                              printHash(mp);
+                              sendUpdate(mp);
+                              
+                              ModOK.add(e);
             
             return true;
+        }
+        
+        private HashMap<String,String> auto = new HashMap();
+        
+        private String updateValue(String val, HashMap<String, String> tmap, HashMap<String, ArrayList<String>> imp,HashMap<String, ArrayList<String>> mp,String attr) {
+            final String func=getFunc("updateValue(String val, HashMap<String, String> tmap, HashMap<String, ArrayList<String>> imp,HashMap<String, ArrayList<String>> mp,String attr)");
+            String sf="";
+            Iterator<String> itter =tmap.keySet().iterator();
+            while( itter.hasNext() ) {
+                String s = itter.next();
+                if (! s.isEmpty() ) { sf=s; }
+            }
+            printf(func,3,"like to modify :"+val+":  based on ->|"+sf+"|<-");
+            if ( ! sf.isEmpty() ) {
+                if ( ! sf.contains("{") && ! sf.contains("__") ){
+                    val=sf;
+                } else  if ( sf.startsWith("{") ) {
+                    int i = val.indexOf("{"); int j=val.indexOf("}");
+                    if ( j>i+1 ) {
+                        String v = val.substring(i+1, j);
+                        printf(func,3,"need to modify value:"+val+" based:"+sf+":  with {} =>"+v+"<=  for attribute:"+attr+":");
+                        if ( v.startsWith("autoinc") ) {
+                            String a = auto.get(attr); 
+                            int base = 500;
+                            if ( a == null ) {
+                                 try {
+                                    a = sf.substring(  sf.indexOf("(")+1, sf.indexOf(")") ); 
+                                    // System.out.println("parse:"+a+":");
+                                    base=Integer.parseInt(a);
+                                 } catch(Exception e) { base=500;}
+                            } else {
+                                try{ base=Integer.parseInt(a); }catch(java.lang.NumberFormatException nf){ base=500; }
+                            }
+                            base++;
+                            auto.put(attr, ""+base);
+                            val=auto.get(attr);
+                            
+                            printf(func,2,"new value for attribute "+attr+" are now:"+val+":");
+                        }
+                    }
+                } else {
+                    printf(func,3,"need to modify value:"+val+" based:"+sf+":");
+                    StringBuilder sw = new StringBuilder();
+                    for (String s : sf.split("__") ) {
+                        int start=0; int stop=-1;
+                        String[] sp = s.split("\\(");
+                        if ( sp.length > 1 ) {
+                                     s=sp[0];
+                                     sp = sp[sp.length-1].split(",");  
+                                     sp[1]= sp[1].replaceAll("\\)", "");
+                                     if ( sp[1].isEmpty() || sp[1].equals("$") ) { sp[1]=""+val.length(); }
+                                     try { start=Integer.parseInt(sp[0]); }catch(java.lang.NumberFormatException nf) { start=0; }
+                                     try { stop =Integer.parseInt(sp[1]); }catch(java.lang.NumberFormatException nf) { stop=-1; }
+                        }
+                        printf(func,3,"like to take:"+s+":   start:"+start+":  stop:"+stop+":");
+                        ArrayList<String> ar = imp.get(s);
+                        printf(func,3,"found ar:"+(ar!=null));
+                        if ( mp.get(s.toLowerCase()) != null ) { ar= mp.get(s); }
+                        printf(func,3,"found with mp ar:"+(ar!=null));
+                        if ( ar != null ) {
+                            s=ar.get(0);
+                            if      ( stop == -1        ) { s=s.substring(start);       } 
+                            else if ( stop > s.length() ) { s=s.substring(start);       }
+                            else                          { s=s.substring(start, stop); }
+                            sw.append(s);
+                        } else {
+                            sw.append(s);
+                        }
+                    }
+                    printf(func,2,"new value :"+sw.toString()+":");
+                    val=sw.toString();
+                }
+            }
+            return val;
         }
         
         private void printHash(HashMap<String, ArrayList<String>> imp) {
@@ -782,6 +703,83 @@ public class LdapCopy extends LdapMain{
                }
                
                printf(func,d,"");
+        }
+
+        private void sendUpdate(HashMap<String, ArrayList<String>> mp) {
+           final String func=getFunc("sendUpdate(HashMap<String, ArrayList<String>> mp)");
+           printf(func,4,"start update");
+           Name nam=null;
+           try { 
+                 if ( lc.lmm == null ) {
+                     lc.lmm = LdapModify.getInstance( lc.getAuthHash(false, "modify"));
+                 }
+                 nam  = new CompositeName().add( mp.get("dn").get(0) );
+                 
+                 ArrayList<BasicAttribute> ar = new ArrayList();
+                 Iterator<String> itter = mp.keySet().iterator();
+                 while(itter.hasNext()) {
+                     String k = itter.next();
+                     if ( ! k.equals("dn") && ! k.startsWith("#") ) {
+                         ArrayList<String> a = mp.get(k);
+                         BasicAttribute ba = new BasicAttribute(k);
+                         int i=0;
+                         for(String s : a) {
+                             if ( !s.isEmpty()) {
+                                printf(func,1, "add k:"+k+":  v:"+s+":"); 
+                                //ar.add(  new BasicAttribute(k,s));
+                                ba.add(s);
+                             }   
+                         }
+                         ar.add(ba);
+                      }    
+                 }
+                 
+                 if ( needToCreate(nam) ) {
+                     
+                     BasicAttributes ent = new BasicAttributes();
+                     for ( int i=0; i<ar.size(); i++ ) {
+                        ent.put( ar.get(i) );
+                     }
+                     
+                     lc.lmm.getLdapContext().createSubcontext(nam, ent);
+                     
+                 } else {
+                     
+                     ModificationItem[] mods = new ModificationItem[ar.size()];
+                     
+                     for ( int i=0; i<ar.size(); i++ ) {
+                            //mods[i] = new ModificationItem(DirContext.ADD_ATTRIBUTE, new BasicAttribute("objectclass", ar.get(i)) );
+                            mods[i] = new ModificationItem( DirContext.REPLACE_ATTRIBUTE, ar.get(i) );
+                            //mods[i] = ( ModificationItem ) ar.get(i);
+                     }
+                     
+                     lc.lmm.getLdapContext().modifyAttributes(nam, mods);
+                 }
+                 ModOK.add(nam);
+           } catch(NamingException ne) {
+                printf(func,1,"Naming error "+ne.getMessage(),ne);
+                ModNOK.add(nam);
+           }
+           
+           printf(func,4,"close update");
+        
+        }
+
+        private boolean needToCreate(Name nam) {
+            final String func=getFunc("needToCreate(Name nam)");
+            BasicAttributes matchingAttributes = new BasicAttributes();
+                            matchingAttributes.put( new BasicAttribute("dn") );
+            try {
+                NamingEnumeration<SearchResult> s = lc.lmm.getLdapContext().search(nam, matchingAttributes);
+                if ( s == null ) { return true;}
+                printf(func,3,nam+" exist? "+ ( ! s.hasMore()) );
+                return ( s.hasMore());
+            } 
+            catch (NamingException ex) { 
+                printf(func,1," lookup runs in error "+ex.getMessage(),ex);
+                
+                return false; 
+            }
         }
         
     }

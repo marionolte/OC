@@ -711,7 +711,7 @@ public class Mos extends Updater{
                 op=1;
             }
             else if ( op == 1 ) {
-                sw.append(g);
+                sw.append(g).append("\n");
             }
         }
         if ( sw.length() > 0 ) { sw.append("\n\n"); }
