@@ -34,6 +34,13 @@ function reindex() {
    starting "$1" "$2"
 }
 
+function reindexall() {
+   stopping "$1" "$2"
+   echo "Reindexing"
+   ( cd $2/bin && for ind in $INDEXLIST; do echo "reindex $ind"; ./rebuild-index -b $baseDN --rebuildAll ; done ; )
+   starting "$1" "$2"
+}
+
 ho=`hostname`
 sHost=""
 sPort=""
@@ -179,6 +186,7 @@ case "$1" in
     'status' ) status $instpath ;;
     'restart') stopping $inst $instpath ; sleep 3;  starting $inst $instpath  ;;
     'reindex') reindex $inst $instpath ;;
+    'reindexall') reindexall $inst $instpath ;;
         *) usage;;
 esac
 
