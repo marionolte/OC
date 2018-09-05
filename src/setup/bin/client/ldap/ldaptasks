@@ -1,0 +1,405 @@
+#!/usr/bin/env  bash
+#set -x
+
+progdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+   prog=`basename "$0"`
+
+. $progdir/inst 2>/dev/null
+
+DAY24=$(( `date '+%Y%m%d'` - 1 ))
+TIMESYNC="${DAY24}000000Z"
+if [[ "$1" != "" ]] && [[ "$1" != "user" ]] && [[ "$1" != "find" ]]; then TIMESYNC="$1"; fi
+
+function setComm() {
+  COMM="./bin/ldapmodify -p $INSTPORT -D ${USERDN} -j ${PRODPW}"
+  COMS="./bin/ldapsearch  -p $INSTPORT -D ${USERDN} -j ${PRODPW}"
+  if [[ "$1" == "qa" ]]; then
+     COMM="./bin/ldapmodify -p $TRANSMODP -h $TRANSHOST -D ${USERDN} -j ${TESTPW}" ;
+     COMS="./bin/ldapsearch -p $TRANSMODP -h $TRANSHOST -D ${USERDN} -j ${TESTPW}" ;
+  fi
+  export COMM COMS
+}
+
+function getUserDN() {
+ setComm prod
+
+ (cd $INST && ${COMS}  -b "${USERS}" "(modifytimestamp>=${TIMESYNC})"  dn ) 2>&1 \
+ | awk '{ if ( $1 == "dn:" ){ print $NF }}' | while read pa rest; do
+          #echo "call user update for $pa"
+                  $progdir/usersync user $pa
+  done
+
+}
+
+
+ATTR="dn attrObjectSrc baseObjectSrc changelog createTimestamp creatorsName departmentNumber displayName ds-sync-hist employeeType entryDN entryUUID hasSubordinates mail modifiersName modifyTimestamp orclGUID ou physicalDeliveryOfficeName pwdChangedTime pwdPolicySubentry sparMemberOf subschemaSubentry fullWinLogin activeEntry uid userPassword preferredLanguage employeeNumber givenName objectClass cn sn st structuralObjectClass numSubordinatesi uidClarity"
+
+function getATTRList() {
+    echo "LDAP Attribute List"
+        echo "$ATTR" | awk '{ for(i=1;i<=NF;i++){ print $i }}'
+        echo
+    echo "done"
+}
+
+function updateUser() {
+    if [[ "$1" == "" ]];  then
+        echo "ERROR: no user baseDN"
+        exit 2
+    fi
+
+        echo $1
+    (cd $INST && ./bin/export-ldif -p "${ADMINPORT}"  -D "${USERDN}" -j "$PRODPW" -b "$1" -l "$TRANSFILE" --backendID userRoot -X  )
+
+
+}
+function findUserIdent() {
+   if [[ "$1" == "" ]];  then
+        echo "ERROR: no search filter"
+        exit 1
+   fi
+   findUser1 "./bin/ldapsearch -p $INSTPORT -D ${USERDN} -j ${PRODPW} -b ${USERIDENT}" "(|(uid=*${1}*)(cn=*${1}*)(mail=*${1}*)(givenName=*${1}*)(sn=*${1}*))" "dn sn cn uid employeeType givenname roomNumber mail ${2}"
+}
+
+function findUser() {
+   if [[ "$1" == "" ]];  then
+            echo "ERROR: no search filter"
+                exit 1
+   fi
+
+   findUser1 "./bin/ldapsearch -p $INSTPORT -D ${USERDN} -j ${PRODPW} -b ${USERS}" "(|(uid=*${1}*)(cn=*${1}*)(mail=*${1}*)(givenName=*${1}*)(sn=*${1}*)(fullWinLogin=*${1}*))" "dn ${2}"
+}
+
+function findUserQA() {
+   if [[ "$1" == "" ]];  then
+        echo "ERROR: no search filter"
+        exit 1
+   fi
+
+   findUser1 "./bin/ldapsearch -p  $TRANSMODP -h $TRANSHOST -D ${USERDN} -j ${TESTPW} -b ${USERS}" "(|(uid=*${1}*)(cn=*${1}*)(mail=*${1}*)(givenName=*${1}*)(sn=*${1}*))" "dn mail sn givenname ${2}"
+}
+
+function findUser1() {
+   (cd $INST && ${1} ${2} ${3} ) 2>&1
+}
+
+function findUser2() {
+        setComm $1
+         findUser1 "$COMS -b ${USERS}" "(|(uid=*${2}*)(cn=*${2}*)(mail=*${2}*)(givenName=*$2}*)(sn=*${2}*))" "dn mail sn givenname ${3}"
+}
+
+
+function findGroup() {
+   if [[ "$1" == "" ]];  then
+        echo "ERROR: no search filter"
+        exit 1
+   fi
+
+   findGroup1 prod "(|(uid=*${1}*)(cn=*${1}*)(mail=*${1}*)(givenName=*${1}*)(sn=*${1}*))" "dn sn givenname mail member isMemberOf sparMemberOf uniqueMember ${2}"
+}
+
+
+function findGroupQA() {
+   if [[ "$1" == "" ]];  then
+        echo "ERROR: no search filter"
+        exit 1
+   fi
+
+  findGroup1 qa "(|(uid=*${1}*)(cn=*${1}*)(mail=*${1}*)(givenName=*${1}*)(sn=*${1}*))" "dn sn givenname mail member isMemberOf sparMemberOf uniqueMember ${2}"
+}
+
+function findGroup1(){
+   setComm $1
+   ( cd $INST && $COMS -b "$GROUP" "$2" $3 ) 2>&1
+}
+
+
+function updateUser() {
+   if [[ "$1" == "" ]];  then
+        echo "ERROR: no search filter"
+        exit 1
+   fi
+    uid=`awk 'BEGIN{s=""}{ if($1=="dn:"    ) {s=$NF} } END{print s}' $1 2>/dev/null`
+   attr=`awk 'BEGIN{s=""}{ if($1=="replace:") {s=$NF} } END{print s}' $1 2>/dev/null`
+
+   (cd $INST && ./bin/ldapmodify -p $INSTPORT -D "${USERDN}" -j "${PRODPW}" -f $1 && ./bin/ldapsearch -p $INSTPORT -D "${USERDN}" -j "${PRODPW}" -b "ou=users,o=sparag" "dn=${uid}"  dn sn givenname $attr ) 2>&1
+}
+
+function list() {
+   if [[ "$1" == "" ]];  then
+        echo "ERROR: no search filter"
+        exit 1
+   fi
+
+    list1 prod "(|(uid=*${1}*)(cn=*${1}*)(mail=*${1}*)(givenName=*${1}*)(sn=*${1}*))" "${3}"
+
+
+}
+function listQA() {
+   if [[ "$1" == "" ]];  then
+        echo "ERROR: no search filter"
+        exit 1
+   fi
+
+   list1 qa "(|(uid=*${1}*)(cn=*${1}*)(mail=*${1}*)(givenName=*${1}*)(sn=*${1}*))" " ${2}"
+}
+
+function list1() {
+   setComm $1
+   (cd $INST && $COMS -b "$USERS" "${2}" objectclass=* $3 ) 2>&1
+}
+
+
+function pullGroup() {
+   if [[ "$1" == "" ]] || [[ "$2" == "" ]];  then
+        echo "ERROR: missing user for group sync"
+            echo "$prog pullgroup <new user> <ref user>  <area AEM>"
+        exit 1
+   fi
+
+   refu=`(cd $INST && ./bin/ldapsearch -p $INSTPORT -D "${USERDN}" -j "${PRODPW}" -b "ou=users,o=sparag" "(|(uid=*${2}*)(cn=*${2}*))"  member isMemberOf sparMemberOf uniqueMember ) 2>&1  | awk '{print substr($0, length($1)+1,length($0));}' `
+
+echo  $refu
+echo "<|"
+        (cd $INST && ./bin/ldapsearch -p $INSTPORT -D "${USERDN}" -j "${PRODPW}" -b "ou=users,o=sparag" "(|(uid=*${1}*)(cn=*${1}*))"  member isMemberOf sparMemberOf uniqueMember ) 2>&1 | awk 'BEGIN{s=""}{if($0 ~ /^[a-z]/){ if(s!=""){print s}; s=substr($0, length($1)+1,length($0));}else{s=s""$NF}}END{print s}' | grep "o=sparag" | while read pa rest;  do
+
+
+                echo $pa
+    done
+}
+
+findAGroup(){
+   comm="./bin/ldapsearch -p $INSTPORT -D ${USERDN} -j ${PRODPW}"
+   if [[ "$1" == "qa" ]]; then comm="./bin/ldapsearch -p $TRANSMODP -h $TRANSHOST -D ${USERDN} -j ${TESTPW}" ; fi
+   (cd $INST && ${comm} -b "ou=groups,o=sparag" "(|(cn=*$2*)(ou=*$2*)(dn=*$2*))" )
+}
+
+syncGroupRef(){
+  if [[ "$1" == "" ]]; then
+         echo "ERROR:  missing userid"
+         return
+  fi
+  ret=` ( cd $INST 2>&1 && ./bin/ldapsearch -p $INSTPORT -D "${USERDN}" -j "${PRODPW}" -b "ou=users,o=sparag" "(|(uid=*$1*)(cn=*$1*)(mail=*$1*)(givenName=*$1*)(sn=*$1*))"  dn isMemberOf 2>&1 ) `
+  dn=`echo "$ret" | awk 'BEGIN{s=""}{ if($1 == "dn:"){ s=$2 } }END{print s}' | grep "$1" `
+  if [[ "$dn" == "" ]]; then
+         echo "ERROR: user dn for $1 not found"
+         return
+  fi
+  ret=`echo "$ret" | awk 'BEGIN{s=""}{ if( substr($1,length($1),1) != ":"){print s substr($0,2,length($0));s=""}else{s=$0} }END{print s}' `
+
+  if [[ "$2" == "" ]]; then
+     echo "ERROR:  missing reference userid"
+     return
+  fi
+  ref=` ( cd $INST 2>&1 && ./bin/ldapsearch -p $INSTPORT -D "${USERDN}" -j "${PRODPW}" -b "ou=users,o=sparag" "(|(uid=*$2*)(cn=*$2*)(mail=*$2*)(givenName=*$2*)(sn=*$2*))"  dn isMemberOf 2>&1 ) `
+  refdn=`echo "$ref" | awk 'BEGIN{s=""}{ if($1 == "dn:"){ s=$2 } }END{print s}' | grep "$2" `
+  if [[ "$refdn" == "" ]]; then
+     echo "ERROR: refence user dn for $2 not found"
+     return
+  fi
+  ref=`echo "$ref" | awk 'BEGIN{s=""}{ if( substr($1,length($1),1) != ":"){print s substr($0,2,length($0));s=""}else{s=$0} }END{print s}' `
+
+  if [[ "$3" == "" ]]; then
+         echo "ERROR: missing filter"
+         return
+  fi
+
+   echo "$ref" | awk '{ if($1 == "isMemberOf:") { print $2 } }' | while read grp rest; do
+          echo "$ret" | grep $grp >/dev/null 2>&1
+      if [ "$?" -eq 0 ]; then
+                 echo "INFO: user $1 already in group $grp"
+       else
+             echo "$grp" | grep "$3" >/dev/null 2>&1
+             if [ "$?" -eq 0 ]; then
+                     attr=`( cd $INST 2>&1 && ./bin/ldapsearch -p $INSTPORT -D ${USERDN} -j ${TESTPW}  -b "$grp" objectclass=* dn member uniqueMember 2>&1 ) |  awk 'BEGIN{u=0;m=0;s=0}{ if($1 == "member:" ){m++;}else{ if($1 == "uniqueMember:"){u++}else{if($1 != "dn:" && $1 != "" ){s++;}}} }END{if(s==0){if(u>m){print "uniqueMember"}else{print "member"} }else{print "fail" } }' `
+                 if [[ "$attr" != "fail" ]]; then
+                                echo "INFO: like to add user $1 to group $grp"
+                addUserGroup "$grp" "$dn" "$attr"
+                #echo "addUserGroup  $grp   $dn   $attr"
+                            echo
+             fi
+          else
+                         echo "INFO: group $grp not in focus"
+                fi
+          fi
+
+  done
+
+}
+
+syncGroupQA(){
+  ret=` ( cd $INST 2>&1 && ./bin/ldapsearch -p $INSTPORT -D "${USERDN}" -j "${PRODPW}" -b "ou=users,o=sparag" "(|(uid=*$1*)(cn=*$1*)(mail=*$1*)(givenName=*$1*)(sn=*$1*))"  dn isMemberOf 2>&1 ) `
+  dn=`echo "$ret" | awk 'BEGIN{s=""}{ if($1 == "dn:"){ s=$2 } }END{print s}' `
+  if [ `echo $dn | grep "$1" >/dev/null 2>&1; echo $?` -eq 0 ]; then
+    remote=`( cd $INST 2>&1 && ./bin/ldapsearch -p $TRANSMODP -h $TRANSHOST -D ${USERDN} -j ${TESTPW} -b "$dn" objectclass=* isMemberOf 2>&1) | awk 'BEGIN{s=""}{ if( substr($1,length($1),1) != ":"){print s substr($0,2,length($0));s=""}else{s=$0} }END{print s}' `
+        echo "$remote" | grep "$dn" 2>&1 | grep "does not exist" >/dev/null 2>&1
+    if [ "$?" -eq 0 ]; then
+        echo "ERROR: user dn $dn not exist in QA"
+        return
+    fi
+    if [[ "$remote" == "" ]]; then
+           echo "ERROR: read error from remote"
+           return
+    fi
+        echo "$ret" | awk 'BEGIN{s=""}{ if( substr($1,length($1),1) != ":"){print s substr($0,2,length($0));s=""}else{s=$0} }END{print s}' | grep isMemberOf | awk '{ print $2 }' | while read grp rest; do
+            echo $grp
+            echo "$remote" | grep "$grp"  >/dev/null
+        if [ "$?" -eq 0 ]; then
+                   echo "  group already added on remote"
+         else
+                   attr=`( cd $INST 2>&1 && ./bin/ldapsearch -p $TRANSMODP -h $TRANSHOST -D ${USERDN} -j ${TESTPW}  -b "$grp" objectclass=* dn member uniqueMember 2>&1 ) |  awk 'BEGIN{u=0;m=0;s=0}{ if($1 == "member:" ){m++;}else{ if($1 == "uniqueMember:"){u++}else{if($1 != "dn:" && $1 != "" ){s++;}}} }END{if(s==0){if(u>m){print "uniqueMember"}else{print "member"} }else{print "fail" } }' `
+                   if [[ "$attr" != "fail" ]]; then
+                          addUserGroupRemote "$grp" "$dn" "$attr"
+                          echo
+                    else
+                          echo "  group not exist on remote"
+           fi
+
+        fi
+    done
+   else
+        echo "ERROR:  could not find valid user dn with `echo $ret | grep '^dn' `"
+  fi
+}
+
+addUserToGrp() {
+  setComm $1
+  FIN=`( cd $INST && ${COMS} -b "$GROUP" "cn=$2" dn member uniqueMember 2>&1 )`
+  UDN=` (cd $INST && ${COMS} -b "$USERS" "(|(uid=*${3}*)(cn=*${3}*)(dn=*${3}*))" dn ) 2>&1 | awk 'BEGIN{dn=""}{ if( $1 == "dn:" ){dn=$2} }END{ print dn}' `
+
+  echo "${FIN}" |  awk '{ if( $1 == "dn:" ){print $2} }' | grep "$4" | while read pagr rest; do
+     echo $pagr
+     echo $UDN
+     A1=`echo "${FIN}" | awk -v gr="$pagr" 'BEGIN{s=0}{ if ( $0 == "" ){s=0};if($2 == gr){s=1;};if(s > 0){print $0}}' `
+   attr=`echo "${A1}" | awk -v gr="$pagr" 'BEGIN{u=0;m=0;s=0}{ if($1 == "member:" ){m++;}else{ if($1 == "uniqueMember:"){u++}else{if($1 != "dn:" && $1 != "" ){s++;}}} }END{if(s==0){if(u>m){print "uniqueMember"}else{print "member"} }else{print "fail" } }' `
+   if [ `echo "$A1" | grep "$UDN" >/dev/null 2>&1;echo $?` -ne 0 ]; then
+                addUserGroup1 "${COMM}" $pagr $UDN $attr
+   else
+           echo "INFO: already added to $pagr"
+   fi
+  done
+  echo
+  echo "INFO: new member user info for $3 "
+  findUser2 "$1" "$3" isMemberOf
+}
+
+addUserGroupRemote() {
+  addUserGroup1 "./bin/ldapmodify -p $TRANSMODP -h $TRANSHOST -D ${USERDN} -j ${TESTPW}"  "$1" "$2" "$3"
+}
+
+addUserGroup() {
+  addUserGroup1 "./bin/ldapmodify -p $INSTPORT -D ${USERDN} -j ${PRODPW}" "$1" "$2" "$3"
+}
+
+addUserGroup1() {
+    mod=$(cat <<EOF
+dn: $2
+changetype: modify
+add: $4
+$4: $3
+
+EOF
+)
+        (cd $INST && echo "$mod" | $1  )
+}
+
+function touchUser() {
+   if [[ "$1" == "" ]]; then
+            echo "ERROR: missing user to touch"
+        echo "$prog touch <userid>"
+        exit 1
+   fi
+   setComm prod
+   mod=`(cd $INST && $COMS -b "$USERS" "(|(uid=*${1}*)(cn=*${1}*)(mail=*${1}*)(givenName=*${1}*)(sn=*${1}*))" dn displayName)`
+   if [[ "$mod" == "" ]]; then
+           echo "ERROR: user not found with $1"
+           exit 1
+   fi
+    dn=`echo "$mod" | awk 'BEGIN{s=""} { if($1 == "dn:") {s=$2}}END{print s}' `
+  echo "INFO: touch dn $dn"
+   mod=`echo "$mod" | awk 'BEGIN{s=""} { if($1 != "dn:") {s=$0}}END{print s}' `
+   name=`echo "$mod" | awk 'BEGIN{s=""} { s=substr($1,1,length($1)-1); }END{print s}' `
+  value=`echo "$mod" | awk 'BEGIN{s=""} { s=substr($0, length($1)+2, length($0)); }END{print s}' `
+  echo "with name:$name: val:$value:"
+
+mo=$(cat <<EOF
+dn: $dn
+changetype: modify
+replace: $name
+$name: $value
+
+EOF
+)
+   (cd $INST && echo "$mo" | $COMM )
+   (cd $INST && $COMS -b "$USERS" "(|(uid=*${1}*)(cn=*${1}*)(mail=*${1}*)(givenName=*${1}*)(sn=*${1}*))" dn displayName modifyTimeStamp )
+
+}
+
+function lookup() {
+        setComm $1
+        (cd $INST && $COMS -b "$BASEDN" "$2" "$3" "$4" "$5" )
+}
+
+function getPW() {
+                   oc -getunsecinfo "${SECPRODPW}" >  "${PRODPW}"
+}
+
+function getPWQA() {
+           oc -getunsecinfo "${SECTESTPW}" >  "${TESTPW}"
+}
+
+
+function usage() {
+echo "$progdir/$prog - usage"
+echo
+   #echo    "user"               )  updateUser $2;;
+   echo "       find <user>                                     - find a user in production ldap"
+   echo "       exist|findQA  <userid>                          - find user in QA ldap"
+   echo "       findexist <userid>                              - check if user exist in production and QA ldap"
+   echo "       group <group>                                   - find group in Prod ldap"
+   echo "       groupQA <group>                                 - find group in QA ldap"
+#   echo "      modify <userid>                                 - touch user in production ldap"
+   echo "       touch <userid>                                  - touch user in production ldap"
+   echo "       list <pattern>                                  - find user on pattern in prodction ldap"
+   echo "       listQA <pattern>                                - find user on pattern in QA ldap"
+   #echo "pullgroup"          ) pullGroup $2 $3 $4 ;;
+   echo "       findgroup <group>                               - find in Prod a group"
+   echo "       findgroupQA <group>                             - find in QA a group"
+   echo "       syncgrpQA <userid>                              - sync user group from production to QA group"
+   echo "       syncgrp <ref userid> <targetuser> <patter>      - sync user group from reference user to target user - depend on pattern"
+   echo "       addgroup <group> <userid>                       - add group to user in Prod"
+   echo "       addgroupQA <group> <userid>                     - add group to user in QA"
+   echo "       <attr|attrlist>                                 - get ldap attribute list"
+#   echo "      userdn <pattern>                                - find ldap user dn"
+   echo
+}
+
+case "$1" in
+   "user"               ) getPW;   updateUser $2;;
+   "find"               ) getPW;   findUser $2 "$3"  ;;
+   "exist"|"findQA"     ) getPWQA; findUserQA $2 "$3";;
+   "findexist"          ) getPW;
+                          echo "find $2 in Production";   findUser $2 "$3" ;
+                          getPWQA;
+                          echo "find $2 in QA";           findUserQA $2 "$3" ;;
+   "findident"          ) getPW;   findUserIdent $2 "$3" ;;
+   "group"              ) getPW;   findGroup $2 "$3" ;;
+   "groupQA"            ) getPWQA; findGroupQA $2 "$3" ;;
+   "modify"             ) getPW;   updateUser $2 "$3" ;;
+   "touch"              ) getPW;   touchUser $2 "$3"  ;;
+   "list"               ) getPW;   list $2 "$3" ;;
+   "listQA"             ) getPWQA; listQA $2 "$3" ;;
+   "pullgroup"          ) getPW; getPWQA; pullGroup $2 $3 $4 ;;
+   "findgroup"          ) getPW;   findAGroup  prod $2 $3 $4;;
+   "findgroupQA"        ) getPWQA; findAGroup  qa $2 $3 $4;;
+   "syncgrpQA"          ) getPW; getPWQA; syncGroupQA $2 $3 $4 ;;
+   "syncgrp"            ) getPW;   syncGroupRef $2 $3 $4 ;;
+   "addgroup"           ) getPW;   addUserToGrp prod $2 $3 $4;;
+   "addgroupQA"         ) getPWQA; addUserToGrp qa $2 $3 $4;;
+   "attr"|"attrlist"    ) getATTRList;;
+   "userdn"             ) getPW;   getUserDN;;
+   "lookup"             ) getPW;   lookup prod "$2" "$3" "$4" "$5";;
+   "lookupQA"               ) getPWQA; lookup qa "$2" "$3" "$4" "$5";;
+   *)       usage;;
+esac
+
+rm $PRODPW $TESTPW 2>/dev/null
