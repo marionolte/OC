@@ -23,6 +23,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -498,11 +499,14 @@ public class SSHshell  extends RunnableT {
                         if ( debug > 0 ) {
                             System.out.println("DEBUG[1/"+debug+"] "+func+"parse args["+i+"/"+args.length+"]="+args[i]);
                         }
-                        if      ( args[i].startsWith("host=")) { ho=args[i].substring("host=".length());}
+                        if      ( args[i].startsWith("host=") || args[i].matches("-h") ) { ho=args[i].substring("host=".length());}
                         else if ( args[i].matches("-d")      ) { SSHshell.debug++; debug++; }
-                        else if ( args[i].startsWith("user=")) { u=args[i].substring("user=".length());}
-                        else if ( args[i].startsWith("pass=")) { p=args[i].substring("pass=".length());}
+                        else if ( args[i].startsWith("user=")  ) { u=args[i].substring("user=".length());}
+                        else if ( args[i].matches("-u")        ) { u=args[++i];}
+                        else if ( args[i].startsWith("pass=")  ) { p=args[i].substring("pass=".length());}
+                        else if ( args[i].matches("-pass")     ) { p=args[++i]; }
                         else if ( args[i].startsWith("port=")) { po= Integer.parseInt( args[i].substring("port=".length()) ); }
+                        else if ( args[i].matches("-p")      ) { po= Integer.parseInt( args[++i] ); }
                         else if ( args[i].startsWith("dir=") ) { conf=  ( new ReadDir( args[i].substring("dir=".length()) )).getFQDNDirName(); }
                         else if ( args[i].matches("-j") ) { 
                                     SecFile f=new SecFile(args[++i]); 
@@ -512,6 +516,32 @@ public class SSHshell  extends RunnableT {
                         else if (args[i].matches("-help")) {  String prog = System.getProperty("prog");
                                                               System.out.println( ( (prog==null)?"":prog ) +usage()); 
                                                               return null;
+                        }
+                        else if (args[i].matches("-conn") ) {
+                             SecFile fsec = new SecFile(args[++i]);
+                             Properties prop = fsec.getProperties();
+                             //System.out.println("conn: "+fsec.getFQDNFileName()+"  read:"+fsec.isReadableFile() + " all:"+prop+ " check:"+prop.containsKey("HOST"));
+                             if ( prop.containsKey("HOST") ) {  ho=prop.getProperty("HOST");
+                                 //System.out.println("comn: Host:"+ ho);
+                             }
+                             if ( prop.containsKey("USER") ) {  u=prop.getProperty("USER"); 
+                                 //System.out.println("conn: User:"+u);
+                             }
+                             if ( prop.containsKey("KEY")  ) {  ReadFile rf = new ReadFile( prop.getProperty("KEY") ); 
+                                 //System.out.println("conn: keyfile:"+rf.getFQDNFileName()+" read:"+rf.isReadableFile() );
+                                                             if ( rf.isReadableFile() ) { kFile=new File(rf.getFQDNFileName()); }
+                             }
+                             if ( prop.containsKey("PASS") ) { 
+                                    SecFile fpass = new SecFile( prop.getProperty("PASS") );
+                                    if ( fpass.isReadableFile() ) {
+                                         p=fpass.readOut().toString();
+                                    } else {
+                                         p=prop.getProperty("PASS") ; 
+                                    }
+                                    
+                             }
+                             if ( prop.contains("PORT") ) { po= Integer.parseInt( prop.getProperty("PORT") ); }
+                                 
                         }
                         else { 
                             if ( comm.length() > 0 ) { comm.append(" "); }

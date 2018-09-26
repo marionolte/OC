@@ -169,7 +169,8 @@ public class Mos extends Updater{
                 if      ( args[i].matches("-testssl") ) { _exit = ( testssl(args[++i],args[++i])     )?0:1;   fin=true; }
                 else if ( args[i].matches("-debugssl")) { System.setProperty("javax.net.debug","ssl"); }
                 else if ( args[i].matches("-sshcomm") ) { _exit = (sshCommand(getArgsLower(args,++i)))?0:1;   fin=true; printf(func,3, "INFO: sshComm parseArgs closed"); }
-                else if ( args[i].matches("-sshpass") ) { _exit = (sshScript(getArgsLower(args,++i)) )?0:1;   fin=true; printf(func,3, "INFO: sshScript parseArgs closed"); }
+                else if ( args[i].matches("-sshpass") ) { _exit = (sshScript(getArgsLower(args,++i)) )?0:1;   fin=true; printf(func,3, "INFO: sshScript  parseArgs closed"); }
+                else if ( args[i].matches("-sshcluster")){_exit = (sshCluster(getArgsLower(args,++i)) )?0:1;  fin=true; printf(func,3, "INFO: sshCluster parseArgs closed"); }
                 //else if ( args[i].matches("-ldap")    ) { _exit = (ldap( getArgsLower(args,++i) )    )?0:1;   fin=true; }
                 else if ( args[i].matches("-ldapbulk")) { _exit = (ldapBulk( getArgsLower(args,++i) ))?0:1;   fin=true; }
                 else if ( args[i].matches("-testhttp")) { String[] ar = getArgsLower(args,++i);
@@ -197,6 +198,7 @@ public class Mos extends Updater{
                 else if ( args[i].matches("-gclog1")    ){ this.gcLog(getArgsLower(args,++i));           fin=true; }
                 else if ( args[i].matches("-update")   ){ this.updateJar();                              fin=true; }
                 else if ( args[i].matches("-unsecure") ){ this.unsecureFile(getArgsLower(args,++i));     fin=true; }
+                else if ( args[i].matches("-getunsecinfo")){ this.unsecureInfo(getArgsLower(args,++i));  fin=true; }
                 else if ( args[i].matches("-secure")   ){ this.secureFile(getArgsLower(args,++i));       fin=true; }
                 else if ( args[i].matches("-pwfile")   ){ this.setPassword(args[++i]);                   fin=true; }
                 else if ( args[i].matches("-gclog")    ){ this.checkGC(getArgsLower(args,++i));          fin=true; }
@@ -304,10 +306,24 @@ public class Mos extends Updater{
                                     break;
                 case "ldapcopy":
                                     net.ldap.LdapCopy lc = net.ldap.LdapCopy.getInstance(ar);
-                                                      lc.debug=debug;
-                                                      if ( ! lc.usage ) {
-                                                            lc.copy();
-                                                      }      
+                                    System.out.println("le"+ar.length);
+                                                     if ( lc != null && ! lc.usage ) {
+                                                           lc.debug=debug;
+                                                          try { 
+                                                             printf(func,3," start ldap copy");  
+                                                              lc.copy(); 
+                                                             printf(func,3," complete ldap copy"); 
+                                                          }
+                                                          catch(RuntimeException re) {
+                                                              lc.printUsage();
+                                                          }
+                                                          catch(Exception e) {
+                                                              printf(func,1,"ldapcopy with excetion "+e.getMessage(),e);
+                                                          }
+                                                      } else {
+                                                          printf(func,1,"no instance ");
+                                                          lc.printUsage();
+                                                      }     
                                     break;
                 default:
                     System.out.println("ERROR: "+foo+" not found");
@@ -358,6 +374,10 @@ public class Mos extends Updater{
                 }     
             }
         }
+    }
+    private void unsecureInfo(String[] ar) {
+        SecFile sec = new SecFile(ar[0]);
+        System.out.println(sec.readOut().toString());
     }
     private void unsecureFile(String[] ar) {
         if ( ar.length > 0 ) {
@@ -478,6 +498,23 @@ public class Mos extends Updater{
                     
         System.out.println("Scan host:"+host+" from min port: "+pc.getMinPort()+" to max port: "+pc.getMaxPort()+" for listening");
         pc.test();
+    }
+    
+    private boolean sshCluster(String[] args) {
+        final String func=getFunc("sshCluster(String[] args)");
+        printf(func,2,"sshCluster(sshCommand] start");
+        net.ssh.SSHCluster.debug=debug;
+        net.ssh.SSHCluster sc = net.ssh.SSHCluster.getInstance(args);
+        if ( sc.isValid() ) {
+            sc.start();
+            while( ! sc.isRunning() ) { sleep(100);}
+            
+            sc.setClosed();
+            return true;
+        } else {
+            sc.usage();
+        }
+        return false;
     }
     
     private boolean sshCommand(String[] args) {

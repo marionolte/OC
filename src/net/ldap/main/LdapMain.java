@@ -200,16 +200,18 @@ abstract public class LdapMain extends Version{
      public    String operationfile=null;
      public   boolean usage=false;
                   int pageSize = 10;
-     private      int searchlimit=1024; 
+     private      int searchlimit=1024;
+     private  String  _myusage="";
      
      Properties conn = new Properties();
      public HashMap<String,String> map = new  HashMap<String,String> ();
-     public void scanner(String[] args,final String use) {    
+     public void scanner(String[] args,final String use) { 
+        this._myusage=use;
         String func=name+"::scanner(String[] args,final String use)";
         printf(func,3," usage |"+use+"|");
         Pattern pa = Pattern.compile("\\]|\\[|<|>");
         Matcher ma = pa.matcher(use);
-        int pos=0;
+        int pos=0; int found=0;
         while(ma.find(pos)) {
             String msg = use.substring(pos,ma.start());
             printf(func,3," find |"+msg+"| pos:"+pos+" to:"+ma.start()+" "+msg.indexOf(" ") );
@@ -224,13 +226,14 @@ abstract public class LdapMain extends Version{
                     printf(func,2," save |"+sp[0]+"="+v+"|");
                     map.put(sp[0], v);
                     map.put("_default_"+sp[0], v);
+                    
                 }
             } else {
                 printf(func,3," msg without spaces |"+msg+"|");
                 if ( msg.startsWith("-") ) {
-                    map.put(msg, "false");
+                    map.put(msg, "false"); 
                 }else if ( msg.equals("objectlist")) {
-                    map.put(msg, "");
+                    map.put(msg, ""); 
                 }
             }
             if ( map.get("-w") == null ) { map.put("-w", "password");     map.put("_default_-w", "password");      }
@@ -260,7 +263,7 @@ abstract public class LdapMain extends Version{
                                 v=map.get(p)+"\n"+v;
                             }
                             printf(func,2," map:"+p+"="+v+":");
-                            map.put(p, v);
+                            map.put(p, v); found++;
                        } else {
                            System.out.println("unknown argument "+args[i]);
                            usage=true; log(use);
@@ -274,7 +277,7 @@ abstract public class LdapMain extends Version{
                 }   
             }
             
-            if(  ! getMapValue("-help").isEmpty() ) {
+            if(  ! getMapValue("-help").isEmpty() || found == 0 ) {
                  usage=true; log(use);
             }
             
@@ -345,6 +348,7 @@ abstract public class LdapMain extends Version{
                   }     
               }   
               
+              
               String f=getFromMap("-pg");
               if ( ! f.isEmpty() && ! f.equals("true") ){
                     int si=this.getPageSize();
@@ -381,6 +385,8 @@ abstract public class LdapMain extends Version{
             usage=true; 
         }
     }
+     
+    public void printUsage() { log(this._myusage); }
      
      private String getFromMap(String k) {
          String f=map.get("k");

@@ -9,9 +9,11 @@ import io.crypt.Base64;
 import io.crypt.Crypt;
 import io.thread.RunnableT;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -145,6 +147,17 @@ public class SecFile extends ReadFile {
             return new StringBuilder("");
         }
         
+    }
+    @Override
+    public Properties getProperties() {
+       Properties p = new Properties();
+       try { 
+            InputStream ims = new ByteArrayInputStream( this.readOut().toString().getBytes("UTF-8") );
+            p.load( ims ); 
+       } 
+       catch( java.io.IOException  io) {} 
+       catch( NullPointerException ne){}
+       return p;
     }
     
     @Override

@@ -12,11 +12,8 @@ import io.file.SecFile;
 import io.thread.RunnableT;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.naming.CompositeName;
 import javax.naming.InvalidNameException;
 import javax.naming.Name;
@@ -50,9 +47,13 @@ public class LdapCopy extends LdapMain{
     private  String moduserpw;
     private  String template;
     private boolean restiktCopy;
+    private boolean originCopy;
     
     private LdapCopy() { this(new String[]{}); }
-    private LdapCopy(String[] ar) {  scanner(ar,"ldapcopy "+myusage); lcInit(); }
+    private LdapCopy(String[] ar) {  
+        scanner(ar,"ldapcopy "+myusage); 
+        lcInit(); 
+    }
     private void lcInit() {
         final String func=getFunc("lcInit()");
         printf(func,4,"created");
@@ -78,7 +79,7 @@ public class LdapCopy extends LdapMain{
         printf(func,3,"port:"+port+":  host:"+host+":");
         
         try {
-            this.modport=Integer.parseInt(map.get("-p"));
+            this.modport=Integer.parseInt(map.get("-modp"));
             if ( this.modport < Host.getMinPort() || this.modport > Host.getMaxPort() ) {
                 throw new RuntimeException("not a port");
             }
@@ -109,7 +110,7 @@ public class LdapCopy extends LdapMain{
         //System.out.println("moduserpw2:"+moduserpw);
         auth="simple";
         
-        this.template= ( ! map.get("-t").equals(map.get("_default_-t")))? ( new ReadFile( map.get("-t") ).readOut().toString() ):"";
+        this.template= ( ! map.get("-t").equals(map.get("_default_-t")))? ( new ReadFile( map.get("-t") ).readOut().toString() ):"#template: all";
         for( String s: this.template.split("\n")) {
             if ( ! s.isEmpty() ) {
                     String[] sp = s.split(" ");
@@ -122,6 +123,9 @@ public class LdapCopy extends LdapMain{
                       for ( int i = 1; i< sp.length; i++ ) {
                         String[] at = sp[i].split("\\|");
                         tp.put(at[0].toLowerCase(), (at.length <= 1)?at[0]:sp[i].substring(at[0].length()+1));
+                        if ( sp[i].indexOf('|') > 0 && tp.get(at[0].toLowerCase()).equals(at[0].toLowerCase()) ) {
+                          tp.put(at[0].toLowerCase(),"");
+                        }
                         printf(func,2,"attribute:"+attr+" "+at.length+" update with :"+sp[i]+":  =>"+at[0]+"="+tp.get(at[0])+"<= =>"
                                 +at[0].toLowerCase()+"="+tp.get(at[0].toLowerCase()+"|<="));
                       }  
@@ -137,6 +141,9 @@ public class LdapCopy extends LdapMain{
         }
         HashMap<String, String> tp = tmap.get("#template");
         this.restiktCopy=( tp.get("strict") != null && tp.get("strict").equals("strict"));
+        this.originCopy =( tp.get("origin") != null && tp.get("origin").equals("origin"));
+        
+        printf(func,2,"tp:origin:"+tp.containsValue("origin")+":   :"+tp.get("origin")+":"+tp);
         
         int size=this.getPageSize();
         try {
@@ -303,12 +310,37 @@ public class LdapCopy extends LdapMain{
     
     private String getNewDN(String old,String base, String newbase) {
         final String func=getFunc("getNewDN(String old,String base, String newbase)");
+        int savdebug=debug; 
+        //debug=3;        
+        HashMap<String,String> tp = tmap.get("dn");
+        if ( tp == null ) { tp= new HashMap<String,String>(); tmap.put("dn", tp); }
+        if ( ! tp.isEmpty() ) {
+            Iterator<String> itter = tp.keySet().iterator();
+            while(itter.hasNext()) {
+                String a = itter.next();
+                if ( a.equals("{replace")) {
+                    String v = tp.get(a).replace("(","").replace(")}", "").toLowerCase();
+                    printf(func,3,"itter:"+a+":  has value:"+v+":");
+                    for ( String s : v.split(";")) {
+                        if ( ! s.isEmpty() ) {
+                          printf(func,3," s =>"+s+"<=");  
+                          String[] at = s.split("\\|");
+                                   at = new String[] { at[0], ((at.length>1)?at[1]:"") };
+                          printf(func,3, "replace :"+at[0]+":  with:"+at[1]+":  old=>"+old+"<=");
+                          old=old.toLowerCase().replaceAll(at[0], at[1]);
+                          printf(func,3, "after replace =>"+old+"<=");
+                          
+                        }  
+                    }
+                }    
+                
+            }
+        }
+        
         String[] sp = old.substring(0, old.length()-base.length() ).split(",");  String[] at=base.split(",");
         StringBuilder sw = new StringBuilder();
-        HashMap<String,String> tp = tmap.get("dn");
-        if ( tp == null ) { tp= new HashMap<String,String>(); }
         
-        printf(func,3,"check:"+old+":  base:"+base+":  newbase:"+newbase+":");
+        printf(func,3,"check:"+old+":  base:"+base+":  newbase:"+newbase+":" + " tp =>"+tp);
             
         for( int i=0; i<(sp.length-(at.length-1));i++ ) {
             if ( sw.length() >0 ) {sw.append(","); }
@@ -316,9 +348,9 @@ public class LdapCopy extends LdapMain{
             if ( tp.get(sp[i].toLowerCase()) != null ) { sp[i]=tp.get(sp[i].toLowerCase()); }
             sw.append(sp[i]);
         }
-        final String f=sw.toString()+","+newbase;
+        final String f=sw.toString()+(( sw.length() > 0)?",":"")+newbase;
         printf(func,3,"from:"+old+":  moved to:"+f+":");
-        
+        debug=savdebug;
         return f;
     }
     
@@ -327,7 +359,7 @@ public class LdapCopy extends LdapMain{
     final static public String myusage="\nusage():\noption: [-h hostname] [-p port] [-ssl] [-D adminDN] [-j passwordfile] [-modh modifyHost] [-modp port] [-modD adminDN] [-modj passwordfile] [-modssl] [-b baseDN] [-bc copyBaseDN] [-f filter] [-t copytemplate] [-pg <page-sizelimit>] [objectlist]\n"
             + "\n\t\texample template file:\n"
             + "\t\t\t\t#template: strict\n" 
-            + "\t\t\t\tdn: ou=People|ou=Users\n" 
+            + "\t\t\t\tdn: {replace(ou=People|ou=Users;ou=subtree|)\n" 
             + "\t\t\t\tobjectClass: top person posixAccount inetOrgPerson\n" 
             + "\t\t\t\tgidNumber: 1000\n" 
             + "\t\t\t\tsn:\n" 
@@ -344,6 +376,7 @@ public class LdapCopy extends LdapMain{
             + " \t\t__ \t\t\tbefore and after will take a value from a ldap attribute\n"
             + " \t\t(0,5)  \t\t\ttake a substring from 0 to 5 \n"
             + " \t\tou=People|ou=Users \treplace  in the dn the ou=People part with ou=Users\n"
+            + " \t\t{replace(ou=People|ou=Users;ou=subtree|) replace ou=People to ou=Users and removes ou=subtree\n"
             + " \t\tautoinc(1000) \twill generate an auto integer incrimental value starting with the base 1000\n"
             + " \t\tstrict in the #template\tthis with take over only the names attributes\n"
             + "\n";
@@ -357,7 +390,10 @@ public class LdapCopy extends LdapMain{
     
     public static void main(String[] args) throws Exception {
          LdapCopy lc = getInstance(args);
+         if ( lc != null && ! lc.usage ) {
+                  lc.debug=debug;
                   lc.copy();
+         }
     }
     
     private RingBuffer<Name> rbuf = new RingBuffer(this.getPageSize());
@@ -429,7 +465,7 @@ public class LdapCopy extends LdapMain{
                               final String n = entry.getNameInNamespace();
                               printf(func,3,"dn: "+n+" entry:"+entry); 
                               final HashMap<String, ArrayList<String>> imp = lc.getLdapHash(entry);
-                              printf(func,3,"dn: "+n+" ldap hah generated"); 
+                              printf(func,3,"dn: "+n+" ldap has generated"); 
                               ReadOK.add(o);
                               mbuf.push(imp);
                         }    
@@ -610,6 +646,7 @@ public class LdapCopy extends LdapMain{
                     val=sf;
                 } else  if ( sf.startsWith("{") ) {
                     int i = val.indexOf("{"); int j=val.indexOf("}");
+                    printf(func,3,"df:"+sf+":  index j("+j+")>i+1("+(i+1)+")");
                     if ( j>i+1 ) {
                         String v = val.substring(i+1, j);
                         printf(func,3,"need to modify value:"+val+" based:"+sf+":  with {} =>"+v+"<=  for attribute:"+attr+":");
@@ -630,6 +667,23 @@ public class LdapCopy extends LdapMain{
                             val=auto.get(attr);
                             
                             printf(func,2,"new value for attribute "+attr+" are now:"+val+":");
+                        } else if (  v.startsWith("replace") ) {
+                            String a = auto.get(attr);
+                            if ( a != null ) {
+                                 a = sf.substring(  sf.indexOf("(")+1, sf.indexOf(")") ); 
+                                 printf(func,3,"a:"+a+":");
+                                 for ( String s : v.split(";")) {
+                                    if ( ! s.isEmpty() ) {
+                                        printf(func,3," s =>"+s+"<=");  
+                                        String[] at = s.split("\\|");
+                                                 at = new String[] { at[0], ((at.length>1)?at[1]:"") };
+                                                 printf(func,3, "replace :"+at[0]+":  with:"+at[1]+":  old=>"+val+"<=");
+                                        val=val.replaceAll(at[0], at[1]);
+                                        printf(func,3, "after replace =>"+val+"<=");
+                          
+                                    }  
+                                  }                              
+                            }
                         }
                     }
                 } else {
@@ -756,9 +810,12 @@ public class LdapCopy extends LdapMain{
                      lc.lmm.getLdapContext().modifyAttributes(nam, mods);
                  }
                  ModOK.add(nam);
+           } catch(NullPointerException npe) {
+                printf(func,1,"NullPointer error ",npe);
+                
            } catch(NamingException ne) {
                 printf(func,1,"Naming error "+ne.getMessage(),ne);
-                ModNOK.add(nam);
+                if ( nam != null ) ModNOK.add(nam); 
            }
            
            printf(func,4,"close update");
@@ -781,6 +838,7 @@ public class LdapCopy extends LdapMain{
                 return false; 
             }
         }
+        
         
     }
 }
