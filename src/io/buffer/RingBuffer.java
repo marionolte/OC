@@ -27,12 +27,23 @@ public class RingBuffer<Item> extends Version implements Iterable<Item> {
     private String lock = null ;
     private RingBuffer<Object> ring;
     private boolean autoInc=true;
+    private int capa;
     
 
     // contructor for the RingBuffer - array where not generated on default
-    public RingBuffer(int capacity) { this.elements = ( Item[] ) new Object[capacity];  }
+    public RingBuffer(int capacity) { this.capa=capacity; clear(); } //this.elements = ( Item[] ) new Object[capacity];  }
 
     public RingBuffer() { this(16384); }
+    
+    public  synchronized boolean clear() { 
+        getLock("clear");
+            this.elements = ( Item[] ) new Object[capa];
+            this.number = 0;      // number of elements on queue
+            this.first  = 0;      // first element in the queue
+            this.last   = 0;
+        clearLock("clear");
+        return true;
+    }
 
     public  synchronized boolean isEmpty()  { return number == 0;  }
     public  synchronized boolean isFull()   { return number == this.elements.length; }
@@ -40,10 +51,9 @@ public class RingBuffer<Item> extends Version implements Iterable<Item> {
     public  synchronized boolean reSize(int newSize) {
         if ( ! this.isEmpty() ) { return false; }
         getLock("resize");
-        
-            this.elements = ( Item[] ) new Object[newSize];
-        
+            this.capa=newSize;
         clearLock("resize");
+            clear();  
         
         return true;
     }
@@ -121,7 +131,18 @@ public class RingBuffer<Item> extends Version implements Iterable<Item> {
         printf(func,5,"return item :"+item.toString()+":");
         return(item);
     }
+    
+    synchronized public  String getFirst()       { return (String) getFirstObject(); }
+    synchronized public  Object getFirstObject() { return          getObject(0); }
 
+    synchronized public  String getLast()        { return (String) getLastObject(); }
+    synchronized public  Object getLastObject()  { return          getObject(last-1); }
+    synchronized private Object getObject(int pos){
+        getLock("pos");
+        Object o = (pos >=0 && pos < this.elements.length )?this.elements[pos]:null;                 
+        clearLock("pos");    
+        return o;
+    }
    
     @Override
     public Iterator<Item> iterator() { return new RingBufferIterator(); }

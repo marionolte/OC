@@ -28,7 +28,7 @@ public abstract class Version  { //extends OraConst {
     final public static int minorVersion=0;
     final public static int patchVersion=3;
     final public static int fixedVersion=3;
-    final public static int   libVersion=3;
+    final public static int   libVersion=4;
     final public static int  betaVersion=1;
     
     static {
@@ -49,7 +49,8 @@ public abstract class Version  { //extends OraConst {
      * @return
      */
     final public static String  getVersion()       { return ""+majorVersion+"."+minorVersion+((patchVersion==0)?"":"."+patchVersion); }
-    final public static String  getFullVersion()   { return ""+majorVersion+"."+minorVersion+"."+patchVersion+((fixedVersion==0)?"":"."+fixedVersion); }
+    final public static String  getFullVersion()   { return getVersion()+((fixedVersion==0)?"":"."+fixedVersion); }
+    final public static String  getDebugVersion()  { return getFullVersion()+((libVersion==0)?"":"."+libVersion); }
     final public static String  getFullInfo()      { return mhservice+"/"+getFullVersion()+" - "+getProductAuthor();}
     final public static String  getProductAuthor() { return prodauthor; }
     final public static int     getLibVersion()    { return libVersion;}
@@ -60,7 +61,7 @@ public abstract class Version  { //extends OraConst {
     }
     final public static String getBetaVersion(){
                         if (betaVersion == 0 ) { return getFullVersion(); } 
-                        return ""+majorVersion+"."+minorVersion+"."+patchVersion+"."+fixedVersion+"."+betaVersion;
+                        return getDebugVersion()+"."+betaVersion;
     }
     final public static boolean isBeta() { return ! ( getBetaVersion().matches(getFullVersion())); }
     final public static String getBetaInfo(){
@@ -104,6 +105,7 @@ public abstract class Version  { //extends OraConst {
               logger.info(s);
          }*/
     }
+    
     final public static void printUsage(String s) {
         log(mhservice+"/"+(isBeta()?getBetaVersion():getVersion())+" - "+prodauthor+" "+s);
     }

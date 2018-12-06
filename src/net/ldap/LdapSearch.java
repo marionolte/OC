@@ -115,14 +115,15 @@ public class LdapSearch  extends LdapMain{
         ctls = new SearchControls();
         
         
-        /*
+        
         // remove filter local
         printf(func,3," attr list:"+attr.size());
         if (attr.size()>0) {
             String[] attrIDs = new String[attr.size()]; // { "sn", "telephonenumber", "golfhandicap", "mail" };
             for(int i=0; i<attr.size();i++) { attrIDs[i] = (String) attr.get(i); }
             ctls.setReturningAttributes(attrIDs);
-        }*/
+        }
+        
         if ( getSearchTimeout() > 0)
             ctls.setTimeLimit(getSearchTimeout());
         
@@ -190,6 +191,7 @@ public class LdapSearch  extends LdapMain{
     
     public boolean printResults(NamingEnumeration namEnum ) throws NamingException {
         final String func=getFunc("printResults(NamingEnumeration namEnum)");
+        final int savdeb=debug; //debug=4;
         boolean b=false;
         printf (func,3," print results:"+(namEnum != null && namEnum.hasMore())+" nameEnum:"+namEnum);
         HashMap<String, ArrayList<String>> imp = new HashMap<String, ArrayList<String>>();
@@ -209,25 +211,42 @@ public class LdapSearch  extends LdapMain{
                    ar = new ArrayList<String>();
                    printf(func,3,"Attribute:"+at);
                    String id=at.getID().toLowerCase();
-                   printf(func,3,"id:"+id+":  :"+at.toString().substring(at.getID().length()+2)+":");
-                   String sp[]  = at.toString().substring(at.getID().length()+2).split(",");
-                   for (int i=0; i<sp.length; i++) {
-                       printf(func,4,"i="+i+":   sp[]=:"+sp[i]+":");
-                       Object ob=at.get();
-                       
-                       String v= (( ob instanceof byte[] )? new String((byte[]) ob ):sp[i]).replaceAll("^ ", "");
-                       printf(func,4,id+": "+v);
-                       ar.add(v);
-                       
-                       
-                   }
-                   printf(func,3,"put list  for:"+id);
+                   String va=at.toString().substring(at.getID().length()+2);
+                   printf(func,3,"id:"+id+":  :"+va+":");
+                   if ( ! va.contains(" ") ) {
+                        //String sp[]  = at.toString().substring(at.getID().length()+2).split(",");
+                        String sp[]  = va.split(",");
+                        if ( sp.length == 0 || sp.length >2 ) {
+                              printf(func,4,id+": "+va);
+                              ar.add(va);
+                        } else {
+                            for (int i=0; i<sp.length; i++) {
+                                printf(func,4,"i="+i+":   sp[]=:"+sp[i]+":");
+                                Object ob=at.get();
+
+                                String v= (( ob instanceof byte[] )? new String((byte[]) ob ):sp[i]).replaceAll("^ ", "");
+                                printf(func,4,id+": "+v);
+                                ar.add(v);
+                            }
+                        }
+                   } else {
+                       printf(func,3,"id:"+id+":  with space value :"+va+":");
+                       for ( String a : va.split(" ") ) {
+                           if ( ! a.isEmpty() ) {
+                                printf(func,3,"id:"+id+":  with space value :"+a.replaceAll(",$", "")+":");
+                                ar.add(a.replaceAll(",$", "") );
+                           }     
+                       }
+                   }     
+                   printf(func,3,"put list for:"+id+" size :"+ar.size()+":");
                    imp.put(id, ar);
                }
                
                
                System.out.println("dn: "+(imp.get("dn")).get(0));
-               ArrayList<String> a = super.getAttrList();
+               ArrayList<String> a  = super.getAttrList();
+               ArrayList<String> ab = new ArrayList();
+               for ( String af : a ) { ab.add(af.toLowerCase()); }
                if ( debug >= 0 ) {
                    printf(func,1,"objList is Empty ? :"+a.isEmpty()+":  ");
                    for(String s: a ) {
@@ -235,18 +254,18 @@ public class LdapSearch  extends LdapMain{
                    }
                }
                ar = imp.get("objectclass");
-               for ( int i=0; i<ar.size() ; i++ ) {
+               if ( ar != null )
+                 for ( int i=0; i<ar.size() ; i++ ) {
                    String o = ar.get(i);
                    if ( a.isEmpty() || a.contains("objectclass") ) System.out.println("objectclass: "+o);
-               }
-               //System.out.println("a");
+                 }
                Iterator<String> itter = imp.keySet().iterator(); 
                while ( itter.hasNext() ) {
                    String f = itter.next();
                    if ( ! f.isEmpty() && ! f.equals("dn") && ! f.equals("objectclass")) {
                        ar = imp.get(f);
                        for(int i=0; i<ar.size(); i++) {
-                           if ( a.isEmpty() || a.contains(f) ) { System.out.println(f+": "+ar.get(i)); }
+                           if ( a.isEmpty() || a.contains(f) || ab.contains(f) ) { System.out.println(f+": "+ar.get(i)); }
                        }
 
                    }
@@ -258,7 +277,9 @@ public class LdapSearch  extends LdapMain{
                //    System.out.println("at("+i+"):"+(String) at.get(i));
                //}
                
+               
         }
+        debug=savdeb;
         return b;
     }
     

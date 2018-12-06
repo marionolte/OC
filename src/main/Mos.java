@@ -208,7 +208,8 @@ public class Mos extends Updater{
                 else if ( args[i].matches("-d")        ){ } // needs empty - run in pre-scan
                 else if ( args[i].matches("-monitor")  ){ this.runMonitor(getArgsLower(args,++i));       fin=true; }
                 else if ( args[i].matches("-newpass")  ){ this.getNewPassword(getArgsLower(args,++i));   fin=true; }
-                else if ( args[i].matches("-version")  ){ this.version(); _exit=0;                       fin=true; donemsg=false; }
+                else if ( args[i].matches("-version")    ){ this.version(false); _exit=0;                fin=true; donemsg=false; }
+                else if ( args[i].matches("-fullversion")){ this.version(true);  _exit=0;                fin=true; donemsg=false; }
                 else {
                     usage(); sleep(300); _exit=1; throw new RuntimeException("force closing - unknown argument"); 
                 }
@@ -700,8 +701,12 @@ public class Mos extends Updater{
                System.exit(m._exit);
     }
     
-    private void version() {
-        System.out.println(this.getFullInfo());
+    private void version(boolean b) {
+        
+            System.out.println(this.getFullInfo());
+        if ( b ) {
+            System.out.println("full version are: "+this.getDebugVersion());
+        }    
     }
     
     private void usage() {

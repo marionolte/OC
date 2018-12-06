@@ -15,23 +15,29 @@ public class Perf extends MainTask{
     private final PerfMonitor pm;
 
     public Perf(String[] ar) {
+        final String func=getFunc("Perf(String[] ar)");
+        
         args = parseArgs(ar);
         ops  = io.lib.IOLib.scanner(ar, myusage);
         debug=Integer.parseInt(ops.get("_debug_"));
-        
-        if ( ops.get("_usage_").equals("true") ) { 
+        printf(func,3,"usage:"+ops.get("_usage_")+"  args size:"+args.size());
+        if ( ops.get("_usage_").equals("true") && ar.length > 0 ) { 
             printUsage(myusage); 
             System.exit(-1);
         }
         
-        final String func=getFunc("Perf(String[] ar)");
         printf(func,3,"args hash:"+args);
         map=new HashMap<String,PerfTask> (); 
         if ( this.args.getProperty("-cpu") != null ) { map.put("cpu", new PerfTask("cpu",this.args.getProperty("-cpu"))); }
         if ( this.args.getProperty("-io")  != null ) { map.put("io",  new PerfTask("io", this.args.getProperty("-io" ) )); }
         if ( this.args.getProperty("-net") != null ) { map.put("net", new PerfTask("net",this.args.getProperty("-net"))); }
         if ( this.args.getProperty("-mem") != null ) { map.put("mem", new PerfTask("mem",this.args.getProperty("-mem"))); }
-        
+        if ( map.isEmpty() ) {
+            //{ map.put("cpu", new PerfTask("cpu",this.args.getProperty("-cpu")));  }
+            //{ map.put("io",  new PerfTask("io", this.args.getProperty("-io" ) )); }
+            //{ map.put("net", new PerfTask("net",this.args.getProperty("-net")));  }
+            { map.put("mem", new PerfTask("mem",this.args.getProperty("-mem")));  }
+        }
         
         printf(func,2,"hash:"+map+":");
         Iterator<String> itter = map.keySet().iterator();
@@ -54,13 +60,13 @@ public class Perf extends MainTask{
     //public boolean printUsage=false;
     
     public void test() {
-        debug=4;
+        //debug=4;
         final String func=getFunc("test()");
         printf(func,4,"run test()");
         //if ( printUsage ) {  return; }
         while(! pm.isRunning()) { sleep(300);}
         printf(func,4,"pm running");
-        while ( ! pm.isClosed() ) {            
+        while ( ! pm.isClosed() ) {  
             sleep(300);
         }
         printf(func,4,"pm complete test()");
@@ -68,12 +74,6 @@ public class Perf extends MainTask{
 
     final public static String myusage="\nusage()\n[-cpu=time=XX,count=XX] [-mem=time=XX,count=XX] [-io=time=XX,count=XX] [-net=time=XX,count=XX] ";
     
-   /* public String usage() {
-        printUsage=true;
-        StringBuilder sw = new StringBuilder();
-        sw.append("< [-cpu|-mem|-io|-net]=time=XX,count=XX  ..>");
-        return sw.toString();
-    }*/
     
     public static Perf getInstance(String[] args) {
          Perf p = new Perf(args);          
@@ -86,8 +86,8 @@ public class Perf extends MainTask{
     }
 
    private class PerfTask extends RunnableT{
-
-        long time=15000L;
+        private long defTime=15000L;
+        long time=defTime;
         int count=3;
         private final String command;
         private final String area;
@@ -102,6 +102,7 @@ public class Perf extends MainTask{
                      printf(func,3,"s:"+s+":");
                      if ( s.startsWith("time:") ) { 
                          time=Long.parseLong(s.substring("time:".length()))*1000L;
+                         if ( time < 1000L ) { time=defTime; }
                      }else if ( s.startsWith("count:") ) { 
                          count=Integer.parseInt(s.substring("count:".length()));
                      } else {
@@ -149,27 +150,34 @@ public class Perf extends MainTask{
                     }
                 }
                 else if ( ! this.command.isEmpty() &&  this.command.equals("buildin")  ) {
-                        switch (area) {
-                            case "mem":  MemInfo.outLine(); break;
-                            case "cpu":  CpuInfo.outLine(); break;
-                            default: ;
-                        }
+                        printResults();
                 }
                 ru++;
-                if ( ru < count ) { 
+                if ( ru <= count ) { 
                     printf(func,4,"go sleep");
                     sleep(time); 
-                    printf(func,4,"waitup");
+                    printf(func,4,"wakeup");
                 }
             }    
             printf(func,4,"out while");
             setRunning();
             printf(func,4,"done");
+            
+            //printResults();
+        }
+        
+        private void printResults() {
+            switch (area) {
+                            case "mem":  MemInfo.outLine(); break;
+                            case "cpu":  CpuInfo.outLine(); break;
+                            default: ;
+            }
         }
 
         boolean isPrintable() {
             return false;
         }
+        
    }
    private class PerfMonitor extends RunnableT {
 

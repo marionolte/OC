@@ -112,6 +112,7 @@ public class IOLib {
     }
     
     static public HashMap<String,String> scanner(String[] args,final String use) {    
+        //v.debug=4;
         String func=getFunc("scanner(Sting[] args,final String use)");
         v.printf(func,3," usage |"+use+"|");
         Pattern pa = Pattern.compile("\\]|\\[|<|>");
@@ -161,6 +162,7 @@ public class IOLib {
                 if ( ! args[i].isEmpty() ) {
                     if ( args[i].equals("--help") ) {
                         map.put(args[i], "true");
+                        map.put("_usage_", "true");
                     } else if ( args[i].equals("-d") ) { 
                        map.put("_debug_", ""+(Integer.parseInt(map.get("_debug_"))+1));
                     } else if ( args[i].startsWith("-") ) { 

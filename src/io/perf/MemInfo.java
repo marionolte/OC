@@ -22,8 +22,8 @@ class MemInfo {
         mr.start();
     }
     
-    static void outLine() {
-    
+    static void outLine(){
+        System.out.println(mr.outLine());
     }
     
     static private class MemRuntime extends RunnableT{
@@ -33,8 +33,8 @@ class MemInfo {
         long used      = 0L;
         long prevUsed  = 0L;
         long free      = 0L;
-        HashMap<String, String> map = new HashMap<String,String>();
-        RingBuffer<String> rbuf = new RingBuffer<String>(10);
+        //HashMap<String, String> map = new HashMap<String,String>();
+        RingBuffer<String> rbuf = new RingBuffer<String>(100);
 
         MemRuntime() {
              prevFree = rt.freeMemory();
@@ -42,17 +42,20 @@ class MemInfo {
              
         }
         
+        final private String lim="__--__";
         @Override
         public void run() {
+            final String func=getFunc("run()");
             setRunning();
-            final String lim="_@_";
+            printf(func,0,"start");
+            long d=System.currentTimeMillis();
             while( isRunning() ) {
                     free = getFreeMemory();
-                    String i=""+System.currentTimeMillis();
-                    if (total != prevTotal || free != prevFree) {
+                    String i=""+d;
+                    if (total != prevTotal || free != prevFree || System.currentTimeMillis() > (d+1000L) ) {
                         used = total - free;
                         prevUsed = (prevTotal - prevFree);
-                        System.out.println(
+                        printf(func,0,
                             "#" + i +
                             ", Total: " + total +
                             ", Used: " + getUsedMemory() +
@@ -60,15 +63,46 @@ class MemInfo {
                             ", Free: " + free +
                             ", ∆Free: " + (free - prevFree));
                      
-                        map.put(i, total+lim+used+lim+ (used - prevUsed)+lim+free+lim+(free-prevFree) );
+                        //map.put(i, total+lim+used+lim+ (used - prevUsed)+lim+free+lim+(free-prevFree) );
                         rbuf.push(i+lim+total+lim+used+lim+ (used - prevUsed)+lim+free+lim+(free-prevFree));
-                    
+                        last=i; if( first.isEmpty() ) { first=i;};
                         prevTotal = total;
                         prevFree = free;
-                    
-                    }    
+                        d=System.currentTimeMillis();
+                    }  
+                    sleep(100);
             }
             setRunning();
+            printf(func,0,"closed");
+        }
+        private String first="";
+        private String  last="";
+        public String outLine(){
+            StringBuilder sw = new StringBuilder();
+            //while ( map.get(first) == null ) { sleep(300); }
+            while ( rbuf.isEmpty() ) { sleep(300);}
+            //String[] fp=map.get(first).split(lim);  
+            String[] fp=rbuf.getFirst().split(lim); 
+            //String[] ep=map.get(last).split(lim);   
+            String es=rbuf.getLast();
+            String[] ep=es.split(lim); last=ep[0];
+            sw.append("#" + last +
+                            ", Total: " + ep[0] +
+                            ", Used: "  + ep[1] +
+                            ", ∆Used: " + ep[2] +//getMathLongBack(ep[1],fp[1]) +
+                            ", Free: "  + ep[3] +
+                            ", ∆Free: " + ep[4] //getMathLongBack(ep[4],fp[4]));
+                      );
+            first=last;
+            rbuf.clear(); rbuf.push(es);
+            
+            return sw.toString();
+        }
+        
+        private String getMathLongBack(String a, String b) {
+            long ad = Long.parseLong(a);
+            long bd = Long.parseLong(b);
+            return ""+(ad-bd);
         }
         
         public  long getMaxMemory() {
@@ -79,7 +113,7 @@ class MemInfo {
             return getMaxMemory() - getFreeMemory();
         }
         public  long getDeltaUsedMemory(){
-            long used=getUsedMemory();
+            used=getUsedMemory();
             long ret = used - prevUsed; 
             prevUsed=used;
             return ret;

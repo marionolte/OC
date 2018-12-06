@@ -8,6 +8,7 @@ package io.crypt;
 import general.Version;
 import static java.lang.Character.digit;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -67,11 +68,21 @@ class CryptHigh extends Version {
         final String func="CryptHigh::init() - ";
         try {
             field = Class.forName("javax.crypto.JceSecurity").getDeclaredField("isRestricted");
-            field.setAccessible(true);
-            field.set(null, java.lang.Boolean.FALSE);
-        } catch (Exception ex) {
-            printf(func,1,"strength isRestricted set error : "+ex.getMessage(),ex);
-        }
+            int modify = field.getModifiers();
+            if ( Modifier.isFinal(modify) && Modifier.isStatic(modify) && Modifier.isPrivate(modify) ) {
+                field.setAccessible(true);
+                field.setBoolean(null, java.lang.Boolean.FALSE);
+                field.setAccessible(false);
+            } else {
+                throw new RuntimeException("newer JRE/JDK used");
+            } 
+            
+            
+        } catch (ClassNotFoundException cnf ) { printf(func,1,"strength isRestricted class set error  : "+cnf.getMessage(),cnf); }
+          catch (IllegalAccessException iae ) { printf(func,1,"strength isRestricted access set error : "+iae.getMessage(),iae); }
+          catch (NoSuchFieldException   nsfe) {  printf(func,1,"strength isRestricted field error : "    +nsfe.getMessage(),nsfe); }
+          catch (RuntimeException       re)   { printf(func,1,"strength isRestricted set error : "       +re.getMessage(),re); }
+        
         try { 
                 cipher= Cipher.getInstance("AES/CBC/NoPadding", "SunJCE");
         }
