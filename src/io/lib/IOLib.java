@@ -9,11 +9,13 @@ import general.MyVersion;
 import general.Version;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
@@ -28,21 +30,67 @@ public class IOLib {
        loader = ClassLoader.getSystemClassLoader();
    } 
    
-   static public String execReadToString(String execCommand) throws java.io.IOException {
-            Process proc = Runtime.getRuntime().exec(execCommand);
+   static public String execReadToString(String[] execCommand) throws java.io.IOException {
+       System.out.println("comm 0 =>"+execCommand[0]);
+       Process proc = Runtime.getRuntime().exec(execCommand);
+            System.out.println("proc:"+proc);
             StringBuilder sw=new StringBuilder();
             try (java.io.InputStream stream = proc.getInputStream()) {
                 try (java.util.Scanner s = new java.util.Scanner(stream).useDelimiter("\\A")) {
                     sw.append( (s.hasNext() ? s.next().trim() : ""));
                 }
             }
+            System.out.println("stdout:"+sw.toString()+":");
             try (java.io.InputStream stream = proc.getErrorStream()) {
                 try (java.util.Scanner s = new java.util.Scanner(stream).useDelimiter("\\A")) {
                    sw.append( (s.hasNext() ? s.next().trim() : ""));
                 }
             }
+            System.out.println("return:"+sw.toString()+":");
             return sw.toString();
+     
    }
+   static public String execReadToString(String execCommand) throws java.io.IOException {
+       return execReadToString(execCommand.split(" "));
+   }
+   
+   public static String launch(List<String> cmdarray) { // throws IOException,InterruptedException {
+        StringBuilder sw = new StringBuilder();
+        byte[] buffer = new byte[1024];
+        Process process;
+        //System.out.println("1");
+        ProcessBuilder processBuilder = new ProcessBuilder(cmdarray);
+        //System.out.println("1a");
+        processBuilder.redirectErrorStream(true);
+        //System.out.println("1b");
+        try { 
+            //System.out.println("command: "+processBuilder.toString());
+            process = processBuilder.start();
+        } catch (java.io.IOException io) {
+            //System.out.println("not accessed");
+            return "";
+        }
+        //System.out.println("1c");
+        InputStream in  = process.getInputStream();
+        //System.out.println("2");
+        while (true) {
+           try { 
+            int r = in.read(buffer);
+            if (r <= 0) {
+                break;
+            }
+            //System.out.write(buffer, 0, r);
+            for( int i = 0; i<r; i++ ) { sw.append((char)buffer[i]);}
+            
+           } catch(java.io.IOException io ) {
+               
+           }
+        }
+        //System.out.println("3");
+        //process.waitFor();
+        //System.out.println("4");
+        return sw.toString();
+    }
    
    private static final HashMap<String, String> _zipmap = new HashMap<String, String>();
    

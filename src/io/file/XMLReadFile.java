@@ -155,10 +155,12 @@ public class XMLReadFile extends ReadFile{
     }
 
     public void nodeReadout(NodeList nlf, HashMap<String, String> nh) {
+        System.out.println("1bb"+nlf);
         if ( nlf == null ) { return; }
         int savdebug=debug;
         debug=4;
         final String func=getFunc("nodeReadout(NodeList nlf, HashMap<String, String> nh)");
+        printf(func,4,"starting");
         if ( nlf.getLength() > 0 ) {
             for(int i=0;i<nlf.getLength(); i++) {
                 Node n = nlf.item(i);
@@ -178,6 +180,7 @@ public class XMLReadFile extends ReadFile{
             }
         }
         debug=savdebug;
+        printf(func,4,"completed");
     }
     
     

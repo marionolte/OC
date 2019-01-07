@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import javax.naming.NamingException;
 import main.checker.Checker;
 import net.ldap.LdapUserBlk;
