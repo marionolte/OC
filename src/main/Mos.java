@@ -736,6 +736,8 @@ public class Mos extends Updater{
                 + "\n\t\t-pwfile <filename>\t-\tstore a password in a secure file\n"
                 + "\n\t\t-secure <filename>\t-\tgenerate a secure file from filename\n"
                 + "\n\t\t-unsecure <filename>\t-\tunsecure a secure file back to normal file\n"
+                + "\n\t\t-mwinfo \t\t-\tget Middleware information\n"
+                        
                         
                 
                 //+ "\n\t\t-logrotate\t"+(new LogRotation(new String[]{}).usage(false) )
