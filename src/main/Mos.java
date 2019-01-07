@@ -190,6 +190,7 @@ public class Mos extends Updater{
                 else if ( args[i].matches("-portscan") ){       this.portScanner(getArgsLower(args,++i));      fin=true; _exit=0;}
                 else if ( args[i].matches("-wlsconfig")){ _exit=this.wlsConfigTools(getArgsLower(args,++i));   fin=true; }
                 else if ( args[i].matches("-wlsinfo")  ){ this.wlsInfoTools(getArgsLower(args,++i));     fin=true; donemsg=false; }
+                else if ( args[i].matches("-mwinfo")   ){ this.mwInfo(getArgsLower(args,++i));           fin=true; donemsg=false; }
                 else if ( args[i].matches("-wlsrota")  ){ this.wlsRotate(getArgsLower(args,++i));        fin=true; donemsg=false; }
                 else if ( args[i].matches("-logrota")  ){ this.logApacheRotate(getArgsLower(args,++i));  fin=true; donemsg=false; }
                 else if ( args[i].matches("-crypt")    ||
@@ -659,6 +660,13 @@ public class Mos extends Updater{
               printf(func,3,"call destionation updated not needed");
           }
           return ret;
+    }
+    
+    private void mwInfo(String[] args ) {
+          final String func=getFunc("mwInfo(String[] args)");
+          int ret=-1;
+          System.out.println(net.wls.MwInfo.info(args));
+          
     }
     
     @Override
