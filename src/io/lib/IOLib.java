@@ -251,6 +251,14 @@ public class IOLib {
         return "";
     }
     
+    static public boolean isNumber(String s) {
+        try {  
+            double d = Double.parseDouble(s);  
+            return true;
+        }  
+        catch(NumberFormatException nfe) { return false; }  
+ 
+    }
      
 }   
 

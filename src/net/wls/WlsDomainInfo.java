@@ -44,6 +44,8 @@ public class WlsDomainInfo extends TcpHost {
         sw.append("Domain version: ").append(this.getDomainVersion()        ).append("\n");
         sw.append("Java version: "  ).append(this.map.get("java")           ).append("\n");
         sw.append("Java home: "     ).append(this.map.get("javahome")       ).append("\n");
+        sw.append("Products: ").append("\n");
+        sw.append("Patches: ").append(this.getPatchlist()).append("\n");
         sw.append("Adminserver: "   ).append(this.map.get("AdminServerName")).append("\n");
         
         HashMap<String,String> imap = new HashMap();
@@ -152,7 +154,7 @@ public class WlsDomainInfo extends TcpHost {
         ArrayList<String> m = new ArrayList();        
         ReadFile rf = new ReadFile(domloc.getFQDNDirName()+File.separator+"bin"+File.separator+"setDomainEnv.sh"); 
                 final String fa= rf.readOut().toString();
-                final Matcher ma = Pattern.compile("JAVA_HOME=|^WL_HOME=\"").matcher(fa);
+                final Matcher ma = Pattern.compile("JAVA_HOME=").matcher(fa);
                 int start=0;
                 while ( ma.find(start) ) {
                     String[] sp = fa.substring(ma.end()).split("\n");
@@ -168,17 +170,10 @@ public class WlsDomainInfo extends TcpHost {
                         map.put("java",sp[ 0 ].replaceAll("\\(", "").replaceAll("\"", "") );
                         
                     }
-                    else if ( ma.group().contains("WL_HOME") && sp[0].startsWith("\""+File.separator)) {
-                        System.out.println(fa.substring(ma.end()));
-                    }
-                    
                     
                     start=ma.end();
                     
                 }
-         
-         //m = new ArrayList();   m.add(fa);
-         //io.lib.IOLib.launch(cmdarray);
                 
     }
     
@@ -227,5 +222,61 @@ public class WlsDomainInfo extends TcpHost {
         }
         
         return imap.get(name);
+    }
+
+    
+    private ArrayList<String> patches = new ArrayList();
+    private ArrayList<String> prods   = new ArrayList();
+    
+    void setOpatch(String opatch) {
+        //System.out.println("opatch:"+opatch);
+        int is=0;
+        for ( String s : opatch.split("\n"))  {
+           
+           if ( is > 0 && ! s.isEmpty() ) {
+               if ( is == 1  ) {
+                   prods.add(s);
+               }
+           }
+            
+           if ( s.startsWith("Patch" ) ) {
+               String sp[] = s.split(" ");
+               String p = "";
+               for ( String pa : sp ) {
+                   if ( p.isEmpty() && io.lib.IOLib.isNumber(pa) ) {  p=pa; break; }
+               }
+               if ( ! p.isEmpty() ) {
+                   //System.out.println("s[patch]=>"+p);
+                   patches.add(p);
+               }    
+           }
+           else if ( s.startsWith("Interim patches")) {
+               is=0;
+           }
+           else if( s.startsWith("Installed Top-level Products") ) {
+               is=1;
+           }
+           else if ( s.startsWith("There are") ) { is=0; }
+        }
+        
+        
+    }
+    
+    String getPatchlist(){
+         StringBuilder sw = new StringBuilder();
+         for ( String s : patches) {
+             if ( sw.length() > 0 ) { sw.append(","); }
+             sw.append(s);
+         }
+         return sw.toString();
+    }
+    
+    String getProductlist(){
+         StringBuilder sw = new StringBuilder();
+         for ( String s : prods) {
+             if ( sw.length() > 0 ) { sw.append("\n"); }
+             sw.append("\t").append(s);
+         }
+         return sw.toString();
     }
 }

@@ -59,7 +59,8 @@ public class MwInfo extends Version {
         printf(func,3,"check "+ar.size()+" directories");
         while ( ar.size() > 0 ) {
            ReadDir  d = ar.remove(0);
-             
+           
+           
            try {  
              
              String[] fp= d.getFiles("inventory.xml|beahomelist", true);
@@ -110,6 +111,11 @@ public class MwInfo extends Version {
     
     private static StringBuilder readDomains(String mwhome) {
         final String func=getFu("readDomains(String mwhome)");
+        ArrayList<String> m = new ArrayList();  
+                          m.add(mwhome+File.separator+"Opatch"+File.separator+"opatch");
+                          m.add("lsinventory");
+        String opatch = io.lib.IOLib.launch(m);
+                                            
         StringBuilder sw = new StringBuilder();
         XMLReadFile nf = new XMLReadFile(mwhome+File.separator+"domain-registry.xml");
         NodeList    xn = nf.getNodeList("domain");
@@ -124,6 +130,7 @@ public class MwInfo extends Version {
                         try { 
                              sw.append("Domain ").append(nl).append("\n");
                              WlsDomainInfo w = new WlsDomainInfo(nl);
+                                           w.setOpatch(opatch);
                              printf(func,2,"domain:"+w);
                              sw.append(w.getDomainInfo());
                              sw.append("#####\n\n");
