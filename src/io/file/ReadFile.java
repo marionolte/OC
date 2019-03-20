@@ -7,6 +7,7 @@
 package io.file;
 
 import general.Version;
+import io.crypt.MD5;
 import io.thread.RunnableT;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -24,8 +25,13 @@ import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -407,7 +413,7 @@ public class ReadFile extends Version {
     
    
     public void save(StringBuilder sb) {
-        final String meth="save(StringBuilder sb)";
+        final String func="save(StringBuilder sb)";
         try {
             java.io.OutputStream out = new java.io.FileOutputStream(filer);
             out.write(sb.toString().getBytes());
@@ -421,7 +427,7 @@ public class ReadFile extends Version {
     }
     
     public StringBuilder read() {
-        final String meth="read()";
+        final String func="read()";
         StringBuilder ab=new StringBuilder();
         try {
             java.io.BufferedReader is = new java.io.BufferedReader(new java.io.InputStreamReader(new java.io.FileInputStream(filer)));
@@ -439,6 +445,112 @@ public class ReadFile extends Version {
         
     }
     
+    public  HashMap<String, String> getLines(int[] line) {
+        HashMap<String, String> imap = new HashMap();
+        try {
+            java.io.BufferedReader is = new java.io.BufferedReader(new java.io.InputStreamReader(new java.io.FileInputStream(filer)));
+            String inputLine; 
+            int li=0; int c=0;
+            while(  ( inputLine = is.readLine() ) != null ) { li++;
+                if ( li == line[c] ) {
+                     imap.put(""+li, inputLine); c++;
+                }
+            }
+            is.close();
+        }catch (Exception ex) {
+            if ( debug > 1)
+                System.err.println("reading file ends with Exception : "+ex.toString());
+        }
+        for ( int i =0; i< line.length; i++ ) {
+            if ( ! imap.containsKey((""+i)) ) { imap.put(""+i, _not); }
+        }
+        return imap;
+    }
+    
+    private final String _not="__@@NOT@@__";
+    
+    HashMap<String,HashMap<String,String>> check_mp=new HashMap();
+    public void diffReady() {
+        final String func="diffReady()";
+        MD5 md5 = new MD5();
+        if ( check_mp.size() > 1 ) { return; }
+        try {
+            HashMap<String,String> lines = new HashMap();
+            check_mp.put("lines", lines);
+            java.io.BufferedReader is = new java.io.BufferedReader(new java.io.InputStreamReader(new java.io.FileInputStream(filer)));
+            String inputLine;
+            int line=0;
+            while(  ( inputLine = is.readLine() ) != null ) { line++;
+                 String m=md5.toMD5Hash(inputLine);
+                 if ( lines.containsKey(m) ) {
+                      lines.put(m, lines.get(m)+","+line);
+                 } else {
+                      lines.put(m, ""+line);
+                 }
+            }
+            is.close();
+        }catch (Exception ex) {
+            if ( debug > 1)
+            System.err.println("reading file ends with Exception : "+ex.toString());
+        }
+    }
+    
+    public void getDiff(ReadFile f) {
+        HashMap<String,String> lines =   check_mp.get("lines");
+        HashMap<String,String> line1 = f.check_mp.get("lines");
+        ArrayList<String> list = new ArrayList();
+        Iterator<String> itter = lines.keySet().iterator();
+        while( itter.hasNext() ) {
+            final String k = itter.next();
+            String[] sp=getLineDiff( ((lines.get(k) !=null )?lines.get(k):""), ((line1.get(k) !=null )?line1.get(k):"" ) );
+            for ( String s: sp) {
+                if ( ! list.contains(s) ) { list.add(s); }
+            }
+        }
+                         itter = line1.keySet().iterator();
+        while( itter.hasNext() ) {
+            final String k = itter.next();
+            String[] sp=getLineDiff( ((line1.get(k) !=null )?line1.get(k):""), ((lines.get(k) !=null )?lines.get(k):"" ) );
+            for ( String s: sp) {
+                if ( ! list.contains(s) ) { list.add(s); }
+            }
+        }
+        int[] sort = new int[ list.size() ];
+        int i=0;
+        for ( String s : list ) { sort[i] = Integer.parseInt(s); i++; }
+        Arrays.sort(sort);
+        HashMap<String, String> mp1 =   getLines(sort);
+        HashMap<String, String> mp2 = f.getLines(sort);
+        
+        System.out.println("mp1:"+mp1);
+        System.out.println("mp2:"+mp2);
+    }
+    
+    
+    private String[] getLineDiff(String a, String b) {
+        if ( ! b.matches(a) ) {
+            if ( a.isEmpty() ) { return b.split(","); }
+            if ( b.isEmpty() ) { return a.split(","); }
+            ArrayList<String> ar = new ArrayList();
+            String [] sp = a.split(",");
+            String [] s1 = b.split(",");
+            for (String s : sp ) {
+                if ( ! searchSet(s1,s) ) { ar.add(s); }
+            }
+            for (String s: s1 ) {
+                if ( ! searchSet(sp,s) ) { ar.add(s); }
+            }
+            sp = new String[ ar.size() ];
+            for (int i=0; i<sp.length; i++ ) { sp[i]=ar.get(i); }
+            return sp;      
+        }
+        return new String[] {};
+    }
+    private boolean searchSet(String[] str, String search) {
+        Set<String> stringSet = new HashSet<>(Arrays.asList(str));     
+        return stringSet.contains(search);
+    }
+    
     StringBuilder errorMsg=new StringBuilder();
     StringBuilder stdoutMsg=new StringBuilder();
     public String getStdError() { return errorMsg.toString();  }
@@ -449,7 +561,7 @@ public class ReadFile extends Version {
     public Iterator loadObjects(){ return loadObjects(null); }
     public Iterator loadObjects(Object o) {
         final String func="loadObjects(Object o) - ";
-        java.util.HashMap m = new java.util.HashMap();
+        HashMap m = new HashMap();
         try {
            if ( oin == null ) oin= new ObjectInputStream( new BufferedInputStream( new FileInputStream(this.filer) ) );
            Object obj;

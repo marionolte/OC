@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import javax.naming.NamingException;
 import main.checker.Checker;
 import net.ldap.LdapUserBlk;
@@ -208,6 +209,7 @@ public class Mos extends Updater{
                 else if ( args[i].matches("-d")        ){ } // needs empty - run in pre-scan
                 else if ( args[i].matches("-monitor")  ){ this.runMonitor(getArgsLower(args,++i));       fin=true; }
                 else if ( args[i].matches("-newpass")  ){ this.getNewPassword(getArgsLower(args,++i));   fin=true; }
+                else if ( args[i].matches("-diff")     ){ this.getFileDiff(getArgsLower(args,++i));      fin=true; }
                 else if ( args[i].matches("-version")    ){ this.version(false); _exit=0;                fin=true; donemsg=false; }
                 else if ( args[i].matches("-fullversion")){ this.version(true);  _exit=0;                fin=true; donemsg=false; }
                 else {
@@ -234,6 +236,8 @@ public class Mos extends Updater{
                                        
                                                   
    }
+   
+   private void  getFileDiff(String[] ar) {      io.lib.IOLib.getFileDiff(ar);   }
     
     private void checkGCFile(String[] ar) {
         

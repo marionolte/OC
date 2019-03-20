@@ -12,14 +12,13 @@ import io.crypt.Crypt;
  * @author SuMario
  */
 abstract public class User {
-    private String user;
-    private String pass;
+    private String user=null;
+    private String pass=null;
     volatile private Crypt crypt=new Crypt();
     
-    public User(String user, String pass){
-        
-        this.user=user;
-        this.pass=pass;
+    public User(String user, String pass){        
+        this.user=getCrypted(user);
+        this.pass=getCrypted(pass);
     }
     
     public synchronized String   getCrypted(String a) { return crypt.getCrypted(a);   }
@@ -29,5 +28,8 @@ abstract public class User {
     
     public void setUsername(String user) { this.user=getUnCrypted(user); }
     public void setPassword(String pass) { this.pass=getUnCrypted(pass); }
+    
+    public boolean isPasswordSet() { return (this.pass!=null);}
+    public boolean isUsernameSet() { return (this.user!=null);}
     
 }

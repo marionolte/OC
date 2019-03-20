@@ -49,26 +49,29 @@ class MemInfo {
             setRunning();
             printf(func,0,"start");
             long d=System.currentTimeMillis();
+            int c =0;
             while( isRunning() ) {
-                    free = getFreeMemory();
+                    //free = getFreeMemory();
+                    free = getMem(); 
                     String i=""+d;
-                    if (total != prevTotal || free != prevFree || System.currentTimeMillis() > (d+1000L) ) {
-                        used = total - free;
-                        prevUsed = (prevTotal - prevFree);
+                    if ( rbuf.getSize() != c || System.currentTimeMillis() > (d+1000L) ) {
+                        /*used = total - free;
+                        prevUsed = (prevTotal - prevFree);*/
                         printf(func,0,
                             "#" + i +
                             ", Total: " + total +
                             ", Used: " + getUsedMemory() +
                             ", ∆Used: " + (used - prevUsed) +
                             ", Free: " + free +
-                            ", ∆Free: " + (free - prevFree));
-                     
+                            ", ∆Free: " + getDeltaUsedMemory()+" "+(free - prevFree));
+                        /*
                         //map.put(i, total+lim+used+lim+ (used - prevUsed)+lim+free+lim+(free-prevFree) );
                         rbuf.push(i+lim+total+lim+used+lim+ (used - prevUsed)+lim+free+lim+(free-prevFree));
                         last=i; if( first.isEmpty() ) { first=i;};
                         prevTotal = total;
-                        prevFree = free;
+                        prevFree = free;*/
                         d=System.currentTimeMillis();
+                        c= rbuf.getSize();
                     }  
                     sleep(100);
             }
@@ -85,7 +88,9 @@ class MemInfo {
             String[] fp=rbuf.getFirst().split(lim); 
             //String[] ep=map.get(last).split(lim);   
             String es=rbuf.getLast();
-            String[] ep=es.split(lim); last=ep[0];
+            if ( es == null ) { return ""; }
+            String[] ep=es.split(lim); 
+            last=ep[0];
             sw.append("#" + last +
                             ", Total: " + ep[0] +
                             ", Used: "  + ep[1] +
@@ -125,6 +130,32 @@ class MemInfo {
 
         public  long getFreeMemory() {
             return rt.getRuntime().freeMemory();
+        }
+        
+        long getMem() {
+             final String func=getFunc("getMem()");
+             long t = getTotalMemory();
+             long f = getFreeMemory();
+             used = t-f;
+             if ( used != prevUsed ) {
+                  prevUsed = (prevTotal - prevFree);
+                  String i = ""+System.currentTimeMillis();
+                        printf(func,0,
+                            "#" + i +
+                            ", Total: " + t +
+                            ", Used: " + used +
+                            ", ∆Used: " + (used - prevUsed) +
+                            ", Free: " + free +
+                            ", ∆Free: " + (used-prevUsed)+" "+(free - prevFree));
+                     
+                        //map.put(i, total+lim+used+lim+ (used - prevUsed)+lim+free+lim+(free-prevFree) );
+                        rbuf.push(i+lim+t+lim+used+lim+ (used - prevUsed)+lim+f+lim+(f-prevFree));
+                        last=i; if( first.isEmpty() ) { first=i;};
+                  prevTotal = t;
+                  prevFree = f;
+                        
+             } 
+             return f;
         }
 
 

@@ -7,6 +7,7 @@ package io.lib;
 
 import general.MyVersion;
 import general.Version;
+import io.file.ReadFile;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,7 +22,7 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-public class IOLib {
+public class IOLib extends Version {
    private static MyVersion v;
    private static  ClassLoader loader;
    
@@ -97,7 +98,7 @@ public class IOLib {
    static public void fillJarMap(String  f) throws IOException { fillJarMap(new ZipFile(f)); }
    static public void fillJarMap(File    f) throws IOException { fillJarMap(new ZipFile(f.toString())); }
    static public void fillJarMap(ZipFile f) {
-       final String func=getFunc("fillJarMap(ZipFile f)");
+       final String func=v.getFunc("fillJarMap(ZipFile f)");
        Enumeration<? extends ZipEntry> e = f.entries();
        v.printf(func,4,"read Zip:"+f.getName());
        while(e.hasMoreElements()) {
@@ -111,13 +112,13 @@ public class IOLib {
    static public boolean isPackageExist(String pack) {
        String  a = (pack).replaceAll("\\.", "\\/"); if( ! a.endsWith("/") ) { a +="/"; }
        boolean b = (_zipmap.get(a) != null ||  _zipmap.get("/"+a) != null);
-       v.printf(getFunc("isPackageExist(String pack)"),2," check pack:"+pack+": check with a:"+a+": return:"+b+" "+_zipmap.size()+" "+_zipmap.get(a));
+       v.printf(v.getFunc("isPackageExist(String pack)"),2," check pack:"+pack+": check with a:"+a+": return:"+b+" "+_zipmap.size()+" "+_zipmap.get(a));
        return b;
    }
    static public String[] getClassFromPackage(String pack) {
        int save=v.debug;
        //v.debug=2;
-       final String func=getFunc("getClassFromPackage(String pack)");
+       final String func=v.getFunc("getClassFromPackage(String pack)");
        v.printf(func,4,"income for pack:"+pack);
        ArrayList<String> ar = new ArrayList();
        if (isPackageExist(pack)) {
@@ -145,7 +146,7 @@ public class IOLib {
        return sp;
    }
    
-   static public String getFunc(String func){  return "IOLib::"+func;}
+   //static public String getFunc(String func){  return "IOLib::"+func;}
 
     public String getValueFromClass(String cl, String key) {
         try {
@@ -161,7 +162,7 @@ public class IOLib {
     
     static public HashMap<String,String> scanner(String[] args,final String use) {    
         //v.debug=4;
-        String func=getFunc("scanner(Sting[] args,final String use)");
+        String func=v.getFunc("scanner(Sting[] args,final String use)");
         v.printf(func,3," usage |"+use+"|");
         Pattern pa = Pattern.compile("\\]|\\[|<|>");
         Matcher ma = pa.matcher(use);
@@ -243,7 +244,7 @@ public class IOLib {
      }
     
     static public String getMappedValue(final String use, final HashMap<String,String> map) {    
-        String func=getFunc("getMappedValue(final String use,HashMap<String,String> map)");
+        String func=v.getFunc("getMappedValue(final String use,HashMap<String,String> map)");
         final String f=map.get(use);
         if ( f != null && ! f.equals(map.get("_default_"+use)) ) {
             return f;
@@ -259,6 +260,35 @@ public class IOLib {
         catch(NumberFormatException nfe) { return false; }  
  
     }
+    
+    static public void getFileDiff(String[] ar) {
+        ArrayList<ReadFile> mar = new ArrayList();
+        HashMap<String,String> mp = new HashMap();
+        for ( String f : ar ) {
+            if ( ! mp.containsKey(f) ) {
+                ReadFile fr = new ReadFile(f);
+                if ( fr.isAsciiFile() ) {
+
+                    System.out.print("INFO: include file "+f+" .. ");
+                    fr.diffReady();
+                    mar.add(fr);  mp.put(f, f);
+                    System.out.println("done");
+                } else {
+                    System.out.println("WARNING: "+f+" are not an ascii file - skipping");
+                }
+            } else {
+                    System.out.println("INFO: seconds time for "+f+" - skipping ");
+            }    
+        }
+        if ( mar.size() <= 1 ) {
+            System.out.println("INFO: minimum count 2 of different files not provided - skipping diff ");
+            return;
+        }
+        ReadFile ref = mar.remove(0);
+        for( ReadFile f : mar ) {
+             ref.getDiff(f);
+        }
+   }
      
 }   
 

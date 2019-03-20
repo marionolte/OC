@@ -23,7 +23,11 @@ import main.MainTask;
 public abstract class TcpHost extends MainTask{
     
     public TcpHost() { this(null,"TcpHost");}
-    public TcpHost(String[] args,String name) { super(args,name); }
+    public TcpHost(String[] args,String name) { super(args,name); init(); }
+    
+    private void init() {
+        StringBuilder sw = (new ReadFile("/etc/service")).readOut();
+    }
     
     public boolean isBoolean(String k) {
          return (k!= null && ( k.toLowerCase().equals("true") || k.toLowerCase().equals("false") ));
@@ -47,6 +51,11 @@ public abstract class TcpHost extends MainTask{
     }
     
     public int getPort(String k) {
+        if ( isPort(k) ) return isInteger(k);
+        return -1;
+    }
+    
+    public int getDefPort(String k) {
         if ( isPort(k) ) return isInteger(k);
         return -1;
     }
