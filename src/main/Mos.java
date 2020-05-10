@@ -79,55 +79,6 @@ public class Mos extends Updater{
          return (ob.getCount()>0 && ob.getModified()>0);   
 
     }
-    /*private boolean ldap(String[] arg) {
-        final String func=getFunc("ldap(String[] arg)");
-        silent=true;
-        String mod="usage";
-        String bindDN=""; String modDN=""; String bindPW=""; String modPW="";
-        String bindHost="localhost"; String modHost=""; int bindPort=-1; int modPort=-1; boolean bindSSL=false; boolean modSSL=false;
-        String filter="objectclass=*"; String baseDN=""; String baseModDN=""; 
-        try {
-            for (int i=0; i<args.length; i++ ) {
-                if      ( arg[i].matches("-D")     ) { bindDN=arg[++i];  if(modDN.isEmpty()){ modDN=bindDN;} }
-                else if ( arg[i].matches("-Dmod")  ) { modDN=arg[++i]; }
-                else if ( arg[i].matches("-j")     ) { bindPW=getPassword(arg[++i]); if(modPW.isEmpty()){ modPW=bindPW;} }
-                else if ( arg[i].matches("-w")     ) { bindPW=arg[++i]; if(modPW.isEmpty()){ modPW=bindPW;}  }
-                else if ( arg[i].matches("-wmod")  ) {  modPW=arg[++i]; }
-                else if ( arg[i].matches("-jmod")  ) {  modPW=getPassword(arg[++i]); }
-                else if ( arg[i].matches("-h")     ) { bindHost=arg[++i]; if(modHost.isEmpty()){ modHost=bindHost;} }
-                else if ( arg[i].matches("-hmod")  ) {  modHost=arg[++i]; }
-                else if ( arg[i].matches("-p")     ) { bindPort=Integer.parseInt(arg[++i]); if(modPort == -1){ modPort=bindPort;} }
-                else if ( arg[i].matches("-pmod")  ) {  modPort=Integer.parseInt(arg[++i]); }
-                else if ( arg[i].matches("-filter")) { filter=arg[++i];}
-                else if ( arg[i].matches("-b")     ) { baseDN=arg[++i]; if (baseModDN.isEmpty()){ baseModDN=baseDN;} }
-                else {
-                   if ( ! arg[i].isEmpty() ) { mod=arg[i].toLowerCase().trim(); }  
-                }
-            }
-            if(modHost.isEmpty()){ modHost=bindHost;}
-            if(bindPort == -1){ bindPort=(bindSSL)?636:389; } 
-            if( modPort == -1){ modPort=bindPort; } 
-            
-        } catch(RuntimeException rt) { mod="usage"; log("ERROR: "+rt.getMessage()+" - interrupt process"); }
-        
-        try {
-            switch(mod) {
-                case "search" :
-                        // getInstance( String protocol, String hostname, int port, String userDN, String userPWD, String filter , String auth )
-                        LdapSearch l = LdapSearch.getInstance( ( "ldap"+((bindSSL)?"s":"")) , bindHost, bindPort, bindDN, bindPW, filter, "", baseDN);
-                        
-                                   return l.printResults( l.search(l.baseDN, l.filter, l.objList) );
-                    //break;
-
-                default: 
-                    System.out.println("");
-                    return false;
-            }
-        } catch(RuntimeException | NamingException | IOException ex) {
-            printf(func,1,"LDAPCommand error:"+ex.getMessage());
-            return false;
-        }  
-    }*/
     
     private String getPassword(String fn) {
         SecFile f = new SecFile(fn);
@@ -171,7 +122,6 @@ public class Mos extends Updater{
                 else if ( args[i].matches("-sshcomm") ) { _exit = (sshCommand(getArgsLower(args,++i)))?0:1;   fin=true; printf(func,3, "INFO: sshComm parseArgs closed"); }
                 else if ( args[i].matches("-sshpass") ) { _exit = (sshScript(getArgsLower(args,++i)) )?0:1;   fin=true; printf(func,3, "INFO: sshScript  parseArgs closed"); }
                 else if ( args[i].matches("-sshcluster")){_exit = (sshCluster(getArgsLower(args,++i)) )?0:1;  fin=true; printf(func,3, "INFO: sshCluster parseArgs closed"); }
-                //else if ( args[i].matches("-ldap")    ) { _exit = (ldap( getArgsLower(args,++i) )    )?0:1;   fin=true; }
                 else if ( args[i].matches("-ldapbulk")) { _exit = (ldapBulk( getArgsLower(args,++i) ))?0:1;   fin=true; }
                 else if ( args[i].matches("-testhttp")) { String[] ar = getArgsLower(args,++i);
                                                           printf(func,1,"testhttp - start");
@@ -211,6 +161,7 @@ public class Mos extends Updater{
                 else if ( args[i].matches("-newpass")  ){ this.getNewPassword(getArgsLower(args,++i));   fin=true; }
                 else if ( args[i].matches("-diff")     ){ this.getFileDiff(getArgsLower(args,++i));      fin=true; }
                 else if ( args[i].matches("-version")    ){ this.version(false); _exit=0;                fin=true; donemsg=false; }
+                else if ( args[i].matches("-sysinfo")    ){ this.getSysInfo(getArgsLower(args,++i));     fin=true; }
                 else if ( args[i].matches("-fullversion")){ this.version(true);  _exit=0;                fin=true; donemsg=false; }
                 else {
                     usage(); sleep(300); _exit=1; throw new RuntimeException("force closing - unknown argument"); 
@@ -238,6 +189,9 @@ public class Mos extends Updater{
    }
    
    private void  getFileDiff(String[] ar) {      io.lib.IOLib.getFileDiff(ar);   }
+   private void  getSysInfo( String[] ar) { 
+   
+   }
     
     private void checkGCFile(String[] ar) {
         
