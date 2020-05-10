@@ -487,6 +487,7 @@ public class ReadFile extends Version {
                  } else {
                       lines.put(m, ""+line);
                  }
+                 printf(func,0,line+":"+m+":"+lines.get(m));
             }
             is.close();
         }catch (Exception ex) {
@@ -496,6 +497,7 @@ public class ReadFile extends Version {
     }
     
     public void getDiff(ReadFile f) {
+        final String func=getFunc("getDiff(ReadFile f)");
         HashMap<String,String> lines =   check_mp.get("lines");
         HashMap<String,String> line1 = f.check_mp.get("lines");
         ArrayList<String> list = new ArrayList();
@@ -503,8 +505,9 @@ public class ReadFile extends Version {
         while( itter.hasNext() ) {
             final String k = itter.next();
             String[] sp=getLineDiff( ((lines.get(k) !=null )?lines.get(k):""), ((line1.get(k) !=null )?line1.get(k):"" ) );
+            printf(func,0,"k="+k+"<= sp list:"+Arrays.toString(sp));
             for ( String s: sp) {
-                if ( ! list.contains(s) ) { list.add(s); }
+                if ( ! s.isEmpty() && ! list.contains(s) ) { list.add(s); }
             }
         }
                          itter = line1.keySet().iterator();
@@ -522,6 +525,7 @@ public class ReadFile extends Version {
         HashMap<String, String> mp1 =   getLines(sort);
         HashMap<String, String> mp2 = f.getLines(sort);
         
+        System.out.println("sort:"+Arrays.toString(sort));
         System.out.println("mp1:"+mp1);
         System.out.println("mp2:"+mp2);
     }
