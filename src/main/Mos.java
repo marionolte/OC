@@ -145,12 +145,13 @@ public class Mos extends Updater{
                 else if ( args[i].matches("-logrota")  ){ this.logApacheRotate(getArgsLower(args,++i));  fin=true; donemsg=false; }
                 else if ( args[i].matches("-crypt")    ||
                           args[i].matches("-uncrypt")  ){ crypt.runArgs(getArgsLower(args,i));           fin=true; }  
-                else if ( args[i].matches("-rota")     ){ this.logRotate(getArgsLower(args,++i));        fin=true; }
-                else if ( args[i].matches("-gclog1")    ){ this.gcLog(getArgsLower(args,++i));           fin=true; }
-                else if ( args[i].matches("-update")   ){ this.updateJar();                              fin=true; }
-                else if ( args[i].matches("-unsecure") ){ this.unsecureFile(getArgsLower(args,++i));     fin=true; }
+                else if ( args[i].matches("-rota")        ){ this.logRotate(getArgsLower(args,++i));     fin=true; }
+                else if ( args[i].matches("-gclog1")      ){ this.gcLog(getArgsLower(args,++i));         fin=true; }
+                else if ( args[i].matches("-update")      ){ this.updateJar();                           fin=true; }
+                else if ( args[i].matches("-unsecure")    ){ this.unsecureFile(getArgsLower(args,++i));  fin=true; }
                 else if ( args[i].matches("-getunsecinfo")){ this.unsecureInfo(getArgsLower(args,++i));  fin=true; }
-                else if ( args[i].matches("-secure")   ){ this.secureFile(getArgsLower(args,++i));       fin=true; }
+                else if ( args[i].matches("-secure")   )   { this.secureFile(getArgsLower(args,++i));    fin=true; }
+                else if ( args[i].matches("-getsecinfo"))  { this.unsecureFile(getArgsLower(args,++i));  fin=true; }
                 else if ( args[i].matches("-pwfile")   ){ this.setPassword(args[++i]);                   fin=true; }
                 else if ( args[i].matches("-gclog")    ){ this.checkGC(getArgsLower(args,++i));          fin=true; }
                 else if ( args[i].matches("-gcfile")   ){ this.checkGCFile(getArgsLower(args,++i));      fin=true; }

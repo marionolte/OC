@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+_user="__@@USER@@__"
+
+echo  $_user
+
+uptime
+date 

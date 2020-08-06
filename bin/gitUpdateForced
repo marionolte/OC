@@ -1,1 +1,4 @@
-git push -f --set-upstream  https://github.com/marionolte/OC.git master
+#/usr/bin/env bash
+FOR="master"
+if [[ "$1" != "" ]]; then FOR="$1" ; fi
+git push -f --set-upstream  https://github.com/marionolte/OC.git $FOR

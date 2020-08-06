@@ -7,6 +7,7 @@ case "$prog" in
    "ldapmodify" ) CLASS="LdapModify"  ;;
    "ldapbulk"   ) CLASS="LdapUserBlk" ;;
    "ldaptrans"  ) CLASS="LdapTrans"   ;;
+   "ldapcopy"   ) CLASS="LdapCopy"    ;;
 esac
 java -cp dist/OC.jar net.ldap.${CLASS} "$@"
 exit $?

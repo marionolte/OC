@@ -1,0 +1,88 @@
+dn: dc=example,dc=com
+changetype: add
+objectclass: top
+objectclass: organization
+o: example.com
+
+dn: ou=People,dc=example,dc=com
+changetype: add
+objectclass: top
+objectclass: organizationalUnit
+ou: People
+ou: Marketing
+
+dn: cn=Pete Minsky,ou=People,dc=example,dc=com
+changetype: add
+objectclass: top
+objectclass: person
+objectclass: organizationalPerson
+objectclass: inetOrgPerson
+cn: Pete Minsky
+givenName: Pete
+sn: Minsky
+ou: People
+ou: Marketing
+uid: pminsky
+
+dn: cn=Sue Jacobs,ou=People,dc=example,dc=com
+changetype: add
+objectclass: top
+objectclass: person
+objectclass: organizationalPerson
+objectclass: inetOrgPerson
+cn: Sue Jacobs
+givenName: Sue
+sn: Jacobs
+ou: People
+ou: Marketing
+uid: sjacobs
+
+dn: ou=Groups,dc=example,dc=com
+changetype: add
+objectclass: top
+objectclass: organizationalUnit
+ou: Groups
+
+dn: cn=Administrators,ou=Groups,dc=example,dc=com
+changetype: add
+objectclass: top
+objectclass: groupOfNames
+member: cn=Sue Jacobs,ou=People,dc=example,dc=com
+member: cn=Pete Minsky,ou=People,dc=example,dc=com
+cn: Administrators
+
+dn: ou=example.com Bolivia\, S.A.,dc=example,dc=com
+changetype: add
+objectclass: top
+objectclass: organizationalUnit
+ou: example.com Bolivia\, S.A.
+
+dn: cn=Carla Flores,ou=example.com Bolivia\,S.A.,dc=example,dc=com
+changetype: add
+objectclass: top
+objectclass: person
+objectclass: organizationalPerson
+objectclass: inetOrgPerson
+cn: Carla Flores
+givenName: Carla
+sn: Flores
+ou: example.com Bolivia\, S.A.
+uid: cflores
+
+dn: cn=Carla Flores,ou=example.com Bolivia\,S.A.,dc=example,dc=com
+changetype: replace
+sn: Flores1
+-
+add: mall
+mail: test
+-
+delete: mail
+-
+replace: mail
+mail: Flores1@example.com
+-
+replace: cn
+cn: Johnny Smith
+-
+add: l
+l: New York

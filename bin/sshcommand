@@ -1,4 +1,4 @@
 #!/bin/bash
-dir=`dirname $0`
-if [[ "$dir" == "" ]]; then dir="." ; fi
-java -jar dist/OC.jar -sshcomm $@
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+prog=`basename $0`
+java  -Dprog="${dir}/$prog" -jar dist/OC.jar -sshcomm $@

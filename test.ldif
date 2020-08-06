@@ -1,0 +1,14 @@
+#template: strict origin
+#origin: uid cn
+dn: {replace|(ou=People,|ou=Users,;ou=[A-Za-z],|;ou=oidm,|)}
+objectClass: top person posixAccount inetOrgPerson
+gidNumber: 1000
+sn:
+givenname:
+mail: __givenname__.__sn__@macmario.com
+uid: __givenname(0,1)__sn(0,5)__
+uidnumber: {autoinc(1000)}
+loginShell: /bin/bash
+homeDirectory: /home/__uid__
+cn: __uid__
+userpassword: 1234

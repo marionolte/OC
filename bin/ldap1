@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+filter="objectclass=*"
+if [[ "$1" != "" ]]; then filter="$1" ; fi
+s=`date '+%s'`
+f=afile.$s.jfr
+java -XX:+UnlockCommercialFeatures -XX:+FlightRecorder -XX:StartFlightRecording=duration=1s,filename=$f -jar dist/OC.jar  -ldapsearch -h localhost -p 11389 -D cn=admin -w secret12 -b o=macmario -f "${filter}" 
+s1=`date '+%s'`
+
+expr $s1 - $s
+
