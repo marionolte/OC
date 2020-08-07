@@ -662,7 +662,7 @@ public class ReadFile extends Version {
         return tailer.read();
     }
     
-    public static void main(String[] args) {
+    public static void main(String[] args)  throws Exception {
         ReadFile f = new ReadFile(args[0]);
         System.out.println("tail file:"+f.getFQDNFileName()+":");
         long d = System.currentTimeMillis()+30000;
