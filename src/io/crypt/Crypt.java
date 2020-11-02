@@ -306,6 +306,11 @@ public class Crypt extends Version {
          
     }
     
+    public static String getRandomID() {
+        String x=(""+Math.random());
+        return x.substring(2);
+    }
+    
     public static void main(String[] args) throws Exception {
          Crypt c = new Crypt();
          //System.out.println("USERKEY |"+c.getUserKey()+"|\nHOSTKEY |"+c.getHostKey()+"|");

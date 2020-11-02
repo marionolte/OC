@@ -5,10 +5,10 @@
  */
 package io.file;
 
+import io.buffer.MapList;
 import java.io.File;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.json.JSONObject;
 
 /**
  *
@@ -45,22 +45,79 @@ public class HCLReadFile extends ReadFile {
         }
     }
     
+    
+    MapList map = null;
+    
     private String sepa="{,},\\,,";
     private String parse(StringBuilder src) {
-        System.out.println("parse");
-        Pattern par = Pattern.compile(sepa);
-        Matcher ma = par.matcher(src.toString());
+        System.out.println("like to parse ->|"+src.toString()+"|<-\n");
+        Pattern par = Pattern.compile("\\{|\\}|\\,");
+        // "\\{\"|\"\\}\\],\"|\":\\{\"|\":\\[\\{\"|\":\"|\",\"|\":|,\"");
         
-        System.out.println("parse:"+src.toString()+"|<-\n");
-        
-        int start=0;
-        while ( ma.find(start) ) {
-            String grp = ma.group();
-            System.out.println("found =>|"+ma.group()+"| from "+start+" to "+ma.start()+"  // end "+ma.end());
-            
-            start=ma.end();
+        //int start=0;
+         String en="";
+        MapList ml = null;
+         
+        for ( String s : src.toString().split("\n") ) {
+            s=s.trim();
+            if ( s.endsWith("\\")) {
+                en=s.substring(0, s.length()-2);
+            } else {
+                if ( ! s.startsWith("#")) {
+                    //System.out.println("Line ->|"+s+"|<-");
+                    s=en+s; en="";
+                    Matcher ma = par.matcher(s); int start=0;
+                    if ( ma.find(start)) {
+                        while ( ma.find(start) ) {
+                            String grp = ma.group();
+                            String f   = s.substring(start, ma.end());
+                            //System.out.println("found =>|"+ma.group()+"| from "+start+" to "+ma.start()+"  // end "+ma.end()
+                            //                   +" ->|"+f+"|<-");
+
+                            
+                            if ( ma.group().equals("{") ) {
+                                if ( ml == null ) { ml = new MapList(); 
+                                                    if ( map == null ) { map=ml;}
+                                } else { ml = ml.getNewList(ml); }
+                                ml.setName( getFirstValue(f,"=").replaceAll(" ", "").replaceAll("\\"+grp, "") );
+                            } else if ( ma.group().equals("}") ) {
+                             //   System.out.println("find "+grp+" in:"+f);
+                                ml = ml.getMaster();
+                            } else if ( ma.group().equals(",") ) {
+                                String[] sp = f.split("=");
+                                sp[0] = sp[0].replaceAll(" ","");
+                                if ( f.contains("\"") ) {
+                                    ml.setValue(sp[0], f.substring(sp[0].length()+3, f.length()-2));
+                                    ml.setValueType(sp[0], "val");
+                                } else {
+                                    System.out.println("hier :"+sp[0]+":  = :"+f.substring(sp[0].length()+1, f.length()-1));
+                                    ml.setValue(sp[0], f.substring(sp[0].length()+1, f.length()-1));
+                                    ml.setValueType(sp[0], "func");
+                                }   
+                            } else {
+                               // System.out.println("no matched :"+f);
+                            }
+
+                            start=ma.end();
+                        }
+                    } else {
+                        String[] sp = s.split("=");
+                        //System.out.println("hier1 :"+sp[0]+":  = :"+s.substring(sp[0].length()+2, s.length()-1)+":");
+                                    
+                        if ( s.contains("\"") ) {
+                            ml.setValue(sp[0].replaceAll(" ",""), s.substring(sp[0].length()+3, s.length()-1));
+                            ml.setValueType(sp[0], "val");
+                        } else {
+                            ml.setValue(sp[0].replaceAll(" ",""), s.substring(sp[0].length()+2, s.length()-1));
+                            ml.setValueType(sp[0], "func");
+                        }   
+                    }    
+                } else {
+                    //System.out.println("skip line |"+s+"|");
+                    ml.setComment(s);
+                }   
+            }
         }
-        
         
         //JSONObject obj = new JSONObject("{"+src.toString()+"}");
         
@@ -68,9 +125,27 @@ public class HCLReadFile extends ReadFile {
         return "";
     }
     
+    private String getFirstValue(String txt, String lim) {
+        if ( txt == null || txt.isEmpty() || lim == null ) {  return ""; }
+        String[] sp = txt.split(lim);
+        return sp[0];
+    }
+    
+    @Override
+    public String toString() {
+        
+        StringBuilder sw = new StringBuilder();
+        if ( map == null || map.isEmpty() ) { sw.append("empty"); }
+        else {
+            sw.append(map.getInfo(""));
+        }
+    
+        return sw.toString();
+    }
     
     public static void main(String[] args)  throws Exception {
-        
-         System.out.println("read:"+(new HCLReadFile(args[0]) ).parse() );
+         HCLReadFile hf = new HCLReadFile(args[0]) ;
+                     hf.parse();
+         System.out.println("out ->|\n"+hf.toString()+"\n|-");
     }
 }
