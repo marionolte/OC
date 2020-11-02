@@ -12,12 +12,15 @@ import io.thread.RunnableT;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
@@ -29,11 +32,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 /**
  *
@@ -654,6 +658,50 @@ public class ReadFile extends Version {
                   catch( java.io.IOException  io) {} 
                   catch( NullPointerException ne){}
         return p;
+    }
+    
+    public ZipInputStream getUnzipStream() {
+        try {
+            return new ZipInputStream(new FileInputStream(filer));
+        } catch ( FileNotFoundException fne ) {
+            return null;
+        }
+    }
+    public InputStream getFileFromZip(String fil) {
+        ZipInputStream ins = getUnzipStream();
+        ByteArrayOutputStream ot = new ByteArrayOutputStream();
+        try {
+            ZipEntry ze = ins.getNextEntry();
+            while ( ze != null ) {
+                if ( ze.getName().equals(fil) || ze.getName().equals(fil.substring(1))) {
+                    byte[] bn = new byte[8192];
+                    int r=0;
+                    try {
+                        while( (r=ins.read(bn)) != -1 ) {
+                            ot.write(bn, 0, r);
+                        }
+                    } catch(IOException io) {
+                    }
+                }
+                ins.closeEntry();
+                ze = ins.getNextEntry();
+            }
+        } catch ( IOException io) {
+            
+        }
+        
+        return new ByteArrayInputStream( ot.toByteArray() );
+    }
+    public String getDataFromResource(String resource) {
+        StringBuilder sw = new StringBuilder();
+        try {
+            BufferedReader re = new BufferedReader(new InputStreamReader(getFileFromZip(resource)));
+            String l;
+            while( (l=re.readLine()) != null ) {
+                sw.append(l).append("\n");
+            }
+        } catch (NullPointerException | IOException npe ) {}
+        return sw.toString();
     }
     
     private TailTask tailer =null;
