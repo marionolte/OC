@@ -538,8 +538,9 @@ public class Mos extends Updater{
         final String func=getFunc("sshScript(String[] args )");
          printf(func,2,"sshScript start - "+args.length );
          if ( args.length == 0 ) { args = new String[]{"--help"};}
-         SSHpass.debug=debug;
-         SSHpass ssh = SSHpass.getInstance(args);        
+         //SSHpass.debug=debug;
+         SSHpass ssh = SSHpass.getInstance(args); 
+                 ssh.debug=debug;
                  ssh.runScript();
          return ssh.isValid();
     }
