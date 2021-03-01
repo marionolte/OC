@@ -34,6 +34,7 @@ public class SSHpass extends Version{
         if ( ssh != null ) {}  //disconnect 
         
         ssh = new SSHshell(host,port,user,pass,false);
+        ssh.debug=debug;
         ssh.setProxy();
         ssh.setKeyFile(kFile);
         ssh.start();
@@ -47,35 +48,53 @@ public class SSHpass extends Version{
         final String func=getFunc("runScript()");
         int step=-1;
         completeOK=true;
+        printf(func,2," run if set prescript:\t"+prescript);
         if ( ! prescript.isEmpty() ) {
              step=1;
+             printf(func,3," run prescript:\t"+prescript);
              completeOK=runPreScript();
-             if ( ! completeOK ) { rollback(step); return step; }
+             printf(func,3," run prescript:\t"+prescript+" complete with "+completeOK);
+             if ( ! completeOK ) { 
+                 printf(func,3," run rollback:\t"+step+" ");
+                 rollback(step); 
+                 printf(func,1," return in step:\t"+step+" ");
+                 return step; 
+             }
         }
-        
+        printf(func,2," run connection");
         connect();
         if ( ! ssh.isLogin() ) {
-               if ( step >0 ) { rollback(step); }
+               printf(func,1," ssh connection not established");
+               if ( step >0 ) {
+                   printf(func,3," run rollback:\t"+step+" ");
+                   rollback(step); 
+               }
+               printf(func,3," return :\t0 ->"+step+" ");
                return 0;
         } else {
+               printf(func,1," ssh connection established");
                step=2;
         }
         
+        printf(func,2," run remote prescript :"+rprescript);
         if ( ! rprescript.isEmpty() ) {
             step=3;
             completeOK=runRemotePreScript();
             if ( ! completeOK ) { rollback(step); return step; }
         }
+        printf(func,2," run remote script :"+script);
         if ( ! script.isEmpty() ) {
              step=3;
              completeOK=runWorkScript();
              if ( ! completeOK ) { rollback(step); return step; }
         }
+        printf(func,2," run remote postscript :"+rpostscript);
         if ( ! rpostscript.isEmpty() ) {
              step=4;
              completeOK=runRemotePostScript();
              if ( ! completeOK ) { rollback(step); return step; }
         }
+        printf(func,2," run local postscript :"+postscript);
         if ( ! postscript.isEmpty() ) {
              step=5;
              completeOK=runPostScript();
@@ -227,6 +246,11 @@ public class SSHpass extends Version{
                          + "\t\t\t\t\t\tHOST=<HOSTNAME>\n"
                          + "\t\t\t\t\t\tPORT=<PORT>\n"
                          + "\t\t\t\t\t\tKEY=<ssh keyfile>\n\n"
+                         + "\t\t\t\t\t\tPROXYUSER=<USERNAME>\n"
+                         + "\t\t\t\t\t\tPROXYPASS=<PASSWORD or PASSWORDFILE>\n"
+                         + "\t\t\t\t\t\tPROXYHOST=<HOSTNAME>\n"
+                         + "\t\t\t\t\t\tPROXYPORT=<PORT>\n"
+                         + "\t\t\t\t\t\tPROXYKEY=<ssh keyfile>\n\n"        
                          + "\t\t script file \t\t- are the script which are runs remote\n"
                          + "\t\t preaction  script \t- are a local script, which runs before the script runs on local system\n"
                          + "\t\t\t\t\t   (ends the scriptname the script file will regenerated with the pre scripti - only local)\n"
@@ -253,6 +277,12 @@ public class SSHpass extends Version{
     private String pass="";
     private File kFile=null;
     
+    private String proxyhost="";
+    private int    proxyport=-1;
+    private String proxyuser="";
+    private String proxypass="";
+    private File proxykFile=null;
+    
     public static SSHpass getInstance(String[] args) {
         try {
             SSHpass sshp = new SSHpass(args); 
@@ -269,12 +299,14 @@ public class SSHpass extends Version{
         Crypt cr=new Crypt();
         HashMap<String, String> imap = io.lib.IOLib.scanner(args, myusage);
         
-        printf(func,3,"help:"+io.lib.IOLib.getMappedValue("--help",imap)+":"+imap.get("_default_--help")+":");
+        printf(func,3,"ask for help:"+io.lib.IOLib.getMappedValue("--help",imap)+":"+imap.get("_default_--help")+":  ->"+( ! io.lib.IOLib.getMappedValue("--help",imap).isEmpty() ));
         if ( ! io.lib.IOLib.getMappedValue("--help",imap).isEmpty() ) {
+            printf(func,1,"usage");
             usage();
             return;
         }   
         
+        printf(func,3,"check for connection:"+( ! io.lib.IOLib.getMappedValue("-conn",imap).isEmpty()  ) );
         if ( ! io.lib.IOLib.getMappedValue("-conn",imap).isEmpty()  ){
             SecFile f= new SecFile(imap.get("-conn"));
             if ( ! f.isReadableFile() ) { throw new RuntimeException(f.getFileName()+" is not a readable file"); }
@@ -301,6 +333,26 @@ public class SSHpass extends Version{
                     } else {
                         System.out.println("ERROR: key file "+prop.getProperty("KEY")+" is not a readable file");
                         throw new RuntimeException("key file "+prop.getProperty("KEY")+" is not a readable file");
+                    }        
+            }
+            proxyhost = prop.getProperty("HOST");  if (host==null) { host="localhost"; }
+            try{ proxyport=Integer.parseInt(prop.getProperty("PROXYPORT")); }catch(Exception e) { port = 22; }
+            proxyuser = prop.getProperty("USER");  if ( proxyuser == null ) { proxyuser=System.getProperty("user.name"); }
+            proxypass = prop.getProperty("PASS");
+            if ( proxypass != null ) {
+                    ReadFile fp = new ReadFile(proxypass);
+                    if ( fp.isReadableFile() ) {
+                         f = new SecFile(proxypass);
+                         proxypass=f.readOut().toString();
+                    }
+            } else { proxypass=""; }
+            if ( prop.getProperty("PROXYKEY") != null ) {
+                    ReadFile fp = new ReadFile(prop.getProperty("PROXYKEY"));
+                    if ( fp.isReadableFile() ) {
+                            proxykFile=fp.getFile();
+                    } else {
+                        System.out.println("ERROR: key file "+prop.getProperty("PROXYKEY")+" is not a readable file");
+                        throw new RuntimeException("key file "+prop.getProperty("PROXYKEY")+" is not a readable file");
                     }        
             }
         } else {
