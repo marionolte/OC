@@ -48,6 +48,7 @@ public class SSHshell  extends RunnableT {
     private InputStream in;
     private InputStream err;
     private File keyFile=null;
+    private String keyFileString="";
     
     public KnownHosts database = new KnownHosts();
     
@@ -139,6 +140,10 @@ public class SSHshell  extends RunnableT {
     
     public boolean isLoggedIn() { return login; }
     
+    private String proxytype="EXEC";
+    public void setProxyConnect(String typ) {
+        proxytype=( typ == null || typ.toUpperCase().equals("HTTP") )?"HTTP":"EXEC";
+    }
     public void setConnection() {
         final String func=getFunc("setConnection()");
             _initSession=false;
@@ -198,6 +203,7 @@ public class SSHshell  extends RunnableT {
         printf(func,4,"setSession return");
     }
     
+    public void setKeyFile(String k) { this.keyFileString=k;}
     public void setKeyFile(File k) { this.keyFile=k;}
     public boolean login(){
         if( isLogin() ) { return isLogin(); }
@@ -278,6 +284,12 @@ public class SSHshell  extends RunnableT {
     public Connection getConnection() throws IOException {
         if ( conn == null ) { login(); }
         return conn;
+    }
+    
+    public void setSubConnect( ) throws IOException{
+         Connection con = getConnection();
+         
+         
     }
     
     public SCPClient getSCPClient() throws IOException { 

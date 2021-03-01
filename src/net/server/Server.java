@@ -12,8 +12,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Properties;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 
 /**
  *
@@ -65,7 +64,6 @@ public class Server extends RunnableT {
                   openAdmin(new URI((String) p.get("ADMINServer")));
             }
         } catch (URISyntaxException ex) {
-                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }    
         setRunning();
         Closed();

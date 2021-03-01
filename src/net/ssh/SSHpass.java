@@ -5,6 +5,7 @@
  */
 package net.ssh;
 
+import com.trilead.ssh2.Session;
 import general.Version;
 import io.crypt.Crypt;
 import io.crypt.GetPassword;
@@ -23,13 +24,32 @@ import java.util.Properties;
 public class SSHpass extends Version{
     private int exit=255;
     private SSHshell ssh=null;
+    private SSHshell pssh=null;
     private String rprescript="";
     private String rpostscript="";
     private String rrollback="";
     private boolean postexec;
     private boolean preexec;
+    private Session session;
     
-    public boolean connect() { return connect(host,port,user,pass); }
+    public boolean connect() { 
+        if ( proxyhost.isEmpty() || proxyport == -1 ) {
+            if ( connect(host,port,user,pass) ) {
+                session= ssh.getSession();
+                return true;
+            } else { return false; }
+           
+        } else {
+            if ( proxyConnect(proxyhost,proxyport,proxyuser,proxypass) ) {
+                session = pssh.getSession();
+                
+                
+                return true;
+            } else {
+                return false;
+            }    
+        }
+    }
     public boolean connect(String host, int port, String user, String pass) {
         if ( ssh != null ) {}  //disconnect 
         
@@ -39,6 +59,16 @@ public class SSHpass extends Version{
         ssh.setKeyFile(kFile);
         ssh.start();
         return ssh.login();
+    }
+    
+    public boolean proxyConnect(String host, int port, String user, String pass) {
+        pssh = new SSHshell(host,port,user,pass,false);
+        pssh.debug=debug;
+        pssh.setProxyConnect(proxytype);
+        pssh.setProxy();
+        pssh.setKeyFile(proxykFile);
+        pssh.start();
+        return pssh.login();
     }
     
     
@@ -250,7 +280,8 @@ public class SSHpass extends Version{
                          + "\t\t\t\t\t\tPROXYPASS=<PASSWORD or PASSWORDFILE>\n"
                          + "\t\t\t\t\t\tPROXYHOST=<HOSTNAME>\n"
                          + "\t\t\t\t\t\tPROXYPORT=<PORT>\n"
-                         + "\t\t\t\t\t\tPROXYKEY=<ssh keyfile>\n\n"        
+                         + "\t\t\t\t\t\tPROXYKEY=<ssh keyfile>\n\n"   
+                         + "\t\t\t\t\t\tPROXYTYPE=<HTTP|Exec>\n"        
                          + "\t\t script file \t\t- are the script which are runs remote\n"
                          + "\t\t preaction  script \t- are a local script, which runs before the script runs on local system\n"
                          + "\t\t\t\t\t   (ends the scriptname the script file will regenerated with the pre scripti - only local)\n"
@@ -281,7 +312,8 @@ public class SSHpass extends Version{
     private int    proxyport=-1;
     private String proxyuser="";
     private String proxypass="";
-    private File proxykFile=null;
+    private String proxykFile=null;
+    private String proxytype="EXEC";
     
     public static SSHpass getInstance(String[] args) {
         try {
@@ -336,7 +368,7 @@ public class SSHpass extends Version{
                     }        
             }
             proxyhost = prop.getProperty("PROXYHOST");  if (host==null) { host=""; }
-            try{ proxyport=Integer.parseInt(prop.getProperty("PROXYPORT")); }catch(Exception e) { port = -1; }
+            try{ proxyport=Integer.parseInt(prop.getProperty("PROXYPORT")); }catch(Exception e) { proxyport = -1; }
             proxyuser = prop.getProperty("PROXYUSER");  if ( proxyuser == null ) { proxyuser=System.getProperty("user.name"); }
             proxypass = prop.getProperty("PROXYPASS");
             if ( proxypass != null ) {
@@ -347,13 +379,10 @@ public class SSHpass extends Version{
                     }
             } else { proxypass=""; }
             if ( prop.getProperty("PROXYKEY") != null ) {
-                    ReadFile fp = new ReadFile(prop.getProperty("PROXYKEY"));
-                    if ( fp.isReadableFile() ) {
-                            proxykFile=fp.getFile();
-                    } else {
-                        System.out.println("ERROR: key file "+prop.getProperty("PROXYKEY")+" is not a readable file");
-                        throw new RuntimeException("key file "+prop.getProperty("PROXYKEY")+" is not a readable file");
-                    }        
+                    proxykFile=prop.getProperty("PROXYKEY");
+            }
+            if ( prop.getProperty("PROXYTYPE") != null ) {
+                    proxytype=( prop.getProperty("PROXYTYPE") != null && prop.getProperty("PROXYTYPE").toUpperCase().equals("HTTP") )? "HTTP":"EXEC";                    
             }
         } else {
             System.out.println("ERROR: key file "+prop.getProperty("KEY")+" is not a readable file");
