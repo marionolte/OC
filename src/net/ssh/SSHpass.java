@@ -335,10 +335,10 @@ public class SSHpass extends Version{
                         throw new RuntimeException("key file "+prop.getProperty("KEY")+" is not a readable file");
                     }        
             }
-            proxyhost = prop.getProperty("HOST");  if (host==null) { host="localhost"; }
-            try{ proxyport=Integer.parseInt(prop.getProperty("PROXYPORT")); }catch(Exception e) { port = 22; }
-            proxyuser = prop.getProperty("USER");  if ( proxyuser == null ) { proxyuser=System.getProperty("user.name"); }
-            proxypass = prop.getProperty("PASS");
+            proxyhost = prop.getProperty("PROXYHOST");  if (host==null) { host=""; }
+            try{ proxyport=Integer.parseInt(prop.getProperty("PROXYPORT")); }catch(Exception e) { port = -1; }
+            proxyuser = prop.getProperty("PROXYUSER");  if ( proxyuser == null ) { proxyuser=System.getProperty("user.name"); }
+            proxypass = prop.getProperty("PROXYPASS");
             if ( proxypass != null ) {
                     ReadFile fp = new ReadFile(proxypass);
                     if ( fp.isReadableFile() ) {
