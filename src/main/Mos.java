@@ -8,6 +8,7 @@ package main;
 import net.ssh.SSHshell;
 import general.Updater;
 import io.Console;
+import io.account.PasswordTyp;
 import io.crypt.Crypt;
 import io.crypt.GetPassword;
 import io.file.ReadDir;
@@ -136,6 +137,7 @@ public class Mos extends Updater{
                                                           fin=true;
                                                           _exit=(b)?0:1;
                                                         }
+                else if ( args[i].matches("-genpassword")){       System.out.println(io.account.GenPassword.getPassword(10, PasswordTyp.STRONG)); fin=true; _exit=0; }
                 else if ( args[i].matches("-logrotate")){       this.logRotate(getArgsLower(args,++i));        fin=true; _exit=0; }
                 else if ( args[i].matches("-portscan") ){       this.portScanner(getArgsLower(args,++i));      fin=true; _exit=0;}
                 else if ( args[i].matches("-wlsconfig")){ _exit=this.wlsConfigTools(getArgsLower(args,++i));   fin=true; }

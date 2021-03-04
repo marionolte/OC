@@ -29,6 +29,7 @@ import java.io.RandomAccessFile;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -704,6 +705,24 @@ public class ReadFile extends Version {
         return sw.toString();
     }
     
+    public String[] getZipIndex() {
+        ZipInputStream ins = getUnzipStream();
+        ArrayList<String> ar = new ArrayList();
+        try {
+            ZipEntry ze = ins.getNextEntry();
+            while ( ze != null ) {
+                if ( ! ze.isDirectory() ) {
+                     ar.add(ze.getName());
+                }
+                ze = ins.getNextEntry();
+            }
+        } catch ( IOException io) {
+        }
+        String[] sp = new String[ ar.size() ];
+        for ( int i=0; i< sp.length; i++) { sp[i]=ar.remove(0); }
+        return sp;
+    }
+    
     private TailTask tailer =null;
     public String tail() {
         if ( tailer == null || (tailer != null && tailer.onError)) { if (tailer!=null){ tailer.setClosed(); } ;tailer = new TailTask(this); tailer.start(); }
@@ -712,14 +731,15 @@ public class ReadFile extends Version {
     
     public static void main(String[] args)  throws Exception {
         ReadFile f = new ReadFile(args[0]);
-        System.out.println("tail file:"+f.getFQDNFileName()+":");
+        /*System.out.println("tail file:"+f.getFQDNFileName()+":");
         long d = System.currentTimeMillis()+30000;
         while(d > System.currentTimeMillis() ) {
             String fa=f.tail();
             if( ! fa.isEmpty() ) System.out.println(fa); 
             sleep(100);
         }
-        System.out.println("tail completed");
+        System.out.println("tail completed");*/
+        for ( String s: f.getZipIndex() ) { System.out.println(s);}
         System.exit(0);
     }
     

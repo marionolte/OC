@@ -25,6 +25,9 @@ abstract public class User {
     public synchronized String getUnCrypted(String a) { return crypt.getUnCrypted(a); }
     public String getUsername() { return getUnCrypted(user); }
     public String getPassword() { return getUnCrypted(pass); }
+    public String genPassword() { return GenPassword.getPassword(PasswordTyp.MEDIUM); }
+    public String genStrongPassword() { return GenPassword.getPassword(PasswordTyp.STRONG); }
+    public String genEasyPassword() { return GenPassword.getPassword(PasswordTyp.EASY); }
     
     public void setUsername(String user) { this.user=getUnCrypted(user); }
     public void setPassword(String pass) { this.pass=getUnCrypted(pass); }

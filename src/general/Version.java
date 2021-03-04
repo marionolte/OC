@@ -8,6 +8,7 @@ package general;
 
 //import com.oracle.OraConst;
 import io.file.ReadFile;
+import java.io.File;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -27,7 +28,7 @@ public abstract class Version  { //extends OraConst {
     final public static int majorVersion=0;
     final public static int minorVersion=0;
     final public static int patchVersion=3;
-    final public static int fixedVersion=4;
+    final public static int fixedVersion=5;
     final public static int   libVersion=0;
     final public static int  betaVersion=1;
     
@@ -41,7 +42,7 @@ public abstract class Version  { //extends OraConst {
        JAVAVERSION = System.getProperty("java.version");
        USERKEY     = System.getProperty("user.name");
        HOSTKEY     = Host.getHostname(); //System.getProperty("os.name")+System.getProperty("os.version");
-       
+       TEMPDIR     = System.getProperty("java.io.tmpdir");
     }
     
     /**
@@ -113,13 +114,24 @@ public abstract class Version  { //extends OraConst {
     private String releaseMD5="";
     private String betaFile="";
     private String betaMD5="";
+    private static       String TEMPDIR  ;
     private static final String OSNAME   ;
     private static final String JAVAHOME ;
     private static final String JAVAVERSION;
     private static final String USERKEY;
     private static final String HOSTKEY;
     public static int debug=0;
-   
+    
+    public final String getTempDir() { return TEMPDIR; }
+    public final void   setTempDir(String f) { setTempDir(new File(f) );}
+    public final void   setTempDir(File f) { 
+         if ( f != null ) {
+              if ( ! f.isDirectory() ) {
+                   f.mkdirs();
+              }
+              System.setProperty("java.io.tempdir", f.getAbsolutePath() );
+         }
+    }
     public final int getJavaMajor() { return Integer.parseInt( ( JAVAVERSION.split("\\.") )[1] ); }
     public final int getJavaMinor() { return Integer.parseInt( ( JAVAVERSION.split("[\\.|_]") )[2] ); }
     public final int getJavaMinorPatch() { return Integer.parseInt(  ( JAVAVERSION.split("_") )[1] ); }
