@@ -119,10 +119,10 @@ public class Mos extends Updater{
         try {
             switch(mod) {
                 case "search" :
-                        // getInstance( String protocol, String hostname, int port, String userDN, String userPWD, String filter , String auth )
-                        LdapSearch l = LdapSearch.getInstance( ( "ldap"+((bindSSL)?"s":"")) , bindHost, bindPort, bindDN, bindPW, filter, "");
+                        // getInstance( String protocol, String hostname, int port, String userDN, String userPWD, String filter , String auth , String baseDn)
+                        LdapSearch l = LdapSearch.getInstance( ( "ldap"+((bindSSL)?"s":"")) , bindHost, bindPort, bindDN, bindPW, filter, "", baseDN);
                         
-                                   return l.printResults( l.search(baseDN, filter, objList) );
+                                   return l.printResults( l.search(baseDN, filter, l.getAttrList()) );
                     //break;
 
                 default: 
@@ -219,9 +219,9 @@ public class Mos extends Updater{
                 else if ( args[i].matches("-monitor")  ){ this.runMonitor(getArgsLower(args,++i));       fin=true; }
                 else if ( args[i].matches("-newpass")  ){ this.getNewPassword(getArgsLower(args,++i));   fin=true; }
                 else if ( args[i].matches("-diff")     ){ this.getFileDiff(getArgsLower(args,++i));      fin=true; }
-                else if ( args[i].matches("-version")    ){ this.version(false); _exit=0;                fin=true; donemsg=false; }
+                else if ( args[i].matches("-version")    ){ this.version(); _exit=0;                fin=true; donemsg=false; }
                 else if ( args[i].matches("-sysinfo")    ){ this.getSysInfo(getArgsLower(args,++i));     fin=true; }
-                else if ( args[i].matches("-fullversion")){ this.version(true);  _exit=0;                fin=true; donemsg=false; }
+                else if ( args[i].matches("-fullversion")){ this.version();  _exit=0;                fin=true; donemsg=false; }
                 else {
                     usage(); sleep(300); _exit=1; throw new RuntimeException("force closing - unknown argument"); 
                 }
@@ -456,7 +456,7 @@ public class Mos extends Updater{
     }
 
     
-    private void parseArgs() throws Exception {
+    /*private void parseArgs() throws Exception {
         final String func="parseArgs()";
         
         for( int i=0; i<args.length; i++ ) {
@@ -479,7 +479,7 @@ public class Mos extends Updater{
                                                     }
             else if ( args[i].matches("-logrotate")){ logRotate(getArgsLower(args,++i));        fin=true; }
             else if ( args[i].matches("-portscan") ){ portScanner(getArgsLower(args,++i));      fin=true; }
-            else if ( args[i].matches("-wlsconfig")){ wlsConfigTools(getArgsLower(args,++i),0); fin=true; }
+            else if ( args[i].matches("-wlsconfig")){ wlsConfigTools(getArgsLower(args,++i));   fin=true; }
             else if ( args[i].matches("-wlsinfo")  ){ wlsInfoTools(getArgsLower(args,++i));     fin=true; }
             else if ( args[i].matches("-wlsrota")  ){ wlsRotate(getArgsLower(args,++i));        fin=true; }
             else if ( args[i].matches("-logrota")  ){ logApacheRotate(getArgsLower(args,++i));  fin=true; }
@@ -495,7 +495,7 @@ public class Mos extends Updater{
             if ( fin ) { setClosed(); return; }
         } 
 
-    }
+    }*/
     
     private void logRotate(String[] args) {
         LogRotation lr = new LogRotation(args);
@@ -773,10 +773,9 @@ public class Mos extends Updater{
                System.exit(m._exit);
     }
     
-    private void version(boolean b) {
-        
-            System.out.println(this.getFullInfo());
-        if ( b ) {
+    private void version() {
+        System.out.println(this.getFullInfo());
+        if ( ((debug > 0)?true:false) ) {
             System.out.println("full version are: "+this.getDebugVersion());
         }    
     }
