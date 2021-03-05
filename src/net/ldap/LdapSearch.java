@@ -201,7 +201,13 @@ public class LdapSearch  extends LdapMain{
                imp.put("dn", ar);
                //System.out.println("dn: "+entry.getNameInNamespace() ); 
                b=true;
-               
+        }       
+        
+        ArrayList<String> ar;
+        while (namEnum != null && namEnum.hasMore()) {
+               SearchResult entry = (SearchResult) namEnum.next();
+               System.out.println("dn: "+entry.getNameInNamespace() ); b=true;
+
                
                Attributes attr = entry.getAttributes();
                printf(func,3,"Attributes:"+attr);
@@ -280,6 +286,7 @@ public class LdapSearch  extends LdapMain{
                
         }
         debug=savdeb;
+
         return b;
     }
     

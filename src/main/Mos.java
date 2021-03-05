@@ -5,8 +5,10 @@
  */
 package main;
 
+
 import net.ssh.SSHshell;
 import general.Updater;
+import com.trilead.ssh2.SCPClient;
 import io.Console;
 import io.account.PasswordTyp;
 import io.crypt.Crypt;
@@ -33,6 +35,7 @@ import net.wls.WlsDomainLogRotation;
 import net.wls.WlsToolConfig;
 import net.wls.WlsUserEnv;
 import org.eclipselabs.garbagecat.GCMain;
+import net.ldap.LdapSearch;
 
 
 
@@ -49,6 +52,7 @@ public class Mos extends Updater{
     private final Console console;
     private String[] args=null;
     private int _exit=-1;
+
     private IOLib lib = new IOLib();
     
     public Mos(String[] args) throws IOException {
@@ -69,6 +73,7 @@ public class Mos extends Updater{
             return  t.isValid();
     }
     
+
     private boolean ldapBulk(String[] arg) {
         LdapUserBlk ob = new LdapUserBlk();
                     ob.scanArgs(arg);
@@ -78,6 +83,56 @@ public class Mos extends Updater{
             System.out.println(ob.getCount()+" ldap entries found \tmodified:"+ob.getModified());
             
          return (ob.getCount()>0 && ob.getModified()>0);   
+    }
+
+    private boolean ldap(String[] arg) {
+        final String func=getFunc("ldap(String[] arg)");
+        silent=true;
+        String mod="usage";
+        String bindDN=""; String modDN=""; String bindPW=""; String modPW="";
+        String bindHost="localhost"; String modHost=""; int bindPort=-1; int modPort=-1; boolean bindSSL=false; boolean modSSL=false;
+        String filter="objectclass=*"; String baseDN=""; String baseModDN=""; 
+        try {
+            for (int i=0; i<args.length; i++ ) {
+                if      ( arg[i].matches("-D")     ) { bindDN=arg[++i];  if(modDN.isEmpty()){ modDN=bindDN;} }
+                else if ( arg[i].matches("-Dmod")  ) { modDN=arg[++i]; }
+                else if ( arg[i].matches("-j")     ) { bindPW=getPassword(arg[++i]); if(modPW.isEmpty()){ modPW=bindPW;} }
+                else if ( arg[i].matches("-w")     ) { bindPW=arg[++i]; if(modPW.isEmpty()){ modPW=bindPW;}  }
+                else if ( arg[i].matches("-wmod")  ) {  modPW=arg[++i]; }
+                else if ( arg[i].matches("-jmod")  ) {  modPW=getPassword(arg[++i]); }
+                else if ( arg[i].matches("-h")     ) { bindHost=arg[++i]; if(modHost.isEmpty()){ modHost=bindHost;} }
+                else if ( arg[i].matches("-hmod")  ) {  modHost=arg[++i]; }
+                else if ( arg[i].matches("-p")     ) { bindPort=Integer.parseInt(arg[++i]); if(modPort == -1){ modPort=bindPort;} }
+                else if ( arg[i].matches("-pmod")  ) {  modPort=Integer.parseInt(arg[++i]); }
+                else if ( arg[i].matches("-filter")) { filter=arg[++i];}
+                else if ( arg[i].matches("-b")     ) { baseDN=arg[++i]; if (baseModDN.isEmpty()){ baseModDN=baseDN;} }
+                else {
+                   if ( ! arg[i].isEmpty() ) { mod=arg[i].toLowerCase().trim(); }  
+                }
+            }
+            if(modHost.isEmpty()){ modHost=bindHost;}
+            if(bindPort == -1){ bindPort=(bindSSL)?636:389; } 
+            if( modPort == -1){ modPort=bindPort; } 
+            
+        } catch(RuntimeException rt) { mod="usage"; log("ERROR: "+rt.getMessage()+" - interrupt process"); }
+        
+        try {
+            switch(mod) {
+                case "search" :
+                        // getInstance( String protocol, String hostname, int port, String userDN, String userPWD, String filter , String auth )
+                        LdapSearch l = LdapSearch.getInstance( ( "ldap"+((bindSSL)?"s":"")) , bindHost, bindPort, bindDN, bindPW, filter, "");
+                        
+                                   return l.printResults( l.search(baseDN, filter, objList) );
+                    //break;
+
+                default: 
+                    System.out.println("");
+                    return false;
+            }
+        } catch(RuntimeException | NamingException | IOException ex) {
+            printf(func,1,"LDAPCommand error:"+ex.getMessage());
+            return false;
+        }  
 
     }
     
@@ -105,6 +160,7 @@ public class Mos extends Updater{
         }
         return ar;
     }
+
     
     boolean fin=false;  private boolean donemsg=true; private boolean parseCompleted=false;
     private void parseArgs() {
@@ -397,7 +453,48 @@ public class Mos extends Updater{
                 println("ERROR: local version "+getFullVersion()+" could not updated to server version "+info); 
                 this.donemsg=false;
         }  
+    }
+
     
+    private void parseArgs() throws Exception {
+        final String func="parseArgs()";
+        
+        for( int i=0; i<args.length; i++ ) {
+            if      ( args[i].matches("-testssl") ) { _exit = ( testssl(args[++i],args[++i])     )?0:1;   fin=true; }
+            else if ( args[i].matches("-debugssl")) { System.setProperty("javax.net.debug","ssl"); }
+            else if ( args[i].matches("-sshcomm") ) { _exit = (sshCommand(getArgsLower(args,++i)))?0:1;   fin=true; printf(func,3, "INFO: sshComm parseArgs closed"); }
+            else if ( args[i].matches("-ldap")    ) { _exit = (ldap( getArgsLower(args,++i) )    )?0:1;   fin=true; }
+            else if ( args[i].matches("-testhttp")) { String[] ar = getArgsLower(args,++i);
+                                                      printf(func,1,"testhttp - start");
+                                                      boolean b=true;
+                                                      for (String s: ar) {
+                                                            printf(func,2,"testhttp:"+s);
+                                                            Http ht= new Http(new URL(s) ); 
+                                                                 System.out.println( ht.getResponse().toString());
+                                                                 if( ! b || ht.getResponseCode()<=0 || ht.getResponseCode() > 403 ) { b=false;}      
+                                                      }
+                                                      printf(func,1,"testhttp - fin");
+                                                      fin=true;
+                                                      _exit=(b)?0:1;
+                                                    }
+            else if ( args[i].matches("-logrotate")){ logRotate(getArgsLower(args,++i));        fin=true; }
+            else if ( args[i].matches("-portscan") ){ portScanner(getArgsLower(args,++i));      fin=true; }
+            else if ( args[i].matches("-wlsconfig")){ wlsConfigTools(getArgsLower(args,++i),0); fin=true; }
+            else if ( args[i].matches("-wlsinfo")  ){ wlsInfoTools(getArgsLower(args,++i));     fin=true; }
+            else if ( args[i].matches("-wlsrota")  ){ wlsRotate(getArgsLower(args,++i));        fin=true; }
+            else if ( args[i].matches("-logrota")  ){ logApacheRotate(getArgsLower(args,++i));  fin=true; }
+            else if ( args[i].matches("-crypt")    ){ crypt.runArgs(getArgsLower(args,++i));    fin=true; } //  fin=runs("io.crypt.Crypt",getArgsLower(args,i++)); } 
+            else if ( args[i].matches("-rota")     ){ logRotate(getArgsLower(args,++i));        fin=true; }
+            else if ( args[i].matches("-gclog")    ){ gcLog(getArgsLower(args,++i));            fin=true; }
+            else if ( args[i].matches("-d")        ){ debug++; }
+            else if ( args[i].matches("-version")  ){ version(); _exit=0; }
+            else {
+                usage(); _exit=1;
+            }
+            printf(func,4,"parse closed");
+            if ( fin ) { setClosed(); return; }
+        } 
+
     }
     
     private void logRotate(String[] args) {
@@ -485,10 +582,11 @@ public class Mos extends Updater{
          
          SSHshell.debug=debug;
          SSHshell ssh = SSHshell.getInstance(args);
+
          if (ssh == null ){  return true; }
          if ( ssh.isSSHShell() ) {
             try { 
-                printf(func,3,"send command :"+ssh.getCommand().toString());
+                printf(func,3,"send command :"+ssh.sendSingleCommand().toString());
                 System.out.println(ssh.sendSingleCommand().toString()); 
             } catch(Exception e) { 
                 printf(func,1,"send command error :"+e.getMessage());
@@ -496,6 +594,7 @@ public class Mos extends Updater{
             }
             printf(func,2,"send command return :"+ssh.isValid());
          } else {
+
            printf(func,3,"transfer files");  
            try {
                
@@ -527,6 +626,7 @@ public class Mos extends Updater{
                     printf(func,0,"like to send local "+lfiles+" to remote "+rfiles[0]);
                     ssh.scpTo(lfiles, rfiles[0]);
                }     
+
            } catch (IOException io ) {
                printf(func,1,"scp command error :"+io.getMessage());
                return false; 
@@ -536,6 +636,7 @@ public class Mos extends Updater{
          return ssh.isValid();
     }
     
+
     private boolean sshScript(String[] args ) {
         final String func=getFunc("sshScript(String[] args )");
          printf(func,2,"sshScript start - "+args.length );
@@ -547,6 +648,7 @@ public class Mos extends Updater{
          return ssh.isValid();
     }
     
+
     private void wlsInfoTools(String[] args ) {
          WlsUserEnv wue = null;
     
@@ -665,6 +767,7 @@ public class Mos extends Updater{
     public static void main(String[] args) throws Exception {
            Mos m = new Mos(args); m.silent=true;
                m.start();
+
                while( (m.isRunning() && ! m.fin) || ! m.parseCompleted ) { sleep(300); }
                if ( m.donemsg ) System.out.println("done."); 
                System.exit(m._exit);
@@ -699,9 +802,6 @@ public class Mos extends Updater{
                 + "\n\t\t-secure <filename>\t-\tgenerate a secure file from filename\n"
                 + "\n\t\t-unsecure <filename>\t-\tunsecure a secure file back to normal file\n"
                 + "\n\t\t-mwinfo \t\t-\tget Middleware information\n"
-                        
-                        
-                
                 //+ "\n\t\t-logrotate\t"+(new LogRotation(new String[]{}).usage(false) )
                 + "\n\n"
         );

@@ -31,7 +31,7 @@ public abstract class RunnableT extends Version implements Runnable {
     
     private boolean closed=false;
     final public boolean isClosed() { return closed; }
-          public void   setClosed() { closed=true; }
+          public void   setClosed() { closed=true; thwakeup(); }
     final public void setUnClosed() { closed=false; }
     
     

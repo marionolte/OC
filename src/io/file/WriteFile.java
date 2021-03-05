@@ -89,7 +89,11 @@ public class WriteFile extends ReadFile{
     public boolean rotate(String fn, boolean gzip, long minSize, long old, boolean truncate) {
         final String func="rotate(String fn, boolean gzip, long minSize, long old, boolean truncate)";
         boolean b=false;
+
         printf(func,3,"fn:"+fn+":");
+        //System.out.println("fn:"+fn+":");
+        WriteFile toFn = new WriteFile(fn); 
+
         if ( ((minSize > 0 && this.getSize() > minSize) || ( old > 0 && this.getLastModified() > old ))  && isWriteableFile() ) {
             return rotate(fn,gzip,truncate);
         } else {

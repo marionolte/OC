@@ -332,6 +332,7 @@ public class AuthenticationManager extends Version implements MessageHandler
 
 	public boolean authenticatePassword(String user, String pass) throws IOException
 	{
+            final String func=getFunc("authenticatePassword(String user, String pass)");
 		try
 		{
 			initialize(user);
@@ -366,6 +367,7 @@ public class AuthenticationManager extends Version implements MessageHandler
 		}
 		catch (IOException e)
 		{
+                        printf(func,1,"Password authentication failed - reason:"+e.getMessage());
 			tm.close(e, false);
 			throw (IOException) new IOException("Password authentication failed.").initCause(e);
 		}

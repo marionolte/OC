@@ -93,6 +93,7 @@ public class TestSSLServer {
         static boolean compress = false;
         
         static boolean _success=false;
+        
         static HashMap<String, HashMap<String,String>> map;
         
         public TestSSLServer(String ho, int po) {
@@ -102,7 +103,7 @@ public class TestSSLServer {
         }
         
         static public boolean isValid() { return _success; }
-        
+                
         public static void test() {
                vulnBEAST  = false;
                vulnPOODLE = false;
@@ -217,11 +218,11 @@ public class TestSSLServer {
                                     long d = getCalendar(imap.get("notbefore"));  certOK = ( certOK && now > d );
                                     sw.append("\n\t NotBefore:\t").append(imap.get("notbefore"))
                                             .append(" (").append( ((now>d)?"OK":"FAILED") ).append(")"); 
-                                         d = getCalendar(imap.get("notafter"));    certOK = ( certOK && now < d );
+                                         d = getCalendar(imap.get("notafter")); certOK = ( certOK && now < d );
                                     sw.append("\n\t NotAfter:\t").append(imap.get("notafter"))
                                             .append(" (").append( ((now<d)?"OK":"FAILED") ).append(")");
                                 } else {
-                                    System.out.println("imap is null for :"+cc);  certOK=false;
+                                    System.out.println("ERORR: no certificates for :"+cc);  certOK=false;
                                 }
                                 
                                 
