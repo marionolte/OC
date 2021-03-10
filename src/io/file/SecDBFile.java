@@ -92,6 +92,9 @@ public class SecDBFile extends Version{
     
     public static void main(String[] args) {
         SecDBFile sdb=new SecDBFile(new ReadFile(args[0]));
+        
+        sdb.add("myhost", "abcd1234!#%");
+        System.out.println(sdb.get("myhost"));
     }
     
 }
