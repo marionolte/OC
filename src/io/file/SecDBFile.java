@@ -7,6 +7,7 @@ package io.file;
 
 import general.Version;
 import io.crypt.Crypt;
+import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -42,6 +43,7 @@ public class SecDBFile extends Version{
         this.crypt.setCryptLevel( (level>0)?level:0 );
     }
     
+    private String[] getIndex(String s ) {  return getIndex( new String[]{ "","",s} ); }
     private String[] getIndex(String[] sp) {
         String md = crypt.getMD5(sp[sp.length-1]);
         String aa = md.substring(0, 2).toUpperCase();
@@ -60,6 +62,33 @@ public class SecDBFile extends Version{
          return ar;
     }
     
+    synchronized private String getSecKey(String key) {      
+        return this.crypt.getCrypted(key);
+    }
+    
+    synchronized public ByteArrayInputStream getUnSecure(String val) {
+        return new ByteArrayInputStream(this.crypt.getUnCryptedByte(val));
+    }
+    
+    synchronized public ByteArrayInputStream getSecure(String val) {
+        return new ByteArrayInputStream(this.crypt.getCryptedByte(val));
+    }
+    synchronized private String getUnSecKey(String key) {      
+        return this.crypt.getUnCrypted(key);
+    }
+    
+    public void add(String key, String value) {
+         String[] sp = getIndex(getSecKey(key));
+         ArrayList<String> ar = getArray(sp[0],sp[1]);
+         
+         db.addToZip(sp[0]+"/"+sp[1]+"/"+sp[2], getSecure(value));
+    }
+    
+    public ByteArrayInputStream get(String key) {
+        String[] sp = getIndex(getSecKey(key));
+        ArrayList<String> ar = getArray(sp[0],sp[1]);
+        return (ByteArrayInputStream) db.getFileFromZip(sp[0]+"/"+sp[1]+"/"+sp[2]);
+    }
     
     public static void main(String[] args) {
         SecDBFile sdb=new SecDBFile(new ReadFile(args[0]));

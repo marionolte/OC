@@ -9,7 +9,9 @@ import com.jcraft.jzlib.GZIPInputStream;
 import com.jcraft.jzlib.GZIPOutputStream;
 import static general.Version.printf;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,6 +20,11 @@ import java.io.OutputStream;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Enumeration;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 /**
  *
@@ -326,6 +333,49 @@ public class WriteFile extends ReadFile{
         return b;
         
     }
+    
+    private void copy(InputStream in, OutputStream out ) throws IOException {
+        byte[] buf = new byte[ 1024 * 32 ];
+        int read;
+        while ( ( read = in.read(buf)) != -1 ){
+            out.write(buf, 0, read);
+        }
+        out.flush();
+    }
+    
+    public boolean addToZip(String fname, ByteArrayInputStream ar) {
+       try { 
+        File    tmp = File.createTempFile(filer.getName(), null);
+        tmp.delete();
+        if( ! filer.renameTo(tmp)) {
+            return false;
+        }
+        //ZipInputStream  zin = new ZipInputStream(new FileInputStream (tmp));
+        ZipOutputStream zout= new ZipOutputStream(new FileOutputStream(filer));
+        
+        ZipFile zip = new ZipFile(tmp);
+        Enumeration<? extends ZipEntry> ent = zip.entries();
+        while( ent.hasMoreElements() ) {
+             ZipEntry e = ent.nextElement();
+             if ( ! e.getName().equals(fname)) {
+                  zout.putNextEntry(e);
+                  if ( ! e.isDirectory() ) {
+                       copy( zip.getInputStream(e) , zout );
+                  }
+                  zout.closeEntry();
+             }
+        }
+        ZipEntry e = new ZipEntry(fname);
+        zout.putNextEntry(e);
+           copy( ar , zout );
+        zout.closeEntry();
+        
+        zip.close();
+        zout.flush(); zout.close();
+        return true;
+       } catch( java.io.IOException io ) { return false;} 
+    }
+    
     
     public boolean setExecutable(boolean b) {  filer.setExecutable(b); return filer.canExecute(); }
     public boolean setWritable(  boolean b) {  filer.setWritable(b);   return filer.canWrite();   }

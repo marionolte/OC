@@ -244,6 +244,10 @@ public class Crypt extends Version {
         return ( cl == null )? ch.getUnCryptedByte(info) : cl.getUnCryptedByte(info);
     }
     
+    public byte[] getCryptedByte(String info) {
+        return (( cl == null )? ch.getCrypted(info) : cl.getCrypted(info) ).getBytes();
+    }
+    
     public void runArgs(String[] args) {
         boolean test = false;  String cust=Host.getHostname()+"1234@456789-0";
          
