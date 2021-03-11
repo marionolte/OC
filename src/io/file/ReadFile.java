@@ -706,6 +706,7 @@ public class ReadFile extends Version {
     }
     
     public String[] getZipIndex() {
+        if ( ! this.exist() ){ return new String[]{}; }
         ZipInputStream ins = getUnzipStream();
         ArrayList<String> ar = new ArrayList();
         try {

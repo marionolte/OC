@@ -347,33 +347,72 @@ public class WriteFile extends ReadFile{
        try { 
         File    tmp = File.createTempFile(filer.getName(), null);
         tmp.delete();
-        if( ! filer.renameTo(tmp)) {
+        if( this.isReadableFile() &&  ! filer.renameTo(tmp)) {
+            // only if exist an rename not working 
             return false;
         }
         //ZipInputStream  zin = new ZipInputStream(new FileInputStream (tmp));
         ZipOutputStream zout= new ZipOutputStream(new FileOutputStream(filer));
-        
-        ZipFile zip = new ZipFile(tmp);
-        Enumeration<? extends ZipEntry> ent = zip.entries();
-        while( ent.hasMoreElements() ) {
-             ZipEntry e = ent.nextElement();
-             if ( ! e.getName().equals(fname)) {
-                  zout.putNextEntry(e);
-                  if ( ! e.isDirectory() ) {
-                       copy( zip.getInputStream(e) , zout );
-                  }
-                  zout.closeEntry();
-             }
-        }
+
+        if ( tmp.isFile() && tmp.canRead()  ) {
+            //in case 
+            ZipFile zip = new ZipFile(tmp);
+            Enumeration<? extends ZipEntry> ent = zip.entries();
+            while( ent.hasMoreElements() ) {
+                 ZipEntry e = ent.nextElement();
+                 if ( ! e.getName().equals(fname)) {
+                      zout.putNextEntry(e);
+                      if ( ! e.isDirectory() ) {
+                           copy( zip.getInputStream(e) , zout );
+                      }
+                      zout.closeEntry();
+                 }
+            }
+            zip.close();
+        }    
         ZipEntry e = new ZipEntry(fname);
         zout.putNextEntry(e);
            copy( ar , zout );
         zout.closeEntry();
         
-        zip.close();
         zout.flush(); zout.close();
         return true;
        } catch( java.io.IOException io ) { return false;} 
+    }
+    
+    public boolean removeFromZip(String fname) {
+        
+        if ( ! this.isReadableFile() ) { return false; }
+        try { 
+        File    tmp = File.createTempFile(filer.getName(), null);
+        tmp.delete();
+        if( this.isReadableFile() &&  ! filer.renameTo(tmp)) {
+            // only if exist an rename not working 
+            return false;
+        }
+        //ZipInputStream  zin = new ZipInputStream(new FileInputStream (tmp));
+        ZipOutputStream zout= new ZipOutputStream(new FileOutputStream(filer));
+
+        if ( tmp.isFile() && tmp.canRead()  ) {
+            //in case 
+            ZipFile zip = new ZipFile(tmp);
+            Enumeration<? extends ZipEntry> ent = zip.entries();
+            while( ent.hasMoreElements() ) {
+                 ZipEntry e = ent.nextElement();
+                 if ( ! e.getName().equals(fname)) {
+                      zout.putNextEntry(e);
+                      if ( ! e.isDirectory() ) {
+                           copy( zip.getInputStream(e) , zout );
+                      }
+                      zout.closeEntry();
+                 }
+            }
+            zip.close();
+        }    
+        zout.flush(); zout.close();
+        return true;
+      } catch( java.io.IOException io ) { return false;} 
+        
     }
     
     
