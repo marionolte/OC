@@ -138,8 +138,7 @@ public class Mos extends Updater{
     
     private String getPassword(String fn) {
         SecFile f = new SecFile(fn);
-        String s = f.readOut().toString();
-        return s;
+        return f.readOut().toString();
     }
     
     private boolean setPassword(String fn) {
@@ -207,10 +206,10 @@ public class Mos extends Updater{
                 else if ( args[i].matches("-gclog1")      ){ this.gcLog(getArgsLower(args,++i));         fin=true; }
                 else if ( args[i].matches("-update")      ){ this.updateJar();                           fin=true; }
                 else if ( args[i].matches("-unsecure")    ){ this.unsecureFile(getArgsLower(args,++i));  fin=true; }
-                else if ( args[i].matches("-getunsecinfo")){ this.unsecureInfo(getArgsLower(args,++i));  fin=true; }
                 else if ( args[i].matches("-secure")   )   { this.secureFile(getArgsLower(args,++i));    fin=true; }
                 else if ( args[i].matches("-getsecinfo"))  { this.unsecureFile(getArgsLower(args,++i));  fin=true; }
                 else if ( args[i].matches("-pwfile")   ){ this.setPassword(args[++i]);                   fin=true; }
+                else if ( args[i].matches("-pwInfo")   ){ this.unsecureInfo(getArgsLower(args,++i));     fin=true; }
                 else if ( args[i].matches("-gclog")    ){ this.checkGC(getArgsLower(args,++i));          fin=true; }
                 else if ( args[i].matches("-gcfile")   ){ this.checkGCFile(getArgsLower(args,++i));      fin=true; }
                 else if ( args[i].matches("-checker")  ){ this.runChecker(getArgsLower(args,++i));       fin=true; }
@@ -393,10 +392,7 @@ public class Mos extends Updater{
             }
         }
     }
-    private void unsecureInfo(String[] ar) {
-        SecFile sec = new SecFile(ar[0]);
-        System.out.println(sec.readOut().toString());
-    }
+    private void unsecureInfo(String[] ar) { System.out.println(getPassword(ar[0]));}
     private void unsecureFile(String[] ar) {
         if ( ar.length > 0 ) {
             for (int i=0; i<ar.length; i++ ) {

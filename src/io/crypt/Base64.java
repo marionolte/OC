@@ -134,6 +134,8 @@ public class Base64 extends Version {
     static boolean isBase64(byte octect) {
         if (octect == PAD) {
             return true;
+        } else if ( octect < 0 ) {
+            return false;
         } else if (base64Alphabet[octect] == -1) {
             return false;
         } else {

@@ -223,7 +223,15 @@ class CryptHigh extends Version {
 		 key = new SecretKeySpec(getBytes(updateLength(encryptionKey,64)), "AES");
                   iv = new IvParameterSpec(getBytes(updateLength(pass, 16)));
 		cipher.init(Cipher.DECRYPT_MODE, key,iv);
-                printf(func,3,"cipherText len:"+cipherText.length+":  mod:"+(cipherText.length%16) );
+                int mod = cipherText.length%16;
+                printf(func,3,"cipherText len:"+cipherText.length+":  mod:"+mod );
+                if ( mod != 0  ) {
+                     byte[] b = new byte[ cipherText.length+mod ];
+                     for ( int i=0; i<cipherText.length; i++) { b[i]=cipherText[i]; }
+                     for ( int i=cipherText.length; i< b.length ; i++) { b[i]=0; }
+                     cipherText=b;
+                     printf(func,3,"cipherText new len:"+cipherText.length+":  mod:"+(cipherText.length%16) );
+                } 
 		String s=new String(cipher.doFinal(cipherText),"UTF-8");
                 //String s=new String(cipher.doFinal(getBytes(cipherText)),"UTF-8");
                 printf(func,3,"s:"+s+":  len:"+s.length()+"  mod:"+(s.length()%16));

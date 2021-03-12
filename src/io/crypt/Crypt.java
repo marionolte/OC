@@ -181,6 +181,12 @@ public class Crypt extends Version {
     }
     
     public String getUnCrypted(String info) {
+        /*
+         String out = getUserCrypted(txt);
+                out = getHostCrypted(out);
+                out = getCustCrypted(out);
+         return ( cl == null )? ch.getCrypted(out) : cl.getCrypted(out);
+        */
         String out=( cl == null )? ch.getUnCrypted(info) : cl.getUnCrypted(info);
                out=getUnCryptedCust(out);
                out=getUnCryptedHost(out);

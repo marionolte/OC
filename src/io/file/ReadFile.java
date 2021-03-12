@@ -264,7 +264,8 @@ public class ReadFile extends Version {
             in.read(data);
             in.close();
         } catch(IOException io) {}
-        return checkAscii(data,data.length);
+        //System.out.println("data length:"+data.length);
+        return (! checkAscii(data,data.length));
     }
     
     boolean checkAscii(byte[] buf,int len) {
@@ -280,9 +281,11 @@ public class ReadFile extends Version {
                 else other++;
             }
 
-            if( other == 0 ) return false;
-
-            return 100 * other / (ascii + other) > 95;
+            //System.out.println("other:"+other+" ascii:"+ascii);
+            
+            if( other == 0 ) return true;
+        
+            return (100 * other / len < 5);
             
     }
     

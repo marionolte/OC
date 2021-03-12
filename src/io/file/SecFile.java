@@ -80,8 +80,10 @@ public class SecFile extends ReadFile {
     
     synchronized public boolean crypt() {
         final String func=getFunc("crypt()");
-
-        if ( ! rFile.isBinaryFile() )  {
+        
+        boolean as = rFile.isBinaryFile() ;
+        printf(func,0,"file "+rFile.getFQDNFileName()+" is a binary "+( (as)?"YES":"NO") );
+        if ( ! as )  {
               String s= rFile.readOut().toString();
               printf(func,2,"crypt ascii =>|"+s+"|<=");
               if ( ! crypt.isCrypted(s) ) {
@@ -93,6 +95,7 @@ public class SecFile extends ReadFile {
               printf(func,2,"crypt ascii replace with =>|"+s+"|<=");
               rFile.replace( s );
         } else {
+            printf(func,3,"is a Binary");
             InputStream in = rFile.getInputStream();
             StringBuilder sw = new StringBuilder("<BINARY>\n");
             
@@ -111,7 +114,8 @@ public class SecFile extends ReadFile {
             } catch(java.io.IOException io ) {
               printf(func,1,"ERROR - crypt exception "+io.getMessage(),io);      
             }  
-            sw.append( ((sw.substring(sw.capacity()-1).matches("="))?"":"=") );
+            printf(func,2,"crypted:"+sw.toString()+":  length:"+sw.length()+":"+sw.capacity());
+            sw.append( ((sw.substring(sw.length()-1).matches("="))?"":"=") );
             rFile.replace(sw.toString());
             
         }
