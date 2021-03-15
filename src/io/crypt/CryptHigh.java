@@ -67,6 +67,8 @@ class CryptHigh extends Version {
     private void init() { 
         final String func="CryptHigh::init() - ";
         try {
+          int v=getJavaMainVersion();
+          if ( v <= 7 || (v==8 && getJavaMinVersion() < 152 )) {  
             field = Class.forName("javax.crypto.JceSecurity").getDeclaredField("isRestricted");
             int modify = field.getModifiers();
             if ( Modifier.isFinal(modify) && Modifier.isStatic(modify) && Modifier.isPrivate(modify) ) {
@@ -76,7 +78,7 @@ class CryptHigh extends Version {
             } else {
                 throw new RuntimeException("newer JRE/JDK used");
             } 
-            
+          }  
             
         } catch (ClassNotFoundException cnf ) { printf(func,1,"strength isRestricted class set error  : "+cnf.getMessage(),cnf); }
           catch (IllegalAccessException iae ) { printf(func,1,"strength isRestricted access set error : "+iae.getMessage(),iae); }

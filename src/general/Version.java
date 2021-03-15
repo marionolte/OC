@@ -43,6 +43,8 @@ public abstract class Version  { //extends OraConst {
        USERKEY     = System.getProperty("user.name");
        HOSTKEY     = Host.getHostname(); //System.getProperty("os.name")+System.getProperty("os.version");
        TEMPDIR     = System.getProperty("java.io.tmpdir");
+       
+        //System.out.println("java:"+getJavaMainVersion()+":"+getJavaMinVersion()+":");
     }
     
     /**
@@ -60,6 +62,18 @@ public abstract class Version  { //extends OraConst {
         int b =0; try { b=Integer.parseInt(a); }catch(Exception e) {}
         return (getLibVersion() == b );
     }
+    
+    final public static int getJavaMainVersion(){
+        String[] sp = JAVAVERSION.split("\\.");
+        if ( sp.length > 1 ) { sp[0]=sp[1]; }
+        return Integer.parseInt(sp[0]);
+    }
+    
+    final public static int getJavaMinVersion(){
+        String[] sp = JAVAVERSION.split("_");
+        return Integer.parseInt( ((sp.length > 1)?sp[ sp.length-1 ]:"0")   ) ;
+    }
+    
     final public static String getBetaVersion(){
                         if (betaVersion == 0 ) { return getFullVersion(); } 
                         return getDebugVersion()+"."+betaVersion;
