@@ -36,6 +36,10 @@ public class SSHshell  extends RunnableT {
     private final int     port;
     private final String  user;
     private final String  pass;
+    private       String  phost;
+    private       int     pport;
+    private       String  puser;
+    private       String  ppass;
     //private final Console console;
     private final boolean guiMode;
     
@@ -55,6 +59,11 @@ public class SSHshell  extends RunnableT {
     final public String knownHostPath ;
     final public String idDSAPath ;
     final public String idRSAPath ;
+          public String idDSAPathProxy ;
+          public String idRSAPathProxy ;
+          
+    private SSHDB sshdb ;      
+    
    static public String confDir=System.getProperty("user.home")+File.separator+".ssh";
    
     private boolean _success = false;  
@@ -81,6 +90,47 @@ public class SSHshell  extends RunnableT {
         idRSAPath    =SSHshell.confDir+File.separator+"id_rsa";
         
         printf(func,1," knownHostPath:\t"+knownHostPath+"\nidDSAPath:\t\t"+idDSAPath+"\nidRSAPath:\t\t"+idRSAPath);
+        
+        sshdb = new SSHDB(SSHshell.confDir+File.separator+".local.sdb");
+        init();
+        printf(func,1,"end Constructor");
+    }
+    
+    public SSHshell(SecFile con) {
+        final String func="SSHshell::";
+        this.debug=SSHshell.debug;
+        
+        Properties p = con.getProperties();
+        
+        knownHostPath=SSHshell.confDir+File.separator+"known_hosts";
+        idDSAPath    = p.getProperty("DKEY", SSHshell.confDir+File.separator+"id_dsa");
+        idRSAPath    = p.getProperty("KEY", SSHshell.confDir+File.separator+"id_rsa");
+        
+        idDSAPathProxy    = p.getProperty("PROXYDKEY", SSHshell.confDir+File.separator+"id_dsa");
+        idRSAPathProxy    = p.getProperty("PROXYKEY", SSHshell.confDir+File.separator+"id_rsa");
+        
+        int po;
+        try{ po=Integer.parseInt(p.getProperty("PORT", "22")); } catch(java.lang.NumberFormatException ne) { po=22;}
+        
+        this.host=p.getProperty("HOST","localhost");
+        this.port=(po >0 && po < 64*1024-1)?po:22;
+        this.user=p.getProperty("USER", System.getProperty("user.name") );
+        String pa=p.getProperty("PASS", "" );
+        ReadFile fa = new ReadFile(pa);
+                 if ( fa.isReadableFile() ) {
+                      SecFile fp = new SecFile(fa);
+                 }
+        this.pass=p.getProperty("PASS", "" );
+        this.guiMode=false;
+        
+        try{ po=Integer.parseInt(p.getProperty("PROXYPORT", "22")); } catch(java.lang.NumberFormatException ne) { po=22;}
+        
+        this.phost=p.getProperty("PROXYHOST","localhost");
+        this.pport=(po >0 && po < 64*1024-1)?po:22;
+        this.puser=p.getProperty("PROXYUSER", System.getProperty("user.name") );
+        this.ppass=p.getProperty("PROXYPASS", "" );
+        
+        sshdb = new SSHDB(SSHshell.confDir+File.separator+".local.sdb");
         
         init();
         printf(func,1,"end Constructor");
@@ -502,10 +552,11 @@ public class SSHshell  extends RunnableT {
     public static SSHshell getInstance(String[] args) {
            final String func="SSHshell::getInstance(String[] args) - ";
            //Crypt crypt=new Crypt();
-           String ho = "localhost";  int po = 22;  int debug=0;  File kFile=null;
+           String  ho = "localhost";  int  po = 22;  int debug=0;  File kFile=null;
            String u=System.getProperty("user.name");  String p=""; StringBuilder comm = new StringBuilder();
            String conf=System.getProperty("user.dir")+File.separator+"config";
            String scom="ssh";
+           SecFile fsec = null;
            if ( args.length > 0 ) {
                     for(int i=0; i<args.length; i++) {
                         if ( debug > 0 ) {
@@ -530,8 +581,8 @@ public class SSHshell  extends RunnableT {
                                                               return null;
                         }
                         else if (args[i].matches("-conn") ) {
-                             SecFile fsec = new SecFile(args[++i]);
-                             Properties prop = fsec.getProperties();
+                             fsec = new SecFile(args[++i]);
+                             /*Properties prop = fsec.getProperties();
                              //System.out.println("conn: "+fsec.getFQDNFileName()+"  read:"+fsec.isReadableFile() + " all:"+prop+ " check:"+prop.containsKey("HOST"));
                              if ( prop.containsKey("HOST") ) {  ho=prop.getProperty("HOST");
                                  //System.out.println("comn: Host:"+ ho);
@@ -553,7 +604,7 @@ public class SSHshell  extends RunnableT {
                                     
                              }
                              if ( prop.contains("PORT") ) { po= Integer.parseInt( prop.getProperty("PORT") ); }
-                                 
+                              */  
                         }
                         else { 
                             if ( comm.length() > 0 ) { comm.append(" "); }
@@ -570,7 +621,7 @@ public class SSHshell  extends RunnableT {
            if ( debug > 0 ) {
                 System.out.println("DEBUG[1/"+debug+"] "+func+"ssh to "+u+"@"+ho+":"+po+"  with p>|"+p+"|<  command:"+comm.toString()+":");
            }
-           SSHshell ssh = new SSHshell(ho,po,u,p,false);
+           SSHshell ssh = (fsec == null ) ? (new SSHshell(ho,po,u,p,false)): new SSHshell(fsec);
                     ssh.debug=debug;
                     ssh.setProxy();
                     ssh.sCommand=comm;

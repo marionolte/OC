@@ -33,6 +33,7 @@ public class SecFile extends ReadFile {
     
     public SecFile(String fn,int level) { this(new File(fn),level); }
     public SecFile(String fn) { this(new File(fn),1); }
+    public SecFile(ReadFile fn) { this(fn.filer,1); }
     public SecFile(File   fn,int level) { 
         super(fn);
         final String func=getFunc("SecFile");
@@ -82,7 +83,7 @@ public class SecFile extends ReadFile {
         final String func=getFunc("crypt()");
         
         boolean as = rFile.isBinaryFile() ;
-        printf(func,0,"file "+rFile.getFQDNFileName()+" is a binary "+( (as)?"YES":"NO") );
+        printf(func,2,"file "+rFile.getFQDNFileName()+" is a binary "+( (as)?"YES":"NO") );
         if ( ! as )  {
               String s= rFile.readOut().toString();
               printf(func,2,"crypt ascii =>|"+s+"|<=");

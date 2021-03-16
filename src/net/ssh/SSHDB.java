@@ -18,6 +18,10 @@ import java.io.IOException;
  */
 public class SSHDB extends Version{
     private String sshdir=System.getProperty("user.home")+File.separator+".ssh";
+    
+    SSHDB(String file) {
+        SecDBFile f = new SecDBFile(new ReadFile(file));
+    }
     SSHDB() {
          ReadDir d = new ReadDir(sshdir);
          if ( ! d.isDirectory() ) {
