@@ -9,6 +9,7 @@ package main;
 import net.ssh.SSHshell;
 import general.Updater;
 import com.trilead.ssh2.SCPClient;
+import comm.mail.Imap;
 import io.Console;
 import io.account.PasswordTyp;
 import io.crypt.Crypt;
@@ -24,6 +25,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import javax.mail.MessagingException;
 import javax.naming.NamingException;
 import main.checker.Checker;
 import net.ldap.LdapUserBlk;
@@ -218,7 +220,9 @@ public class Mos extends Updater{
                 else if ( args[i].matches("-monitor")  ){ this.runMonitor(getArgsLower(args,++i));       fin=true; }
                 else if ( args[i].matches("-newpass")  ){ this.getNewPassword(getArgsLower(args,++i));   fin=true; }
                 else if ( args[i].matches("-diff")     ){ this.getFileDiff(getArgsLower(args,++i));      fin=true; }
-                else if ( args[i].matches("-version")    ){ this.version(); _exit=0;                fin=true; donemsg=false; }
+                else if ( args[i].matches("-imap")     ){ this.getMail(getArgsLower(args,++i));          fin=true; }
+                else if ( args[i].matches("-pullhttp") ){ this.getPullHttp(getArgsLower(args,++i));      fin=true; }
+                else if ( args[i].matches("-version")    ){ this.version(); _exit=0;                     fin=true; donemsg=false; }
                 else if ( args[i].matches("-sysinfo")    ){ this.getSysInfo(getArgsLower(args,++i));     fin=true; }
                 else if ( args[i].matches("-fullversion")){ this.version();  _exit=0;                fin=true; donemsg=false; }
                 else {
@@ -264,6 +268,10 @@ public class Mos extends Updater{
     private void checkGC(String[] ar) {
         GCMain gc = new GCMain(ar);
                gc.scan();
+    }
+    
+    private void getPullHttp(String[] ar) {
+        PullHttp ph = new PullHttp(ar); 
     }
     
     private void runLdap(String foo, String[] ar ) {
@@ -412,6 +420,16 @@ public class Mos extends Updater{
             }
         }
     }
+    
+    private void getMail(String[] ar) {
+        final String func=getFunc("getMail(String[] ar)");
+        try { 
+               Imap imap = comm.mail.Imap.getInstance(ar);
+        } catch(MessagingException me){
+            printf(func,1,"Message read rrror : "+me.getMessage(),me);
+        }       
+    }
+    
     private void updateJar(){
         final String func=getFunc("updateJar()");
         String info="unknown";

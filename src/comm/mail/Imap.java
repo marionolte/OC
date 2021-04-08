@@ -365,7 +365,7 @@ public class Imap extends Version {
     public void setImapHost(String host) {  this.host.setHost(host); }
     public void setImapPort(String port) {  this.host.setPort(port); }
     
-    public static void main(String[] args) throws Exception {
+    static public Imap getInstance(String[] args) throws MessagingException {
          Crypt crypt = new Crypt();
          String u=""; String p=""; String ho=""; String po="";
          if ( args.length > 0 ) {
@@ -384,7 +384,16 @@ public class Imap extends Version {
                   if( ! ho.isEmpty() ) { imap.setImapHost(ho); }
                   if( ! po.isEmpty() ) { imap.setImapPort(po); }
                   imap.init();
-                  
+                           
+            return imap;
+         }
+         return null;
+    }
+    
+    public static void main(String[] args) throws Exception {
+         Imap imap = getInstance(args);
+         
+         if (  imap != null ) {
                   imap.scan();
          } else {
              System.out.println("missing properties");

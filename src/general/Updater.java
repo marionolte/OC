@@ -13,10 +13,10 @@ import io.thread.RunnableT;
  */
 public abstract class Updater extends RunnableT{
     
-    private static String serviceHost="www.macmario.de";
+    private static String serviceHost="www.macmario.com";
     private static int    servicePort=443;
     public  static String userver="https://"+serviceHost+":"+servicePort;
-    public  static String updateUrl=userver+"/OCservice/";
+    public  static String updateUrl=userver+"/service/";
     public  static String updateScript="OCUp2Date.php";
     
 }
