@@ -1,0 +1,4 @@
+#!/bin/bash
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+prog=`basename $0`
+java  -Dprog="${dir}/$prog" -jar ${dir}/../dist/OC.jar -wlsconfig $@
