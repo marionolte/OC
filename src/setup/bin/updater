@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $dir/oc_profile 2>/dev/null 
+
+if [[ "$JAVA_HOME" == "" ]]; then JAVA_HOME="/usr/java"; fi
+
+$JAVA_HOME/bin/java -version 2>&1| grep -E "1.[7-8].0_|9.0.|1[1-9].0." >/dev/null 2>&1
+if [[ "$?" -ne 0 ]]; then
+        echo "ERROR: unsupport java version - minimum java 1.7 required"
+        exit -1
+fi
+
+if [ ! -r $dir/lib/OC.jar ]; then 
+	echo "ERROR: OC not configured"
+	exit -1
+fi
+
+$JAVA_HOME/bin/java -jar $dir/lib/OC.jar -update
+if [[ "$?" -eq 0 ]]; then
+      $JAVA_HOME/bin/java ´$JAVAEX -jar $dir/lib/OC.jar.1 -version >/dev/null 2>&1
+      if [[ "$?" -eq 0 ]]; then
+	mv $dir/lib/OC.jar.1 $dir/lib/OC.jar 
+      else 
+	echo "ERROR: remove downloaded version as corrupt"
+	rm $dir/lib/OC.jar.1 2>/dev/null
+	exit 1
+      fi
+ else 
+	rm $dir/lib/OC.jar.1 2>/dev/null
+	exit 1
+fi
+
+echo "`$JAVA_HOME/bin/java $JAVAEX -jar $dir/lib/OC.jar -version ` - is alive "
+exit 0

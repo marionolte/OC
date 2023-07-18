@@ -1,0 +1,78 @@
+#!/usr/bin/env  bash
+
+LOOPTIME=500
+
+function usage() {
+	if [[ "$1" != "" ]]; then 
+		echo "$1"
+	fi
+	echo "${dir}/${prog} <domaindir>"	
+	exit -1
+}
+
+function testWLS() {
+   STARTFILE="$1"
+   TAIL=`tail -1000 "$STARTFILE" 2>/dev/null | egrep -i "state" | egrep "BEA-000365" `
+   CODE=`echo "${TAIL}" | awk 'BEGIN{a="UNKNOWN"}{ if ($NF != ""){a=substr($NF,0,length($NF)-2); if(a=="state"){a=$(NF-1)}}}END{print a}' `
+}
+
+function sleeper() {
+    #printf '-'  ; sleep 1; printf "\b"
+    #printf '\\' ; sleep 1; printf "\b"
+    #printf '|'  ; sleep 1; printf "\b"
+    #printf '/'  ; sleep 1; printf "\b"
+    sleep 2
+}
+
+function checkAction() {
+
+	if [[ "$1" != "UNKNOWN" ]]; then 
+		touch "$2/action.state" 2>/dev/null
+	        ST=`awk -v state="$1" 'BEGIN{s=0; f=0}{ f++; if ($1 != "" && $1 != state){s=1} }END{if(f==0){s++};print s}' "$2/action.state" 2>/dev/null `
+		if [[ $ST -eq 1 ]]; then 
+			if [ -x "$dir/$3.$1" ]; then 	
+			        "$dir/$3.$1"
+				if [[ "$?" -eq 0 ]]; then 
+					echo "$1" >"$2/action.state" 2>/dev/null
+				fi
+			fi
+		fi
+	fi
+}
+
+
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+prog=`basename ${0}`
+
+if [[ "$1" == "" ]]; then
+	usage 
+fi 
+
+if [ ! -d "$1" ]; then 
+	usage "ERROR: $1 is not a directory" 
+fi
+DOMAINDIR="$1"
+DAT=`date '+%s'`
+ENDTIME=$(( $DAT + $LOOPTIME ))
+
+WLSUP=1 
+CODE="UNKNOWN"
+while  [ $WLSUP -eq 1 ]; do
+
+		for srv in `ls $DOMAINDIR/servers/ | grep -v bak `
+		do 
+		   #echo $srv
+		   for file in $DOMAINDIR/servers/$srv/logs/$srv.out
+		   do
+			#echo $file; 
+			testWLS "$file" 
+			checkAction $CODE "$DOMAINDIR/servers/$srv/logs" $srv
+
+                   done
+		done 
+    		CHECKPOINT=` date '+%s' `
+                if [[ $CHECKPOINT -gt $ENDTIME ]]; then
+                                     WLSUP=-1
+                fi
+                if  [[ $WLSUP -eq 1 ]]; then sleeper; fi
+done

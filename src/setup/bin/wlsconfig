@@ -1,0 +1,5 @@
+#!/bin/bash
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+prog=`basename $0`
+. ${dir}/oc_profile 2>/dev/null
+"$JAVA_HOME/bin/java" $JAVAEX -Dprog="${dir}/$prog" -jar ${dir}/lib/OC.jar -wlsconfig $@

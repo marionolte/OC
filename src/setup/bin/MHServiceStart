@@ -1,0 +1,51 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          MHStartService
+# Short-Description: MarioHelp Startup Service 
+# Description:       mh-startup service
+# Required-Start:    $local_fs $remote_fs $network $syslog
+# Required-Stop:     $local_fs $remote_fs $network $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# chkconfig: 345 95 5
+### END INIT INFO
+
+if [ -f /etc/rc.d/init.d/functions ]; then
+	. /etc/rc.d/init.d/functions
+fi
+
+SERVICEFILE=/etc/mhservice
+STARTUPFILE=/tmp/mhstartup
+
+if [ ! -f $SERVICEFILE ]; then
+        echo "no mhservice startup services configured"
+        exit 2
+fi
+
+
+echo "#!/bin/sh" >$STARTUPFILE
+
+case "$1" in 
+start)
+      echo "exec >/root/mh.starting "  >>$STARTUPFILE
+      echo "exec 2>&1 "		       >>$STARTUPFILE
+      echo "set -x    "		       >>$STARTUPFILE
+      awk 'BEGIN{FS=":"}{l=substr($1,0,1);if ( l!="#" && l!=""){ print "su - "$1" -c \""$2" "$3"\""} }' $SERVICEFILE >> $STARTUPFILE 
+;;
+
+stop)
+      echo "exec >/root/mh.stopping "  >>$STARTUPFILE
+      echo "exec 2>&1 "                >>$STARTUPFILE
+      echo "set -x    "                >>$STARTUPFILE
+      awk 'BEGIN{FS=":";t=""}{l=substr($1,0,1);if ( l!="#" && l!=""){ t="su - "$1" -c \""$2" "$4"\"\n"t } }END{print t}' $SERVICEFILE >> $STARTUPFILE
+
+;;
+*) echo $"Usage: $0 <start|stop>" ; exit 1;;
+esac 
+
+chmod 755 $STARTUPFILE
+$STARTUPFILE
+
+rm $STARTUPFILE
+exit 0
+

@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. ${dir}/oc_profile 2>/dev/null
+
+if [[  "$USER" != "oracle" ]] && [[  "$USER" != "SuMario" ]]; then
+        echo "ERROR: could not execute as user $USER"
+        exit -1
+fi
+
+if [[ "$JAVA_HOME" == "" ]]; then JAVA_HOME="/usr/java"; fi
+
+"$JAVA_HOME/bin/java" -version 2>&1| grep -E "1.[7-8].0_|9.0.|1[1-9].0." >/dev/null 2>&1
+if [[ "$?" -ne 0 ]]; then
+        echo "ERROR: unsupport java version - minimum java 1.7 required"
+        exit -1
+fi
+
+function usage() {
+        echo "$prog <start|stop> <domain> <instance> "
+        exit -1
+}
+
+function unsetBlackList() 
+{
+	echo "remove blacklist from  for "
+}
+
+function setBlackList()
+{
+	echo "set blacklist from for "
+}
+
+function testPass()
+{
+	$TESTPass
+	if [[ "$?" -ne 0 ]]; then 
+		echo "ERROR: passfile $CLTPASSFILE generates error"
+		exit 2
+	fi
+}
+
+function init()
+{
+    echo "init"
+    . "${dir}/domain.info" 
+    SSHP="\"${JAVA_HOME}/bin/java\" $JAVAEX -jar \"${dir}/lib/OC.jar\" -sshcomm host=localhost port=22 user=$CTLUSER -j $CLTPASSFILE  -key ~/.ssh/id_rsa "  
+    TESTPass="\"${JAVA_HOME}/bin/java\" $JAVAEX -jar \"${dir}/lib/OC.jar\" -pwfile $CLTPASSFILE " 
+}
+
+init
+WUP=-1
+case "$1" in 
+	'testPass'		)   testSCH	      ;;
+	'start'|'Start'|'START' )   unsetBlackList    ;;
+	'stop' |'Stop' |'STOP'  )   setBlackList      ;;
+	*) usage;;
+esac
+exit $WUP
+
+
+
