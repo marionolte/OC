@@ -22,13 +22,13 @@ import com.macmario.net.tcp.Host;
  */
 public abstract class Version  { //extends OraConst {
     final public static String mhfile="OC.jar";
-    final public static String mh="Opitz - MarioHelpService";
-    final public static String mhservice="Opitz MHService - "+mhfile;
+    final public static String mh="MarioHelpService";
+    final public static String mhservice="MHService - "+mhfile;
     final public static String prodauthor="Mario Nolte";
     final public static int majorVersion=0;
     final public static int minorVersion=0;
     final public static int patchVersion=5;
-    final public static int fixedVersion=1;
+    final public static int fixedVersion=2;
     final public static int   libVersion=0;
     final public static int  betaVersion=1;
     

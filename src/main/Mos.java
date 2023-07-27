@@ -576,9 +576,9 @@ public class Mos extends Updater{
          if (ssh == null ){  return true; }
          if ( ssh.isSSHShell() ) {
             try { 
-                printf(func,3,"send command :"+ssh.sendSingleCommand().toString());
+                printf(func,3,"send command :"+ssh.getCommand());
                 System.out.println(ssh.sendSingleCommand().toString()); 
-            } catch(Exception e) { 
+            } catch(IOException|NullPointerException e) { 
                 printf(func,1,"send command error :"+e.getMessage());
                 return false; 
             }

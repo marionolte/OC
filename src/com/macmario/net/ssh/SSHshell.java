@@ -277,28 +277,42 @@ public class SSHshell  extends RunnableT {
                 printf(func,1,"ERROR: call methods fails with:"+e.getMessage());
             }    
             boolean isAuthenticated = false; 
-            if      ( keyFile == null && conn.isAuthMethodAvailable(user, "password")) {
-                    printf(func,3,"user/pass auth");
-                    try {
-                        isAuthenticated = conn.authenticateWithPassword(user, pass);
-                    } catch(Exception e) {
-                        printf(func,1,"ERROR: user/password authentication fails with:"+e.getMessage());
-                    }    
-            } else if ( conn.isAuthMethodAvailable(user, "publickey") ) {
+            if ( keyFile != null &&conn.isAuthMethodAvailable(user, "publickey") ) {
                 try {
                     printf(func,3,"public key auth:"+user+":"+((pass.isEmpty())?"empty":"KeyPASS SET")+":  keyFile:"+keyFile);
                     isAuthenticated = conn.authenticateWithPublicKey(user, keyFile, pass);
-                    printf(func,3,"public key auth for user:"+user+": end with"+isAuthenticated);
+                    printf(func,3,"public key auth for user:"+user+": end with :"+isAuthenticated);
                 } catch(Exception e) {
                     System.out.println("key error "+e.getMessage());
                     printf(func,1,"ERROR: public key authentication:"+e.getMessage());
+                    keyFile=null;
                 }    
                 printf(func,2,"Public Key Auth successfully:"+isAuthenticated);    
-            } else if (conn.isAuthMethodAvailable(user, "keyboard-interactive") ) {
-                log("ERROR: authentication possible only in interactive mode - change the sshd_conf with PasswordAuthentication yes or use public key");
-                _success=false;
-                return _success;
-            }       
+            }
+            if ( ! isAuthenticated ) { 
+                if  ( keyFile == null && conn.isAuthMethodAvailable(user, "password")) {
+                        printf(func,3,"user/pass auth");
+                        try {
+                            isAuthenticated = conn.authenticateWithPassword(user, pass);
+                        } catch(Exception e) {
+                            printf(func,1,"ERROR: user/password authentication fails with:"+e.getMessage());
+                        }    
+                } else if ( conn.isAuthMethodAvailable(user, "publickey") ) {
+                    try {
+                        printf(func,3,"public key auth:"+user+":"+((pass.isEmpty())?"empty":"KeyPASS SET")+":  keyFile:"+keyFile);
+                        isAuthenticated = conn.authenticateWithPublicKey(user, keyFile, pass);
+                        printf(func,3,"public key auth for user:"+user+": end with"+isAuthenticated);
+                    } catch(Exception e) {
+                        System.out.println("key error "+e.getMessage());
+                        printf(func,1,"ERROR: public key authentication:"+e.getMessage());
+                    }    
+                    printf(func,2,"Public Key Auth successfully:"+isAuthenticated);    
+                } else if (conn.isAuthMethodAvailable(user, "keyboard-interactive") ) {
+                    log("ERROR: authentication possible only in interactive mode - change the sshd_conf with PasswordAuthentication yes or use public key");
+                    _success=false;
+                    return _success;
+                } 
+            }    
             
             if (!isAuthenticated || ! conn.isAuthenticationComplete() )  { 
                 printf(func,1,"ssh authentication fails to "+getHost()+" user:"+user+":  pass:"+pass+":");
