@@ -354,8 +354,8 @@ public class SSHshell  extends RunnableT {
         try {          
             if ( conn.isAuthenticationComplete() ) {}
             sess.getStdin().flush();
-            System.out.println("STDERR:"+sess.getStderr().available()+":");
-            System.out.println("STDOUT:"+sess.getStdout().available()+":");
+            sess.getStderr().available();
+            sess.getStdout().available();
             sess.ping();
             return true;    
         } catch( IOException | NullPointerException np ) { }    
@@ -545,7 +545,10 @@ public class SSHshell  extends RunnableT {
                     if (debug >0) log(func+"complete:"+notComplete+"  lastLine|"+lastLine+"|"+sp[ sp.length-1]+"|");
                 }
                 if ( ! notComplete ) {
-                    if ( ! isConnected() ) { notComplete=true;  }
+                    if ( ! isConnected() ) {   
+                        if (debug >0) log(func+"connection closed");
+                        notComplete=true;  
+                    }
                 }
             }    
         } else {
