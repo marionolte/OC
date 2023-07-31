@@ -350,11 +350,21 @@ public class SSHshell  extends RunnableT {
         return conn;
     }
     
+    public boolean isConnected(){
+        try {          
+            if ( conn.isAuthenticationComplete() ) {}
+            sess.getStdin().flush();
+            System.out.println("STDERR:"+sess.getStderr().available()+":");
+            System.out.println("STDOUT:"+sess.getStdout().available()+":");
+            sess.ping();
+            return true;    
+        } catch( IOException | NullPointerException np ) { }    
+        return false;    
+    }
+    
     public void setSubConnect( ) throws IOException{
          Connection con = getConnection();
-         
-         
-    }
+     }
     
     public SCPClient getSCPClient() throws IOException { 
         Connection con = getConnection();
@@ -533,6 +543,9 @@ public class SSHshell  extends RunnableT {
                     String[] sp = sw.toString().replaceAll("\\e\\[[\\d;]*[^\\d;]", "").split("\n");
                     if ( sp[ sp.length-1].equals(lastLine)) { notComplete=true; }
                     if (debug >0) log(func+"complete:"+notComplete+"  lastLine|"+lastLine+"|"+sp[ sp.length-1]+"|");
+                }
+                if ( ! notComplete ) {
+                    if ( ! isConnected() ) { notComplete=true;  }
                 }
             }    
         } else {
