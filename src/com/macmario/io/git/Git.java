@@ -1,9 +1,10 @@
 package com.macmario.io.git;
 
-import com.macmario.general.Version;
+
 import com.macmario.io.file.ReadDir;
 import com.macmario.io.file.SecFile;
 import com.macmario.io.thread.RunnableT;
+import com.macmario.main.MainTask;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -11,14 +12,22 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.Objects;
+import java.util.Properties;
 
 /**
  *
  * @author SuMario
  */
-public class Git extends Version{
+public class Git extends MainTask{
     private SecFile  pwFile= null;
     private GitConfig conf = null;
+    private ReadDir ind=null;
+    private Properties map;
+    
+    public Git() { this( new String[]{} ); }
+    public Git(String[] ar ) {
+        map = parseArgs(ar);
+    }
     
     public  void setPW(String f) { setPW(new SecFile(f)); }
     public  void setPW(SecFile f) {
@@ -29,6 +38,7 @@ public class Git extends Version{
     String getPW() {         return (pwFile != null)? pwFile.readOut().toString():"";     }
     
     public  int init(ReadDir dir){
+        this.ind=dir;
         
         int ret =runCommand(dir, "git", "init");
         System.out.println("INFO: init return "+ret);
@@ -42,13 +52,14 @@ public class Git extends Version{
         return dir.getFiles();
     }
 
-    
+    public int addRemote(String repo) { return addRemote(ind,repo); }
     public int addRemote(ReadDir dir,String repo) {
         int ret =runCommand(dir, "git", "remote", "add", "origin", repo);
         System.out.println("INFO: add repo "+repo+" return "+ret);
         return ret;
     }
     
+    public String getRepo()  {return getRepo(ind, "master"); }
     public String getRepo(ReadDir dir) { return getRepo(dir, "master"); }
     public String getRepo(ReadDir dir, String branch) {
         if ( conf == null ) {
@@ -62,6 +73,7 @@ public class Git extends Version{
         return conf.getRepo(branch);
     }
     
+    public String[] getBranches() { return getBranches(ind); }
     public String[] getBranches(ReadDir dir) {
         int ret =runCommand(dir, "git", "branch");
         String[] spr = new String[]{};
@@ -72,26 +84,33 @@ public class Git extends Version{
         return spr;
     }
     
+    public int cloni(){ return clone(ind); }
     public int clone(ReadDir dir) {
         String repo = getRepo(dir);
         int ret =runCommand(dir, "git", "clone", repo);
         System.out.println("INFO: clone return "+ret);
         return ret;
     } 
+    
+    public int pull() { return pull(ind); }
     public int pull(ReadDir dir) {
+        System.out.println("INFO: pull in "+dir.getFQDNDirName());
         int ret =runCommand(dir, "git", "pull");
         System.out.println("INFO: pull return "+ret);
         return ret;
     }
     
+    public int commit(String message) { return commit(ind,message); }
     public int commit(ReadDir directory, String message) {
         return runCommand(directory, "git", "commit", "-m", message);
     }
     
+    public int stage() throws IOException, InterruptedException { return stage(ind); }
     public int stage(ReadDir directory) throws IOException, InterruptedException {
         return runCommand(directory, "git", "add", "-A");
     }
     
+    public int gitGc() { return gitGc(ind); }
     public int gitGc(ReadDir directory) {
         return runCommand(directory, "git", "gc");
     }
@@ -127,25 +146,44 @@ public class Git extends Version{
 		return exit;
     }
     
+    public void response(String[] args) {
+        System.out.println("git commands ? "+((args!=null)?"Yes="+args.length:"No"));
+        if ( args.length > 1 ) {
+            System.out.println("REPO: "+ind.getFQDNDirName() );
+            for ( int i=1; i< args.length; i++ ) {
+                if      ( args[i].equals("--pwFile") ) { setPW(args[++i]); }
+            }
+            for ( int i=1; i< args.length; i++ ) {
+                System.out.println(i+"=>"+args[i]+"<=");
+                if      ( args[i].equals("-repo")  ) { addRemote(ind, args[++i] ); }
+                else if ( args[i].equals("-pull")  ) { pull(ind);  }
+                else if ( args[i].equals("-clone") ) { clone(ind); }
+                else if ( args[i].startsWith("--") ) { i++; }
+                else {
+                    System.out.println("unknown git command:"+args[i]);
+                }
+            }
+        } else {
+            System.out.println("no length");
+        }
+    }
+    
+    public static Git getInstance(String[] args ) {
+         Git git = new Git();
+            //System.out.println("args[0]:"+args[0]);
+        String s = (args != null && args.length > 1)?args[0]:System.getProperty("user.dir");
+        ReadDir ind = new ReadDir(s);
+               
+        
+        int test= git.init(ind);
+          
+        return git;
+    }
     public static void main(String[] args) {
         
-        Git git = new Git();
-            //System.out.println("args[0]:"+args[0]);
-        ReadDir ind = new ReadDir(args[0]);
-        
-          int test= git.init(ind);
+        Git git = getInstance(args);
             
-        if ( args.length > 1 ) {
-            for ( int i=1; i< args.length; i++ ) {
-                if      ( args[i].equals("--pwFile") ) { git.setPW(args[++i]); }
-            }
-            for ( int i=1; i< args.length; i++ ) {
-                if      ( args[i].equals("-repo")  ) { git.addRemote(ind, args[++i] ); }
-                else if ( args[i].equals("-pull")  ) { git.pull(ind);  }
-                else if ( args[i].equals("-clone") ) { git.clone(ind); }
-                else if ( args[i].startsWith("--") ) { i++; }
-            }
-        } 
+        git.response(args); 
              
     }
     

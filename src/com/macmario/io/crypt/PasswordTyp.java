@@ -10,6 +10,15 @@ package com.macmario.io.crypt;
  */
 public enum PasswordTyp {
     
-        EASY, MEDIUM, STRONG 
+        EASY, MEDIUM, STRONG;
+        
+        public static PasswordTyp fromString(String text){
+            text=(text!=null)?text.toUpperCase():"";
+            switch(text) {
+                case "EASY"  : { return EASY;   }
+                case "MEDIUM": { return MEDIUM; }
+            }            
+            return STRONG;
+        }
     
 }

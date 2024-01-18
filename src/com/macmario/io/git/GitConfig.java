@@ -15,7 +15,7 @@ public class GitConfig {
     
     final private ReadFile conf;
           private long read;
-          private HashMap<String, HashMap> map;
+          private final HashMap<String, HashMap> map;
     GitConfig(String file) { 
          conf = new ReadFile(file);
          map = new HashMap();
@@ -75,6 +75,7 @@ public class GitConfig {
                   
                  }
              }
+             this.read = System.currentTimeMillis();
         }
     }
 }

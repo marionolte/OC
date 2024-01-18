@@ -28,7 +28,7 @@ public abstract class Version  { //extends OraConst {
     final public static int majorVersion=0;
     final public static int minorVersion=0;
     final public static int patchVersion=5;
-    final public static int fixedVersion=3;
+    final public static int fixedVersion=4;
     final public static int   libVersion=0;
     final public static int  betaVersion=1;
     
@@ -58,6 +58,13 @@ public abstract class Version  { //extends OraConst {
     final public static String  getProductAuthor() { return prodauthor; }
     final public static int     getLibVersion()    { return libVersion;}
     final public static String  getJavaHome()      { return JAVAHOME; }
+    final public static File    getJavaCacerts()   { 
+        File f=new File(JAVAHOME+File.separator+"lib"+File.separator+"security"+File.separator+"lib"+File.separator+"cacerts");
+        if ( ! f.canRead() ) {
+             f=new File(JAVAHOME+File.separator+"jre"+File.separator+"lib"+File.separator+"security"+File.separator+"lib"+File.separator+"cacerts");
+        }
+        return f; 
+    }
     final public static boolean testLibVersion(String a) {
         int b =0; try { b=Integer.parseInt(a); }catch(Exception e) {}
         return (getLibVersion() == b );
@@ -255,4 +262,6 @@ public abstract class Version  { //extends OraConst {
     final        public String getFunc(String func){ return this.getClass().getName()+"::"+func; }
     final static public String getFuncStatic(String func){ return Version.class.getName()+"::"+func; }
     
+    
+    final static public boolean getBooleanValue(String key) { return ( key!=null && ( key.equals("1") ||key.toLowerCase().equals("true") ) )?true:false; }
 }

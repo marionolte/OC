@@ -22,6 +22,7 @@ import com.macmario.io.file.ReadDir;
 import com.macmario.io.file.ReadFile;
 import com.macmario.io.file.SecFile;
 import com.macmario.io.file.WriteFile;
+import com.macmario.io.git.Git;
 import com.macmario.io.java.GCFile;
 import com.macmario.io.lib.IOLib;
 import java.io.File;
@@ -152,6 +153,12 @@ public class Mos extends Updater{
         if ( s != null && ! s.isEmpty() ) { f.replace(s); }
         return ( s.matches(f.readOut().toString()));
     }
+    private String getNewPassword(int len,String typ){
+        com.macmario.io.crypt.PasswordTyp tp=com.macmario.io.crypt.PasswordTyp.fromString(typ);
+        len= ( tp.equals(com.macmario.io.crypt.PasswordTyp.MEDIUM) && len < 12 )?12:len;
+        len= ( tp.equals(com.macmario.io.crypt.PasswordTyp.STRONG) && len < 16 )?16:len;
+        return GetPassword.getPassword(len, tp);
+    }
     
     private String[] getArgsLower(String[]args,int j) {
         final String func="getArgsLower(String[]args,int j)";
@@ -197,9 +204,11 @@ public class Mos extends Updater{
                                                           fin=true;
                                                           _exit=(b)?0:1;
                                                         }
-                else if ( args[i].matches("-genpassword")){       System.out.println(com.macmario.io.account.GenPassword.getPassword(10, PasswordTyp.STRONG)); fin=true; _exit=0; }
+                else if ( args[i].matches("-genpassword")){    String pw=""; i++; if( args.length>i ){ pw=args[i]; }                    
+                                                               System.out.println( getNewPassword(12, pw )  );                           
+                                                                                                               fin=true; _exit=0; }
                 else if ( args[i].matches("-logrotate")){       this.logRotate(getArgsLower(args,++i));        fin=true; _exit=0; }
-                else if ( args[i].matches("-portscan") ){       this.portScanner(getArgsLower(args,++i));      fin=true; _exit=0;}
+                else if ( args[i].matches("-portscan") ){       this.portScanner(getArgsLower(args,++i));      fin=true; _exit=0; }
                 else if ( args[i].matches("-wlsconfig")){ _exit=this.wlsConfigTools(getArgsLower(args,++i));   fin=true; }
                 else if ( args[i].matches("-wlsinfo")  ){ this.wlsInfoTools(getArgsLower(args,++i));     fin=true; donemsg=false; }
                 else if ( args[i].matches("-mwinfo")   ){ this.mwInfo(getArgsLower(args,++i));           fin=true; donemsg=false; }
@@ -224,6 +233,7 @@ public class Mos extends Updater{
                 else if ( args[i].matches("-monitor")  ){ this.runMonitor(getArgsLower(args,++i));       fin=true; }
                 else if ( args[i].matches("-newpass")  ){ this.getNewPassword(getArgsLower(args,++i));   fin=true; }
                 else if ( args[i].matches("-diff")     ){ this.getFileDiff(getArgsLower(args,++i));      fin=true; }
+                else if ( args[i].matches("-git")      ){ this.getGit(getArgsLower(args,++i));           fin=true; }
                 else if ( args[i].matches("-imap")     ){ this.getMail(getArgsLower(args,++i));          fin=true; }
                 else if ( args[i].matches("-pullhttp") ){ this.getPullHttp(getArgsLower(args,++i));      fin=true; }
                 else if ( args[i].matches("-version")    ){ this.version(); _exit=0;                     fin=true; donemsg=false; }
@@ -436,6 +446,16 @@ public class Mos extends Updater{
                     }    
             }
         }
+    }
+    
+    private void getGit(String[] ar) {
+        final String func=getFunc("getGit(String[] ar)");
+        try { 
+               Git g = new Git(ar);
+                   g.response(ar);
+        } catch(Exception me){
+            printf(func,1,"Message read rrror : "+me.getMessage(),me);
+        }       
     }
     
     private void getMail(String[] ar) {
