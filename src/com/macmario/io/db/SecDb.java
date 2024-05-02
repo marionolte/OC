@@ -127,6 +127,7 @@ import java.util.Properties;
         return db;
     }
     
+    
     public static void main(String[] args) {
         SecDb sdb = new SecDb(args);
               sdb.run();

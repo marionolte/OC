@@ -312,5 +312,17 @@ public class IOLib extends Version {
        
        return sw.toString();
    }
+   static public HashMap<String, String> getHashFromHTTP(String payload) {
+       HashMap<String, String> map = new HashMap<>();
+       if ( payload != null && ! payload.isEmpty() ) {
+           for ( String s : payload.split("&") ) {
+               String[] sp = s.split("=");
+               String k=sp[0];
+               String v=(s.length()>(k.length()+1))?s.substring(k.length()+1):"";
+               map.put(k, v);
+           }
+       }
+       return map;
+   }
 }   
 

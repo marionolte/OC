@@ -28,7 +28,7 @@ public abstract class Version  { //extends OraConst {
     final public static int majorVersion=0;
     final public static int minorVersion=0;
     final public static int patchVersion=5;
-    final public static int fixedVersion=4;
+    final public static int fixedVersion=5;
     final public static int   libVersion=0;
     final public static int  betaVersion=1;
     
@@ -59,9 +59,9 @@ public abstract class Version  { //extends OraConst {
     final public static int     getLibVersion()    { return libVersion;}
     final public static String  getJavaHome()      { return JAVAHOME; }
     final public static File    getJavaCacerts()   { 
-        File f=new File(JAVAHOME+File.separator+"lib"+File.separator+"security"+File.separator+"lib"+File.separator+"cacerts");
+        File f=new File(JAVAHOME+File.separator+"lib"+File.separator+"security"+File.separator+"cacerts");
         if ( ! f.canRead() ) {
-             f=new File(JAVAHOME+File.separator+"jre"+File.separator+"lib"+File.separator+"security"+File.separator+"lib"+File.separator+"cacerts");
+             f=new File(JAVAHOME+File.separator+"jre"+File.separator+"lib"+File.separator+"security"+File.separator+"cacerts");
         }
         return f; 
     }
