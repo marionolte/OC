@@ -1,0 +1,8 @@
+#!/bin/bash
+dir=`dirname $0`
+if [[ "$dir" == "" ]]; then dir="." ; fi
+if [ ! -s $dir/prog ]; then dir=""; fi
+command="prog"
+if [[ "$dir" != "" ]]; then command="${dir}/prog" ; fi
+"${command}" net.tcp.PortScanner "$@"
+exit $?

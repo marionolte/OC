@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+cat >> /etc/sysctl.conf <<EOF
+fs.aio-max-nr = 3145728
+fs.file-max = 6815744
+kernel.shmall = 1073741824
+kernel.shmmax = 4398046511104
+kernel.shmmni = 4096
+kernel.sem = 250 32000 100 142
+net.ipv4.ip_local_port_range = 9000 65500
+net.core.rmem_default = 262144
+net.core.rmem_max = 4194304
+net.core.wmem_default = 262144
+net.core.wmem_max = 1048576
+EOF
+
+cat >> /etc/security/limits.conf <<EOF
+oracle soft nproc 65535
+oracle hard nproc 1384283
+oracle soft nofile 65535
+oracle hard nofile 65535
+EOF
