@@ -17,13 +17,13 @@ import com.macmario.net.tcp.Host;
  */
 public class Crypt extends Version {
     final private CryptHigh ch;
-    final private CryptLow  cl;
+    //final private CryptLow  cl;
           private CryptHigh hostch;
-          private CryptLow  hostcl;
-          private CryptLow  custcl=null;
+    //      private CryptLow  hostcl;
+    //      private CryptLow  custcl=null;
           private CryptHigh custch=null;
           private CryptHigh userch;
-          private CryptLow  usercl;
+    //      private CryptLow  usercl;
           
     final private UUID uuid;
     private       String Ukey="5fa4a40a-53b4-4f7a-b132-61bd19b79a8e";
@@ -35,11 +35,11 @@ public class Crypt extends Version {
     public Crypt() {
         uuid= UUID.fromString(Ukey);
         ch=new CryptHigh(uuid);
-        if (ch.getHighAllow()) { 
+        /*if (ch.getHighAllow()) { 
             cl=null; 
         } else{ 
             cl=new CryptLow(uuid);
-        }
+        }*/
         init();
     }
     public Crypt(Mos m) {
@@ -61,11 +61,11 @@ public class Crypt extends Version {
     
     public void setCustomKey(String info) {
         if ( info == null || info.isEmpty() ) { return; }
-        if ( cl == null ) {
+        //if ( cl == null ) {
             custch = new CryptHigh(getUUIDCode(info)) ;
-        } else { 
+        /*} else { 
             custcl = new CryptLow(getUUIDCode(info)) ;
-        }    
+        } */   
         
     }
     
@@ -76,27 +76,27 @@ public class Crypt extends Version {
     public boolean updateUKey(UUID   u) { return updateUKey(u.toString()); }
     public boolean updateUKey(String u) { 
         boolean b=false;
-        if ( cl == null ) {
+        //if ( cl == null ) {
             b=custch.updateUKey(u);
-        } else { 
+        /*} else { 
             b=custcl.updateUKey(u);
-        } 
+        } */
         if (b) { Ukey=u ;  }
         return b; 
     }
     
     private void init() {
-        if (ch.getHighAllow()) { 
-            hostcl=null; 
-            usercl=null; 
+        //if (ch.getHighAllow()) { 
+        //    hostcl=null; 
+        //    usercl=null; 
             hostch=new CryptHigh(getUUIDCode(host));
             userch=new CryptHigh(getUUIDCode(user));
-        } else{ 
+        /*} else{ 
             hostcl=new CryptLow(getUUIDCode(host));
             usercl=new CryptLow(getUUIDCode(user));
             hostch=null;
             userch=null;
-        }
+        }*/
     }
     
     private UUID getUUIDCode(String info) {
@@ -147,17 +147,20 @@ public class Crypt extends Version {
          String out = getUserCrypted(txt);
                 out = getHostCrypted(out);
                 out = getCustCrypted(out);
-         return ( cl == null )? ch.getCrypted(out) : cl.getCrypted(out);
+         //return ( cl == null )? ch.getCrypted(out) : cl.getCrypted(out);
+         return ch.getCrypted(out);
     }
         
     private String getUserCrypted(String txt) {
-        if( cryptLevel > 0 && ( (cl==null && userch!=null) || ( cl!=null && usercl!=null) ) ) {
+        if( cryptLevel > 0 &&  userch!=null  ) {
+        //if( cryptLevel > 0 && ( (cl==null && userch!=null) || ( cl!=null && usercl!=null) ) ) {    
             StringBuilder sw = new StringBuilder();
-                          sw.append(
+                          sw.append(userch.getCrypted(getHostCrypted(txt)));
+                          /*sw.append(
                                      (( cl == null )? userch.getCrypted(getHostCrypted(txt)) 
                                                     : usercl.getCrypted(getHostCrypted(txt)))
                                     );
-                          //System.out.println("crypt user sw:"+sw.toString()+":");
+                          //System.out.println("crypt user sw:"+sw.toString()+":"); */
                           if ( sw.length() > 4 && ! sw.toString().endsWith("=") ) { sw.append("="); }
             return "<"+user+" md5=\""+getMD5(sw.toString())+"\">"+sw.toString()+"</"+user+">";
             //return "<"+user+">"+sw.toString()+"</"+user+">";
@@ -168,10 +171,11 @@ public class Crypt extends Version {
     private String getHostCrypted(String txt) {
         if( cryptLevel > 1 ) {
             StringBuilder sw = new StringBuilder();
-                          sw.append(
+                          sw.append(hostch.getCrypted(txt));
+                          /*sw.append(
                                        (( cl == null )? hostch.getCrypted(txt) 
                                                       : hostcl.getCrypted(txt))
-                                    );
+                                    );*/
                           if ( ! sw.substring(sw.capacity()-1).equals("=") ) { sw.append("="); }
             return "<"+host+">"+sw.toString()+"</"+host+">";
         }
@@ -179,12 +183,13 @@ public class Crypt extends Version {
     }
     
     private String getCustCrypted(String txt) {
-        if(  ( custch!=null ) || ( custcl!=null )  ) {
+        if(  ( custch!=null ) ) { //|| ( custcl!=null )  ) {
             StringBuilder sw = new StringBuilder();
-                          sw.append(
+                          sw.append(custch.getCrypted(txt));
+                          /*sw.append(
                                    (( custcl == null )? custch.getCrypted(txt) 
                                                       : custcl.getCrypted(txt))
-                                    );
+                                    );*/
                           if ( ! sw.substring(sw.capacity()-1).equals("=") ) { sw.append("="); }
             return sw.toString();
         }
@@ -197,8 +202,10 @@ public class Crypt extends Version {
                 out = getHostCrypted(out);
                 out = getCustCrypted(out);
          return ( cl == null )? ch.getCrypted(out) : cl.getCrypted(out);
+        
+        //String out=( cl == null )? ch.getUnCrypted(info) : cl.getUnCrypted(info);
         */
-        String out=( cl == null )? ch.getUnCrypted(info) : cl.getUnCrypted(info);
+        String out= ch.getUnCrypted(info); 
                out=getUnCryptedCust(out);
                out=getUnCryptedHost(out);
                out=getUnCryptedUser(out);
@@ -212,10 +219,10 @@ public class Crypt extends Version {
            String f = info.substring(ab[0].length()+1,info.length()-e.length());
            String md5 = getCryptedMD5(ab[0]);
            if ( md5.isEmpty()  || ( ! md5.isEmpty() && md5.matches(getMD5(f)) )    )  {
-                return ( cl == null )? hostch.getUnCrypted(f) 
-                                     : hostcl.getUnCrypted(f);  
-           // return ( cl == null )? hostch.getUnCrypted(info.substring(a.length(),info.length()-e.length())) 
-           //                     : hostcl.getUnCrypted(info.substring(a.length(),info.length()-e.length())); 
+                /*return ( cl == null )? hostch.getUnCrypted(f) 
+                                     : hostcl.getUnCrypted(f);  */
+                return hostch.getUnCrypted(f);
+           
            }
         }
         return info;
@@ -227,11 +234,9 @@ public class Crypt extends Version {
            String f = info.substring(ab[0].length()+1,info.length()-e.length());
            String md5 = getCryptedMD5(ab[0]);
            if ( md5.isEmpty()  || ( ! md5.isEmpty() && md5.matches(getMD5(f)) )    )  {
-                return ( cl == null )? userch.getUnCrypted(f) 
-                                     : usercl.getUnCrypted(f); 
-
-                //return ( cl == null )? userch.getUnCrypted(info.substring(a.length(),info.length()-e.length())) 
-                //                     : usercl.getUnCrypted(info.substring(a.length(),info.length()-e.length())); 
+                //return ( cl == null )? userch.getUnCrypted(f) 
+                //                     : usercl.getUnCrypted(f); 
+                return userch.getUnCrypted(f) ;
            }
         }
         return info;
@@ -247,10 +252,11 @@ public class Crypt extends Version {
     
     private String getUnCryptedCust(String info) {
         //if ( custcl == null && custch == null ) { return info; }
-        if( ( custch !=null ) || ( custcl!=null )  && info.endsWith("=") ) {
+        if( ( custch !=null ) ) { //|| ( custcl!=null )  && info.endsWith("=") ) {
             //System.out.println("in cust:"+info+":");
-            String out = (( custcl == null )? custch.getUnCrypted(info) 
-                                            : custcl.getUnCrypted(info) ); 
+            /*String out = (( custcl == null )? custch.getUnCrypted(info) 
+                                            : custcl.getUnCrypted(info) ); */
+            String out = custch.getUnCrypted(info);
             //System.out.println("un cust:"+out+":");
             return out;
         }
@@ -258,11 +264,13 @@ public class Crypt extends Version {
     }
     
     public byte[] getUnCryptedByte(String info) {
-        return ( cl == null )? ch.getUnCryptedByte(info) : cl.getUnCryptedByte(info);
+        //return ( cl == null )? ch.getUnCryptedByte(info) : cl.getUnCryptedByte(info);
+        return ch.getUnCryptedByte(info);
     }
     
     public byte[] getCryptedByte(String info) {
-        return (( cl == null )? ch.getCrypted(info) : cl.getCrypted(info) ).getBytes();
+        //return (( cl == null )? ch.getCrypted(info) : cl.getCrypted(info) ).getBytes();
+        return ch.getCrypted(info).getBytes();
     }
     
     public void runArgs(String[] args) {
@@ -279,7 +287,7 @@ public class Crypt extends Version {
                  int j=args.length;
                  for( j=++i; j<args.length; j++) {
                    String s=args[j];
-                   if ( s.matches("\\-d") ){ debug++;  ch.debug++; if(cl!=null){cl.debug++;} } else { 
+                   if ( s.matches("\\-d") ){ debug++;  ch.debug++; } else { //if(cl!=null){cl.debug++;} } else { 
                      String en = getCrypted(s);
                      String de = getUnCrypted(en);
                      String ma = ( s.equals(de) )?"YES":"NO";

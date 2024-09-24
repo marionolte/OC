@@ -130,18 +130,18 @@ public class SecFile extends ReadFile {
                 rFile.replace( crypt.getUnCrypted(sw.toString()));
             } else {
               try {  
-                OutputStream out = rFile.getOutStream();
-                int i=0; int j=sw.indexOf("\n", i);
-                while ( j > 0  ) {
-                    String s= sw.substring(i, j).trim();
-                    if ( ! s.matches("=") && ! s.matches("<BINARY>") ) {
-                        out.write( crypt.getUnCryptedByte(s) );
-                    } 
-                    i=j;
-                    j=sw.indexOf("\n", i);
-                }
-                out.flush();
-                out.close();
+                  try (OutputStream out = rFile.getOutStream()) {
+                      int i=0; int j=sw.indexOf("\n", i);
+                      while ( j > 0  ) {
+                          String s= sw.substring(i, j).trim();
+                          if ( ! s.matches("=") && ! s.matches("<BINARY>") ) {
+                              out.write( crypt.getUnCryptedByte(s) );
+                          }
+                          i=j;
+                          j=sw.indexOf("\n", i);
+                      }
+                      out.flush();
+                  }
               } catch(java.io.IOException io ) {
                  printf(func,1,"ERROR - uncrypt exception - "+io.getMessage(),io); 
               }  
@@ -161,23 +161,32 @@ public class SecFile extends ReadFile {
         }
         
     }
+    public InputStream getReadOutStream() {
+       try {  
+        InputStream ims = new ByteArrayInputStream( this.readOut().toString().getBytes("UTF-8") );
+        return ims;
+       } catch( java.io.IOException | NullPointerException ne){}
+       
+       return null;
+    }
+    
     @Override
     public Properties getProperties() {
        Properties p = new Properties();
        try { 
-            InputStream ims = new ByteArrayInputStream( this.readOut().toString().getBytes("UTF-8") );
-            p.load( ims ); 
-       } 
-       catch( java.io.IOException | NullPointerException ne){}
+            p.load( getReadOutStream() ); 
+       } catch( java.io.IOException | NullPointerException ne){}
        
        return p;
     }
     
+    @Override
     public StringBuilder readOut(String begin, String end) {
         StringBuilder sw = new StringBuilder( crypt.getUnCrypted(rFile.readOut(begin, end).toString()));
         return sw;
     }
     
+    @Override
     public Pattern readPattern() {
        StringBuilder sw=readOut();
        StringBuilder sb=new StringBuilder();
@@ -192,6 +201,7 @@ public class SecFile extends ReadFile {
        return Pattern.compile(sb.toString());
     }
 
+    @Override
     public String findInFile(String pat) {
         
         StringBuilder sw=new StringBuilder();
@@ -216,17 +226,9 @@ public class SecFile extends ReadFile {
         return sw.toString();
     }
     
-    public boolean isReadableFile()  { return rFile.isReadableFile();  }
-    public boolean isWriteableFile() { return rFile.isWriteableFile(); }
-    public boolean isExecutableFile(){ return rFile.isExecutableFile(); }
-
-    public String getFQDNFileName()  { return rFile.getFQDNFileName(); }
-    public String getFileName()      { return rFile.getFileName(); }
-    
-    
     public static void main(String[] args) {
         int level=1;
-        ArrayList<String> ar = new ArrayList();
+        ArrayList<String> ar = new ArrayList<>();
         for (String arg : args) {
             ReadFile f = new ReadFile(arg);
             if ( f.isReadableFile() ) {

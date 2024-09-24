@@ -149,6 +149,7 @@ public class Http extends Version implements Cloneable {
             }
         }
     }
+    public void    setJsonPost(StringBuilder af) { emptyKey.append(af.toString()); }
     private StringBuilder emptyKey=new StringBuilder();
     
     public URL getConnect() { return this.url; }

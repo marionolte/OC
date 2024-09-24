@@ -30,6 +30,7 @@ import javax.crypto.spec.SecretKeySpec;
  *
  * @author SuMario
  */
+@Deprecated
 class CryptLow extends Version {
      private UUID uuid;
      private String pass;

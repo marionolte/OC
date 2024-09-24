@@ -52,7 +52,7 @@ public class WriteFile extends ReadFile{
         return true;
        }catch(Exception e) { return false; } 
     }
-
+    
     public FileOutputStream getFileOutStream() { 
         try { 
             return new FileOutputStream(filer); 
