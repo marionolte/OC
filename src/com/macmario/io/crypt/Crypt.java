@@ -190,7 +190,7 @@ public class Crypt extends Version {
                                    (( custcl == null )? custch.getCrypted(txt) 
                                                       : custcl.getCrypted(txt))
                                     );*/
-                          if ( ! sw.substring(sw.capacity()-1).equals("=") ) { sw.append("="); }
+                          if ( ! sw.substring(sw.length()-1).equals("=") ) { sw.append("="); }
             return sw.toString();
         }
         return txt;

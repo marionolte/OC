@@ -207,37 +207,37 @@ public class Mos extends Updater{
                 else if ( args[i].matches("-genpassword")){    String pw=""; i++; if( args.length>i ){ pw=args[i]; }                    
                                                                System.out.println( getNewPassword(12, pw )  );                           
                                                                                                                fin=true; _exit=0; }
-                else if ( args[i].matches("-logrotate")){       this.logRotate(getArgsLower(args,++i));        fin=true; _exit=0; }
-                else if ( args[i].matches("-portscan") ){       this.portScanner(getArgsLower(args,++i));      fin=true; _exit=0; }
-                else if ( args[i].matches("-wlsconfig")){ _exit=this.wlsConfigTools(getArgsLower(args,++i));   fin=true; }
-                else if ( args[i].matches("-wlsinfo")  ){ this.wlsInfoTools(getArgsLower(args,++i));     fin=true; donemsg=false; }
-                else if ( args[i].matches("-mwinfo")   ){ this.mwInfo(getArgsLower(args,++i));           fin=true; donemsg=false; }
-                else if ( args[i].matches("-wlsrota")  ){ this.wlsRotate(getArgsLower(args,++i));        fin=true; donemsg=false; }
-                else if ( args[i].matches("-logrota")  ){ this.logApacheRotate(getArgsLower(args,++i));  fin=true; donemsg=false; }
+                else if ( args[i].matches("-logrotate") ){       this.logRotate(getArgsLower(args,++i));        fin=true; _exit=0; }
+                else if ( args[i].matches("-portscan")  ){       this.portScanner(getArgsLower(args,++i));      fin=true; _exit=0; }
+                else if ( args[i].matches("-wlsconfig") ){ _exit=this.wlsConfigTools(getArgsLower(args,++i));   fin=true; }
+                else if ( args[i].matches("-wlsinfo")   ){ this.wlsInfoTools(getArgsLower(args,++i));     fin=true; donemsg=false; }
+                else if ( args[i].matches("-mwinfo")    ){ this.mwInfo(getArgsLower(args,++i));           fin=true; donemsg=false; }
+                else if ( args[i].matches("-wlsrota")   ){ this.wlsRotate(getArgsLower(args,++i));        fin=true; donemsg=false; }
+                else if ( args[i].matches("-logrota")   ){ this.logApacheRotate(getArgsLower(args,++i));  fin=true; donemsg=false; }
                 else if ( args[i].matches("-crypt")    ||
-                          args[i].matches("-uncrypt")  ){ crypt.runArgs(getArgsLower(args,i));           fin=true; }  
-                else if ( args[i].matches("-rota")        ){ this.logRotate(getArgsLower(args,++i));     fin=true; }
-                else if ( args[i].matches("-gclog1")      ){ this.gcLog(getArgsLower(args,++i));         fin=true; }
-                else if ( args[i].matches("-update")      ){ this.updateJar();                           fin=true; }
-                else if ( args[i].matches("-unsecure")    ){ this.unsecureFile(getArgsLower(args,++i));  fin=true; }
-                else if ( args[i].matches("-secure")   )   { this.secureFile(getArgsLower(args,++i));    fin=true; }
-                else if ( args[i].matches("-getsecinfo"))  { this.unsecureFile(getArgsLower(args,++i));  fin=true; }
-                else if ( args[i].matches("-pwfile")   ){ this.setPassword(args[++i]);                   fin=true; }
-                else if ( args[i].matches("-pwInfo")   ){ this.unsecureInfo(getArgsLower(args,++i));     fin=true; }
-                else if ( args[i].matches("-gclog")    ){ this.checkGC(getArgsLower(args,++i));          fin=true; }
-                else if ( args[i].matches("-gcfile")   ){ this.checkGCFile(getArgsLower(args,++i));      fin=true; }
-                else if ( args[i].matches("-checker")  ){ this.runChecker(getArgsLower(args,++i));       fin=true; }
-                else if ( args[i].matches("-secdb")    ){ this.getSecDb(getArgsLower(args,++i));         fin=true; }
-                else if ( args[i].startsWith("-ldap")  ){ this.runLdap(args[i].substring(1),getArgsLower(args,++i));  fin=true; }
-                else if ( args[i].matches("-d")        ){ } // needs empty - run in pre-scan
-                else if ( args[i].matches("-monitor")  ){ this.runMonitor(getArgsLower(args,++i));       fin=true; }
-                else if ( args[i].matches("-newpass")  ){ this.getNewPassword(getArgsLower(args,++i));   fin=true; }
-                else if ( args[i].matches("-diff")     ){ this.getFileDiff(getArgsLower(args,++i));      fin=true; }
-                else if ( args[i].matches("-git")      ){ this.getGit(getArgsLower(args,++i));           fin=true; }
-                else if ( args[i].matches("-imap")     ){ this.getMail(getArgsLower(args,++i));          fin=true; }
-                else if ( args[i].matches("-pullhttp") ){ this.getPullHttp(getArgsLower(args,++i));      fin=true; }
-                else if ( args[i].matches("-version")    ){ this.version(); _exit=0;                     fin=true; donemsg=false; }
-                else if ( args[i].matches("-sysinfo")    ){ this.getSysInfo(getArgsLower(args,++i));     fin=true; }
+                          args[i].matches("-uncrypt")   ){ crypt.runArgs(getArgsLower(args,i));           fin=true; }  
+                else if ( args[i].matches("-rota")      ){ this.logRotate(getArgsLower(args,++i));     fin=true; }
+                else if ( args[i].matches("-gclog1")    ){ this.gcLog(getArgsLower(args,++i));         fin=true; }
+                else if ( args[i].matches("-update")    ){ this.updateJar();                           fin=true; }
+                else if ( args[i].matches("-unsecure")  ){ this.unsecureFile(getArgsLower(args,++i));  fin=true; }
+                else if ( args[i].matches("-secure")    ){ this.secureFile(getArgsLower(args,++i));    fin=true; }
+                else if ( args[i].matches("-getsecinfo")){ this.unsecureFile(getArgsLower(args,++i));  fin=true; }
+                else if ( args[i].matches("-pwfile")    ){ this.setPassword(args[++i]);                   fin=true; }
+                else if ( args[i].matches("-pwInfo")    ){ this.unsecureInfo(getArgsLower(args,++i));     fin=true; }
+                else if ( args[i].matches("-gclog")     ){ this.checkGC(getArgsLower(args,++i));          fin=true; }
+                else if ( args[i].matches("-gcfile")    ){ this.checkGCFile(getArgsLower(args,++i));      fin=true; }
+                else if ( args[i].matches("-checker")   ){ this.runChecker(getArgsLower(args,++i));       fin=true; }
+                else if ( args[i].matches("-secdb")     ){ this.getSecDb(getArgsLower(args,++i));         fin=true; }
+                else if ( args[i].startsWith("-ldap")   ){ this.runLdap(args[i].substring(1),getArgsLower(args,++i));  fin=true; }
+                else if ( args[i].matches("-d")         ){ } // needs empty - run in pre-scan
+                else if ( args[i].matches("-monitor")   ){ this.runMonitor(getArgsLower(args,++i));       fin=true; }
+                else if ( args[i].matches("-newpass")   ){ this.getNewPassword(getArgsLower(args,++i));   fin=true; }
+                else if ( args[i].matches("-diff")      ){ this.getFileDiff(getArgsLower(args,++i));      fin=true; }
+                else if ( args[i].matches("-git")       ){ this.getGit(getArgsLower(args,++i));           fin=true; }
+                else if ( args[i].matches("-imap")      ){ this.getMail(getArgsLower(args,++i));          fin=true; }
+                else if ( args[i].matches("-pullhttp")  ){ this.getPullHttp(getArgsLower(args,++i));      fin=true; }
+                else if ( args[i].matches("-version")   ){ this.version(); _exit=0;                     fin=true; donemsg=false; }
+                else if ( args[i].matches("-sysinfo")   ){ this.getSysInfo(getArgsLower(args,++i));     fin=true; }
                 else if ( args[i].matches("-fullversion")){ this.version();  _exit=0;                fin=true; donemsg=false; }
                 else if ( args[i].matches("-cp" ) ) {}
                 else {

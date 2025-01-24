@@ -39,12 +39,19 @@ public abstract class RunnableT extends Version implements Runnable {
         //synchronized ( lock ) {
             if ( th !=null && th.isAlive() && isRunning() )  { return; }
             th = new Thread( this, lock);
+            th.setPriority(thread_prio);
             th.start();  
             Long d = System.currentTimeMillis()+5000L;
             while( ! th.isAlive() && ! isRunning() && System.currentTimeMillis() < d ) { sleep(100); }
         //}
         _startTime_=System.currentTimeMillis();
         _endTime_=0L;
+    }
+    
+    private int thread_prio=Thread.NORM_PRIORITY;
+    final public void setPriority(int prio) {
+        if ( prio == Thread.NORM_PRIORITY || prio == Thread.MIN_PRIORITY || prio == Thread.MAX_PRIORITY )
+             this.thread_prio=prio;
     }
     
     final public void stop() {

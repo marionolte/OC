@@ -15,6 +15,9 @@ import java.io.StringWriter;
 import java.net.URLDecoder;
 import java.util.logging.Logger;
 import com.macmario.net.tcp.Host;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Properties;
 
 /**
  *
@@ -28,8 +31,8 @@ public abstract class Version  { //extends OraConst {
     final public static int majorVersion=0;
     final public static int minorVersion=0;
     final public static int patchVersion=5;
-    final public static int fixedVersion=6;
-    final public static int   libVersion=1;
+    final public static int fixedVersion=8;
+    final public static int   libVersion=3;
     final public static int  betaVersion=1;
     
     static {
@@ -114,7 +117,12 @@ public abstract class Version  { //extends OraConst {
     
     public static String debugTrace=null;
     public static Logger logger = null;
-    //private static FileHandler fh;  
+    //private static FileHandler fh; 
+    public void log(int level, String msg){
+        if ( level <= debug || debug > maxdebug ) {
+            log("DEBUG["+level+"/"+debug+"] "+msg);
+        }
+    }
     final public static void log(String s) {
          //if ( debugTrace == null ) {
               System.out.println(s);  // log stdout
@@ -149,6 +157,7 @@ public abstract class Version  { //extends OraConst {
     private static final String USERKEY;
     private static final String HOSTKEY;
     public static int debug=0;
+    private static int maxdebug=5;
     
     public final String getTempDir() { return TEMPDIR; }
     public final void   setTempDir(String f) { setTempDir(new File(f) );}
@@ -264,4 +273,25 @@ public abstract class Version  { //extends OraConst {
     
     
     final static public boolean getBooleanValue(String key) { return ( key!=null && ( key.equals("1") ||key.toLowerCase().equals("true") ) )?true:false; }
+    final static public int     getInt(String key) {  
+            try{ return Integer.parseInt(key);}
+            catch(NullPointerException|NumberFormatException ne){} 
+            return -1;
+    }
+    final static public long     getLong(String key) {  
+            try{ return Long.parseLong(key);}
+            catch(NullPointerException|NumberFormatException ne){} 
+            return -1L;
+    }
+    final static public boolean isNullOrEmpty(Object s) { 
+       boolean b=false;  
+       if ( s == null ) { b=true; } else {       
+            if      (s instanceof String    st )       return st.isEmpty(); 
+            else if (s instanceof ArrayList  a )       return  a.isEmpty(); 
+            else if (s instanceof HashMap    h )       return  h.isEmpty();
+            else if (s instanceof Properties p )       return  p.isEmpty();
+       }
+       return b;
+    }
+    final static public boolean isNotNullOrEmpty(Object s) { return ! isNullOrEmpty(s); }
 }

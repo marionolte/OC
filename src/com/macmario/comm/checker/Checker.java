@@ -53,7 +53,7 @@ public class Checker extends Version {
     }
 
     private static void usage1() {
-        System.out.println("usage: java -cp OC.jar main.checker.Checker "+usage());
+        System.out.println("usage: java -cp OC.jar com.macmario.comm.checker.Checker "+usage());
     }
     public static String usage(){
         return (" [-f <pattern file>] [-i <include pattern>] [-b <begin time>] [-e <end time>] <FILE|Directory>\n"
@@ -110,7 +110,7 @@ public class Checker extends Version {
     private String[] timebegin=new String[6];
     private String[] timeend=new String[6];
     private File patterFile;
-    private ArrayList ar=new ArrayList();
+    private ArrayList<File> ar=new ArrayList<>();
     private static int debug=0; 
     private int exit=0;
     public int getResult() { return exit; }
@@ -154,7 +154,7 @@ public class Checker extends Version {
     
     public void verify() {
         
-        ArrayList pa = new ArrayList();
+        ArrayList<String> pa = new ArrayList<>();
         String[] sp = null ;
         if ( this.patterFile== null ) {
             InputStream is = this.getClass().getResourceAsStream("/main/checker/defpattern.properties");
@@ -198,7 +198,7 @@ public class Checker extends Version {
 
             ckt = new CheckTimer(timebegin,timeend,debug);
             for ( int i=0; i< ar.size(); i++ ) {
-                File f = (File) ar.get(i) ;
+                File f = ar.get(i) ;
                 ckt.reset();
                 log(2,"MAIN("+i+"): setTest on "+first.getName()+" for file:"+f.toString()+"  size:"+f.length() );
                 if ( f.length() < 32*1024 ) {
@@ -239,9 +239,9 @@ public class Checker extends Version {
         }    
     }
     
-    private static void log(final int level, final String msg) {
-       if ( debug >= level  ) 
-        System.out.println(msg);
+    @Override
+    public void log(final int level, final String msg) {
+       super.log(level, "Checker::"+msg);
     }
     
     

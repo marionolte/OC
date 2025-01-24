@@ -55,11 +55,8 @@ public class XMLFile extends ReadFile {
     public NodeList getChildNodes() { return (doc!=null)?doc.getChildNodes():null; }
     
     public static int debug=0;
-    private void log(final int level, String msg) {
-       if ( debug >= level  ) {
-           if ( level > 0 ) { msg="DEBUG("+level+"/"+ debug +") XMLFile:: =>"+msg; }
-           System.out.println(msg);
-       } 
+    public void log(int level, String msg) {
+        super.log(level, "XMLFile::=>"+msg);
     }
 
 }

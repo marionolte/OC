@@ -68,7 +68,7 @@ public class GCSetDefaults extends Version {
     }
     
     public void setBaseValue(String k, String v) {
-        if ( k.matches("Xmx") ) { Long l =getLong(v);  this.xmx=l; }
+        if ( k.matches("Xmx") ) { Long l =getGCLong(v);  this.xmx=l; }
         this.basemap.put(k, v);
     }
     
@@ -143,7 +143,7 @@ public class GCSetDefaults extends Version {
         printf(func,0, "return from parse:"+l+":"+val+ret+":");
         return val+""+ret;
     }
-    private Long getLong(String v) {
+    private Long getGCLong(String v) {
         final String func=getFunc("getLong(String v)");
         printf(func,0,"parse to get Long :"+v+": ");
         if ( v == null || v.isEmpty() ) { return 0L; }

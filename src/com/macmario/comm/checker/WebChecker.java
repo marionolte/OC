@@ -115,10 +115,7 @@ public class WebChecker extends Version{
     } 
     
     private int debug=0;
-    private void log(final int level, String msg) {
-       if ( debug >= level  ) {
-           if ( level > 0 ) { msg="DEBUG("+level+"/"+ debug +") =>"+msg; }
-           System.out.println(msg);
-       } 
+    public void log(final int level, String msg) {
+        super.log(level, "WebChecker::"+msg);
     }
 }

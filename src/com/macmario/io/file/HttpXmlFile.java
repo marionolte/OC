@@ -153,10 +153,8 @@ public class HttpXmlFile extends XMLFile {
          if ( map.get(key) == null ) { map.put(key, sw.toString()); } else { map.put(key, map.get(key)+sw.toString()); }
     }
     
-    private void log(final int level, String msg) {
-       if ( debug >= level  ) {
-           if ( level > 0 ) { msg="DEBUG("+level+"/"+ debug +") HttpXmlFile:: =>"+msg; }
-           System.out.println(msg);
-       } 
+    @Override
+    public void log(final int level, String msg) {
+        super.log(level, "HttpXmlFile:: =>"+msg);
     }
 }

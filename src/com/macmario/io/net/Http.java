@@ -160,6 +160,7 @@ public class Http extends Version implements Cloneable {
     public void setUserAgent(String agent) {
         if ( agent != null && ! agent.isEmpty() ) { this.useragent=agent; }
     }
+    public String getUserAgent(){ return this.useragent; }
     
     final private int defTimeout=15000;
     private int timeout=defTimeout;
@@ -278,10 +279,14 @@ public class Http extends Version implements Cloneable {
     
     private FileOutputStream outfile=null;
     public  String connect(URL u, String file) throws IOException {
+        if ( file != null ) {
             outfile=new FileOutputStream(file);
+        }    
             connect(u);
+        if ( file != null ) {    
             outfile.flush();
             outfile.close();
+        }    
         try {    
             MessageDigest md = MessageDigest.getInstance("MD5");
             FileInputStream fis = new FileInputStream(file);

@@ -54,15 +54,31 @@ public class Host extends TcpHost{
     static private String randMac=null;
     static private String getRandMac() {
         if ( randMac == null ) {
-            String mac = "";
-            Random r = new Random();
-            for (int i = 0; i < 6; i++) {
-                int n = r.nextInt(255);
-                mac += String.format("%02x", n);
-            }
-            randMac = mac;
+            randMac = getNewRandomMac("");
         }
         return randMac;
+    }
+    static public String getNewRandomMac(String base){
+        String mac = (base!=null)?base:"";
+        if ( ! mac.isEmpty() && ! base.contains(":") ) {
+            int len=base.length();
+            mac=base.substring(0, 2);
+            //System.out.println("mac:"+mac+": ->"+len);
+            for ( int i=2; i<len; i++){
+                if ( (i+1) < len ) {
+                   mac += ":"+base.substring(i, i+2); 
+                   //System.out.println("mac["+i+"]:"+mac+":");
+                   i++;
+                }   
+            }
+        }
+        Random r = new Random();
+        for (int i = 0; i < 6; i++) {
+                int n = r.nextInt(255);
+                mac += ":"+String.format("%02x", n);
+        }
+        //System.out.println("mac =>"+mac+"<- len:"+mac.length());    
+        return ((mac.length()>17)?mac.substring(0,17):mac).toUpperCase();
     }
     
     public String getHost(){
@@ -76,6 +92,7 @@ public class Host extends TcpHost{
     public static void main(String[] args) {
           System.out.println("Hostname:"+getHostname());
           System.out.println("MacMain :"+getMainMac()+":");
+          System.out.println("RandMac :"+getNewRandomMac(args[0])+":");
     }
 
    
