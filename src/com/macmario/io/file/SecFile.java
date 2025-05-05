@@ -11,6 +11,7 @@ import com.macmario.io.thread.RunnableT;
 import java.io.ByteArrayInputStream;
 import java.util.Properties;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
@@ -152,14 +153,8 @@ public class SecFile extends ReadFile {
     
     @Override
     public StringBuilder readOut() {
-
-        try {
             StringBuilder sw = new StringBuilder(crypt.getUnCrypted(super.readOut().toString()));
             return sw;
-        } catch ( Exception e ) {
-            return new StringBuilder("");
-        }
-        
     }
     public InputStream getReadOutStream() {
        try {  

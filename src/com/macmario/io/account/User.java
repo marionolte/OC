@@ -30,8 +30,8 @@ abstract public class User {
     public String genStrongPassword() { return GenPassword.getPassword(PasswordTyp.STRONG); }
     public String genEasyPassword() { return GenPassword.getPassword(PasswordTyp.EASY); }
     
-    public void setUsername(String user) { this.user=getUnCrypted(user); }
-    public void setPassword(String pass) { this.pass=getUnCrypted(pass); }
+    public void setUsername(String user) { this.user=getCrypted(getUnCrypted(user)); }
+    public void setPassword(String pass) { this.pass=getCrypted(getUnCrypted(pass)); }
     
     public boolean isPasswordSet() { return (this.pass!=null);}
     public boolean isUsernameSet() { return (this.user!=null);}

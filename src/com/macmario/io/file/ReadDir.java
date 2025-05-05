@@ -36,10 +36,13 @@ public class ReadDir extends Version{
     private File getCanonical(File d) {
         final String sepa="__@@__";
         final ArrayList<String> ar = new ArrayList();
-        String[] sp= d.getAbsolutePath().replaceAll("^~", System.getProperty("user.home"))
-                                        .replaceAll("^.$", System.getProperty("user.dir")+File.separator )
-                                        .replaceAll("^."+File.separator, System.getProperty("user.dir")+File.separator)
-                      .split(File.separator);
+        String _userd = System.getProperty("user.dir");
+        
+        String[] sp= ((isUnix())? d.getAbsolutePath().replaceAll("^~", System.getProperty("user.home"))
+                                        .replaceAll("^.$", System.getProperty("user.dir")+_FS)
+                                        .replaceAll("^."+_FS, _userd+_FS)
+                                : d.getAbsolutePath()
+                      ).split(_FS);
         for(String s : sp) {
             if ( ! s.isEmpty() ) {
                 if ( s.equals("..") ) { ar.remove(ar.size()-1); }
@@ -49,9 +52,9 @@ public class ReadDir extends Version{
         }
         
         StringBuilder sw = new StringBuilder(sepa);
-        while( ar.size() > 0 ) {sw.append(ar.remove(0)).append(sepa); }
+        while( ! ar.isEmpty() ) {sw.append(ar.remove(0)).append(sepa); }
         
-        return new File(sw.toString().replaceAll(sepa, File.separator));
+        return new File(sw.toString().replaceAll(sepa, _FS));
     }
 
     public boolean isDirectory() { return ( this.readDir.isDirectory() ) ? true : false;  }
@@ -66,7 +69,7 @@ public class ReadDir extends Version{
     public String[] getFiles(){ return loadDir(false); }
     public String[] getDirectories() { return loadDir(true); }
     
-    public ReadFile getFile(String file) {  return new ReadFile( this.getFQDNDirName()+File.separator+file); }
+    public ReadFile getFile(String file) {  return new ReadFile( this.getFQDNDirName()+_FS+file); }
 
     public String[] loadDir(boolean dir){
         String[] s = new String[] {};
@@ -75,11 +78,11 @@ public class ReadDir extends Version{
         if ( this.readDir.lastModified() == 0 ||this.readDir.lastModified() > modified ) {
              //System.out.println("read directory");
              fileList=""; dirList="";
-             if (! this.file.equalsIgnoreCase(java.io.File.separator) ) { dirList=".."; }
-             //System.out.println("readDir:"+readDir);
+             if (! this.file.equalsIgnoreCase(_FS) ) { dirList=".."; }
+             System.out.println("readDir:"+readDir);
              for ( String f : readDir.list() ) {
-                 if ( f.equals("\\.") || f.equals("\\.\\.") ) { continue; }
-                 File io =new File(file+java.io.File.separator+f);
+                 if ( f.equals(".") || f.equals("..") ) { continue; }
+                 File io =new File(file+_FS+f);
                  if ( io.isFile() ) {
                      if ( fileList.isEmpty() ) {
                           fileList=""+f;
@@ -136,7 +139,7 @@ public class ReadDir extends Version{
         for ( String d : myfiles ) {
             if ( ! d.isEmpty() ) {
                 printf(func,3,"add file "+d+" to Directories of "+baseD);
-                ar.add(baseD+File.separator+d);
+                ar.add(baseD+_FS+d);
             }
         }
         printf(func,3,"find "+ar.size()+" files in Directory "+baseD+ " check SubDir:"+subDir);
@@ -147,14 +150,14 @@ public class ReadDir extends Version{
                 String df = this.getFQDNDirName();
                 for( String d : ap ) {
                     if ( ! d.isEmpty() && ! d.matches(".") && ! d.matches("..") ) {
-                        ReadDir rd = new ReadDir(df+File.separator+d);
+                        ReadDir rd = new ReadDir(df+_FS+d);
                         if ( rd.isDirectory() ) {
                             printf(func,3,"run Directories in "+rd.getFQDNDirName() );
                             String[] mp = rd.getFiles(filter, subDir );
                             for ( String f : mp ) {
                                 if ( ! f.isEmpty() ) {
                                     printf(func,3,"add File "+f+" from directories "+baseD);
-                                    ar.add(baseD+File.separator+f);
+                                    ar.add(baseD+_FS+f);
                                 }
                             }
                             printf(func,2,"run complete in directory "+rd.getFQDNDirName() +" -  find "+mp.length+" files");
@@ -213,7 +216,7 @@ public class ReadDir extends Version{
     
     
     public void deleteFiles() {
-        String base=readDir.getAbsolutePath()+File.separator;
+        String base=readDir.getAbsolutePath()+_FS;
         for ( String sp : getFiles()) {
              if ( ! sp.equals("\\.") && ! sp.equals("\\.\\.") ) {
                  WriteFile fd = new WriteFile(base+sp);
@@ -230,8 +233,8 @@ public class ReadDir extends Version{
     public boolean isSubDirectory(String f) { return isSubDirectory(new File(f));  }
     public boolean isSubDirectory(File f) { 
         
-        String o = readDir.getAbsolutePath().replaceAll(File.separator, ":");
-        String a = f.getAbsolutePath().replaceAll(File.separator, ":");
+        String o = readDir.getAbsolutePath().replaceAll(_FS, ":");
+        String a = f.getAbsolutePath().replaceAll(_FS, ":");
         boolean b=( a.startsWith(o) || o.startsWith(a));
         return b;
     }

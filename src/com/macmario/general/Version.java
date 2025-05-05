@@ -32,7 +32,7 @@ public abstract class Version  { //extends OraConst {
     final public static int minorVersion=0;
     final public static int patchVersion=5;
     final public static int fixedVersion=8;
-    final public static int   libVersion=3;
+    final public static int   libVersion=4;
     final public static int  betaVersion=1;
     
     static {
@@ -187,12 +187,13 @@ public abstract class Version  { //extends OraConst {
     public final boolean compareBetaMD5(String md5) { return (this.betaMD5.matches(md5)); }
     public final boolean compateReleaseMD5(String md5) { return (this.releaseMD5.matches(md5)); }
     
-    static public final boolean isWindows() { return OSNAME.contains("win"); } 
+    static public final boolean isWindows() { return (OSNAME.contains("win") || isCygwin() ) ; } 
     static public final boolean isUnix()    { return !isWindows(); } 
-    static public final boolean isMac()     { return (OSNAME.contains("mac")) || (OSNAME.contains("mac")); } 
+    static public final boolean isMac()     { return (OSNAME.contains("mac")); } 
     static public final boolean isSolaris() { return (OSNAME.contains("sunos")) || (OSNAME.contains("solaris")); } 
     static public final boolean isAIX()     { return OSNAME.contains("aix");}
-    static public final boolean isLinux()   { return OSNAME.contains("linux"); }
+    static public final boolean isLinux()   { return OSNAME.contains("linux");  }
+    static public final boolean isCygwin()  { return OSNAME.contains("cygwin"); }
     
     
     public static String jarfile;
@@ -294,4 +295,6 @@ public abstract class Version  { //extends OraConst {
        return b;
     }
     final static public boolean isNotNullOrEmpty(Object s) { return ! isNullOrEmpty(s); }
+    
+    public final String _FS = (isUnix())?File.separator:"\\\\";
 }

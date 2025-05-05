@@ -51,43 +51,50 @@ public class ReadFile extends Version {
     private StringBuilder sb=null;
     public  int debug=0;
     public ReadFile(String dir, String file){
-        this(dir+File.separator+file);
+        this(dir+((isUnix())?File.separator:"\\\\")+file);
     }
 
     public ReadFile(String nfile){
-        this( new File(nfile.replaceAll("^~", System.getProperty("user.home")+File.separator)) );
+        this( new File(nfile.replaceAll("^~", System.getProperty("user.home")+((isUnix())?File.separator:"\\\\"))) );
     }
 
     public ReadFile(File file) {
-        boolean b = file.isFile();
-         this.filer= ( b )? getCanonical(file):file;
-         this.file = ( b )? file.getName():file.toString();
-         this.dir  = ( b )? file.getParent():getPar(file.toString());
-         
+        if ( file != null ) {
+            boolean b = file.isFile();
+             this.filer= ( b )? getCanonical(file):file;
+             this.file = ( b )? file.getName():file.toString();
+             this.dir  = ( b )? file.getParent():getPar(file.toString());
+        } else {
+            this.filer=file;
+            this.file ="NULL";
+            this.dir  ="NULL";
+        } 
          //System.out.println("file:"+filer.toString());
     }
 
     private String getPar(String f) {
         StringBuilder sw = new StringBuilder();
-        if ( f.indexOf(File.separator) > 0 ) {
-            String[] sp = f.split(File.separator); 
+        if ( f.indexOf(_FS) > 0 ) {
+            String[] sp = f.split(_FS); 
             for ( int i=0; i<sp.length-1; i++  ) {
-                if ( sw.capacity() > 0 ) { sw.append(File.separator); }
+                if ( sw.capacity() > 0 ) { sw.append(_FS); }
                 if      ( sp[i].matches("~") ) { sw.append(System.getProperty("user.home")); } 
                 else if ( sp[i].matches(".") ) { sw.append(System.getProperty("user.dir"));  }
                 else { sw.append(sp[i]); }
             }
             
-        } else { sw.append(System.getProperty("user.dir")); }
+        } else { return System.getProperty("user.dir"); }
         return sw.toString();
     }
     private File getCanonical(File d) {
         final String sepa="__@@__";
-        final ArrayList<String> ar = new ArrayList();
-        String[] sp= d.getAbsolutePath().replaceAll("^~", System.getProperty("user.home"))
-                                        .replaceAll("^.$", System.getProperty("user.dir")+File.separator )
-                                        .replaceAll("^."+File.separator, System.getProperty("user.dir")+File.separator)
-                      .split(File.separator);
+        final ArrayList<String> ar = new ArrayList<>();
+        
+        String[] sp= ((isUnix())? d.getAbsolutePath().replaceAll("^~", System.getProperty("user.home"))
+                                        .replaceAll("^.$", System.getProperty("user.dir")+_FS )
+                                        .replaceAll("^."+_FS, System.getProperty("user.dir")+_FS)
+                                 : d.getAbsolutePath()
+                      ).split(_FS);
         for(String s : sp) {
             if ( ! s.isEmpty() ) {
                 if      ( s.equals("..")) { ar.remove(ar.size()-1); }
@@ -100,7 +107,7 @@ public class ReadFile extends Version {
         StringBuilder sw = new StringBuilder(sepa);
         while( ar.size() > 0 ) { sw.append(ar.remove(0)).append(sepa); }
         
-        return new File(sw.toString().replaceAll(sepa, File.separator));
+        return new File(sw.toString().replaceAll(sepa, _FS));
     }
     
     public boolean isModified(long d) { return ( filer.lastModified() > d );    }
@@ -219,10 +226,9 @@ public class ReadFile extends Version {
 
     public String getString() { checkLog(); return (sb == null )? "":sb.toString() ; }
 
-    private ArrayList attr ;
     public ArrayList getMap(StringBuilder readOut) {
         final String meth="getMap(StringBuilder readOut)";
-        attr = new ArrayList();
+        ArrayList<String[]> attr = new ArrayList<>();
         if ( readOut != null ) {
                 String[] sp = readOut.toString().split("\\n");
                 for ( int i=0; i<sp.length; i++) {
@@ -235,7 +241,7 @@ public class ReadFile extends Version {
                             String v=sp[i].substring( j );
                             k=k.replaceAll(" ", "");
                             v=v.replaceFirst(" ", "");
-                            attr.add( new String[] {k,v}  );
+                            attr.add( (new String[] {k,v})  );
 
                     }
                 }
@@ -405,14 +411,14 @@ public class ReadFile extends Version {
     public String getFQDNFileName() { return this.filer.toString(); }
     public String getFileName()     { return this.filer.getName(); }
     public Long   getSize()         { return this.filer.length();  }
-    public String getFQDNName()     { return this.filer.getAbsolutePath()+File.separator+File.separator+this.filer.getName(); }
+    public String getFQDNName()     { return this.filer.getAbsolutePath()+_FS+_FS+this.filer.getName(); }
     
     public String getDirName()      { 
-        String[] sp = getFQDNFileName().split(File.separator);
+        String[] sp = getFQDNFileName().split(_FS);
         StringBuilder sw=new StringBuilder();
-        if ( ! filer.toString().startsWith(File.separator)) { sw.append("."); }
+        if ( ! filer.toString().startsWith(_FS)) { sw.append("."); }
         for(int i=0; i<sp.length-1; i++ ) {
-            sw.append(File.separator).append(sp[i]);
+            sw.append(_FS).append(sp[i]);
         }
         // System.out.println("FILE DIR:"+sw.toString()+":");
         return sw.toString(); 
@@ -455,7 +461,7 @@ public class ReadFile extends Version {
     }
     
     public  HashMap<String, String> getLines(int[] line) {
-        HashMap<String, String> imap = new HashMap();
+        HashMap<String, String> imap = new HashMap<>();
         try {
             java.io.BufferedReader is = new java.io.BufferedReader(new java.io.InputStreamReader(new java.io.FileInputStream(filer)));
             String inputLine; 
@@ -478,13 +484,13 @@ public class ReadFile extends Version {
     
     private final String _not="__@@NOT@@__";
     
-    HashMap<String,HashMap<String,String>> check_mp=new HashMap();
+    HashMap<String,HashMap<String,String>> check_mp=new HashMap<>();
     public void diffReady() {
         final String func="diffReady()";
         MD5 md5 = new MD5();
         if ( check_mp.size() > 1 ) { return; }
         try {
-            HashMap<String,String> lines = new HashMap();
+            HashMap<String,String> lines = new HashMap<>();
             check_mp.put("lines", lines);
             java.io.BufferedReader is = new java.io.BufferedReader(new java.io.InputStreamReader(new java.io.FileInputStream(filer)));
             String inputLine;
@@ -509,7 +515,7 @@ public class ReadFile extends Version {
         final String func=getFunc("getDiff(ReadFile f)");
         HashMap<String,String> lines =   check_mp.get("lines");
         HashMap<String,String> line1 = f.check_mp.get("lines");
-        ArrayList<String> list = new ArrayList();
+        ArrayList<String> list = new ArrayList<>();
         Iterator<String> itter = lines.keySet().iterator();
         while( itter.hasNext() ) {
             final String k = itter.next();
@@ -544,7 +550,7 @@ public class ReadFile extends Version {
         if ( ! b.matches(a) ) {
             if ( a.isEmpty() ) { return b.split(","); }
             if ( b.isEmpty() ) { return a.split(","); }
-            ArrayList<String> ar = new ArrayList();
+            ArrayList<String> ar = new ArrayList<>();
             String [] sp = a.split(",");
             String [] s1 = b.split(",");
             for (String s : sp ) {
@@ -574,7 +580,7 @@ public class ReadFile extends Version {
     public Iterator loadObjects(){ return loadObjects(null); }
     public Iterator loadObjects(Object o) {
         final String func="loadObjects(Object o) - ";
-        HashMap m = new HashMap();
+        HashMap<Object,Object> m = new HashMap<>();
         try {
            if ( oin == null ) oin= new ObjectInputStream( new BufferedInputStream( new FileInputStream(this.filer) ) );
            Object obj;
@@ -706,7 +712,7 @@ public class ReadFile extends Version {
             ZipEntry ze = ins.getNextEntry();
             while (ze != null) {
                     //System.out.println(goal.getFQDNDirName()+"|"+ze.getName());
-                    String fa = goal.getFQDNDirName()+File.separator+ze.getName().replaceAll("/", File.separator);
+                    String fa = goal.getFQDNDirName()+_FS+ze.getName().replaceAll("/", _FS);
                     if ( ze.isDirectory() ) {
                          (new ReadDir(fa)).createDirectoryIfNotExists();
                     } else {
@@ -778,7 +784,7 @@ public class ReadFile extends Version {
     public String[] getZipIndex() {
         if ( ! this.exist() ){ return new String[]{}; }
         ZipInputStream ins = getUnzipStream();
-        ArrayList<String> ar = new ArrayList();
+        ArrayList<String> ar = new ArrayList<>();
         try {
             ZipEntry ze = ins.getNextEntry();
             while ( ze != null ) {
@@ -826,7 +832,7 @@ public class ReadFile extends Version {
         
         boolean onError=false;
         
-        private final ArrayList<String> ar = new ArrayList();
+        private final ArrayList<String> ar = new ArrayList<>();
         
         String read() {
             synchronized(lock) {
