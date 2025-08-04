@@ -102,7 +102,6 @@ class CryptHigh extends Version {
           catch (RuntimeException       re)   { printf(func,1,"strength isRestricted set error : "       +re.getMessage(),re); }
         
         try { 
-                //cipher= Cipher.getInstance("AES/ECB/NoPadding", "SunJCE");
                 cipher = Cipher.getInstance(secCipher, "SunJCE");
         }
         catch( NoSuchAlgorithmException | NoSuchProviderException | NoSuchPaddingException ne ){
@@ -234,16 +233,16 @@ class CryptHigh extends Version {
           SecretKeySpec key ;
           IvParameterSpec iv ;
 	  try {	
-                log(func,1,"enKey:"+enkey.length()+"(64)   pw:"+pw.length()+"(16)");
+                log(1,func+" enKey:"+enkey.length()+"(64)   pw:"+pw.length()+"(16)");
                  key = new SecretKeySpec(getBytes(updateLength(enkey,64)), secCipher);
                   iv = new IvParameterSpec(getBytes(updateLength(pw, 16)));
                 //log(func,1, key.
 		cipher.init(Cipher.ENCRYPT_MODE, key, iv);
-                log(func, 1, "encrption text length="+plainText.length()+"  mod="+(plainText.length()%16));
+                log(1,func+" encrption text length="+plainText.length()+"  mod="+(plainText.length()%16));
 		return cipher.doFinal(updateLength(plainText,64).getBytes("UTF-8"));
           } catch (Exception e) {
               doing=false;
-              log(func, 1, "encrption error unlimited strength - "+e.getMessage(),e);
+              log(1, func+" encrption error unlimited strength - "+e.getMessage(),e);
               
           }  
           
@@ -256,14 +255,14 @@ class CryptHigh extends Version {
         int size=(str.length() % len);
         if ( size == 0 ) { return str; }
         StringBuilder sw=new StringBuilder(); sw.append(str);
-        log(func, 3, "size:"+size+" base are :"+len);
+        log(3,func+" size:"+size+" base are :"+len);
         int c=0;
         if (size != 0 ) {
             while( (size+c) < len ) {
                 sw.append("\0"); c++;
             }
         }    
-        log(func, 3, "new size "+sw.length()+" test:"+(sw.length()%len)+" have added "+c+" null" );
+        log(3,func+" new size "+sw.length()+" test:"+(sw.length()%len)+" have added "+c+" null" );
         return sw.toString();
     }
     
@@ -331,7 +330,7 @@ class CryptHigh extends Version {
                 printf(func,3,"s:"+s+":  len:"+s.length()+"  mod:"+(s.length()%16));
                 return s;
          } catch (Exception e) {
-             log(func, 1, "encrption error (with unlimited size)- "+e.getMessage(),e);
+             log(1, func+" encrption error (with unlimited size)- "+e.getMessage(),e);
          }
          
          return null;       
@@ -350,7 +349,7 @@ class CryptHigh extends Version {
 		cipher.init(Cipher.DECRYPT_MODE, key,iv);
 		return cipher.doFinal(cipherText);
          } catch (Exception e) {
-             log(func, 1, "encrption error (with unlimited size)- "+e.getMessage(),e);
+             log(1,func+" encrption error (with unlimited size)- "+e.getMessage(),e);
          }
          
          return cipherText;       
@@ -363,18 +362,9 @@ class CryptHigh extends Version {
               String en = c.getCrypted(s);
               String de = c.getUnCrypted(en);
               String ma = ( s.equals(de) )?"YES":"NO";
-              c.log("main(String[] args)",0,"TESTING:"+s+":\nENCODED :"+en+":\nDECODED :"+de+":\nMATCHING:"+ma+"\n");
+              c.log(0,"main(String[] args) TESTING:"+s+":\nENCODED :"+en+":\nDECODED :"+de+":\nMATCHING:"+ma+"\n");
             }  
          }
     }
     
-    
-    private void log(String func, int level, String msg) {
-        println(level,func+" - "+msg);
-    }
-    private void log(String func, int level, String msg, Exception e) {
-         log(func,level,msg);
-         log(func,level, "Exception trown with "+e.getMessage());
-         e.printStackTrace();
-    }
 }

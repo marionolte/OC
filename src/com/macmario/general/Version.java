@@ -30,8 +30,8 @@ public abstract class Version  { //extends OraConst {
     final public static String prodauthor="Mario Nolte";
     final public static int majorVersion=0;
     final public static int minorVersion=0;
-    final public static int patchVersion=5;
-    final public static int fixedVersion=9;
+    final public static int patchVersion=6;
+    final public static int fixedVersion=0;
     final public static int   libVersion=0;
     final public static int  betaVersion=1;
     
@@ -118,6 +118,10 @@ public abstract class Version  { //extends OraConst {
     public static String debugTrace=null;
     public static Logger logger = null;
     //private static FileHandler fh; 
+    public void log(int level, String msg, Exception e) {
+         log(level,msg);
+         if ( debug >1 ) {  e.printStackTrace(); }  
+    }
     public void log(int level, String msg){
         if ( level <= debug || debug > maxdebug ) {
             log("DEBUG["+level+"/"+debug+"] "+msg);
@@ -274,6 +278,7 @@ public abstract class Version  { //extends OraConst {
     
     
     final static public boolean getBooleanValue(String key) { return ( key!=null && ( key.equals("1") ||key.toLowerCase().equals("true") ) )?true:false; }
+    final static public boolean getBoolean(String key     ) { return getBooleanValue(key); }
     final static public int     getInt(String key) {  
             try{ return Integer.parseInt(key);}
             catch(NullPointerException|NumberFormatException ne){} 
@@ -287,10 +292,13 @@ public abstract class Version  { //extends OraConst {
     final static public boolean isNullOrEmpty(Object s) { 
        boolean b=false;  
        if ( s == null ) { b=true; } else {       
-            if      (s instanceof String    st )       return st.isEmpty(); 
-            else if (s instanceof ArrayList  a )       return  a.isEmpty(); 
-            else if (s instanceof HashMap    h )       return  h.isEmpty();
-            else if (s instanceof Properties p )       return  p.isEmpty();
+            if      (s instanceof String        st)    return st.isEmpty(); 
+            else if (s instanceof String[]      st)    return st.length==0; 
+            else if (s instanceof StringBuilder st)    return st.isEmpty();
+            else if (s instanceof StringBuffer  st)    return st.isEmpty();
+            else if (s instanceof ArrayList      a)    return  a.isEmpty(); 
+            else if (s instanceof HashMap        h)    return  h.isEmpty();
+            else if (s instanceof Properties     p)    return  p.isEmpty();
        }
        return b;
     }
