@@ -18,7 +18,7 @@ public class GitConfig {
           private final HashMap<String, HashMap> map;
     GitConfig(String file) { 
          conf = new ReadFile(file);
-         map = new HashMap();
+         map  = new HashMap<>();
          map.put("global", new HashMap<String,String>());
          read=0L;
          read();
@@ -32,11 +32,11 @@ public class GitConfig {
     
     String getRepo(String branch) {
         read();
-        HashMap<String, String> mp = map.get(branch);
+        HashMap<String, String> mp = (HashMap<String, String>) map.get(branch);
         if ( mp != null ) {
             String ret = mp.get("url");
             if ( ret == null || ret.isEmpty() ) {
-                mp = map.get( mp.get("remote") );
+                mp = (HashMap<String, String>) map.get( mp.get("remote") );
                 if ( mp != null ) {
                     ret = mp.get("url");
                 }
@@ -50,7 +50,7 @@ public class GitConfig {
     private void read() {
         if ( conf.isReadableFile() && read < conf.getLastModified() ) {
              String _mkey="global";
-             HashMap<String, String> _map = map.get(_mkey);
+             HashMap<String, String> _map = (HashMap<String, String>) map.get(_mkey);
              for ( String line : conf.readOut().toString().split("\n") ) {
                  if ( ! line.startsWith("#")) {
                    if ( line.startsWith("[") ) {
@@ -59,8 +59,8 @@ public class GitConfig {
                       if ( sp.length > 1 ) {
                           nam = sp[1].replaceAll("^\"", "").replaceAll("\"$", "");
                       }
-                      _map = map.get(nam);
-                      if ( _map == null ) { _map = new HashMap(); }
+                      _map = (HashMap<String, String>) map.get(nam);
+                      if ( _map == null ) { _map = new HashMap<>(); }
                       _map.put("type", brz);
                       _map.put("name", nam);
                    } else {

@@ -5,17 +5,17 @@
  */
 package com.macmario.io.file;
 
-import com.macmario.io.crypt.Base64;
+//import com.macmario.io.crypt.Base64;
 import com.macmario.io.crypt.Crypt;
 import com.macmario.io.thread.RunnableT;
 import java.io.ByteArrayInputStream;
 import java.util.Properties;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,7 +38,7 @@ public class SecFile extends ReadFile {
         printf(func,2,"create crypt ");
         
         this.crypt = new Crypt();
-        printf(func,2,"add custom key");
+        printf(func,2,"add custom key "+rFile.getFQDNFileName());
         this.crypt.setCustomKey(rFile.getFQDNFileName());
         printf(func,2,"set crypt level secFile");
         setCryptLevel(1);
@@ -107,7 +107,7 @@ public class SecFile extends ReadFile {
                     i=in.read(b);
                     byte[] bi = new byte[i]; for(int j=0; j<i; i++ ) { bi[j]=b[j]; }
             
-                    sw.append( crypt.getCrypted(new String( Base64.encode( bi ) ) )).append("\n");
+                    sw.append( crypt.getCrypted(new String( Base64.getEncoder().encode( bi ) ) )).append("\n");
                   
                 }
             } catch(java.io.IOException io ) {

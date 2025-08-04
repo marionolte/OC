@@ -31,8 +31,8 @@ public abstract class Version  { //extends OraConst {
     final public static int majorVersion=0;
     final public static int minorVersion=0;
     final public static int patchVersion=5;
-    final public static int fixedVersion=8;
-    final public static int   libVersion=4;
+    final public static int fixedVersion=9;
+    final public static int   libVersion=0;
     final public static int  betaVersion=1;
     
     static {
@@ -296,5 +296,5 @@ public abstract class Version  { //extends OraConst {
     }
     final static public boolean isNotNullOrEmpty(Object s) { return ! isNullOrEmpty(s); }
     
-    public final String _FS = (isUnix())?File.separator:"\\\\";
+    public final static String _FS = (isUnix())?File.separator:"\\\\";
 }

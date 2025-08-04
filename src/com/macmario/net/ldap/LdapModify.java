@@ -148,7 +148,7 @@ public class LdapModify extends LdapMain {
     
     public  String  getLdifFile() { return ( map.get("-lf").equals( map.get("_default_lf") ) )?null:map.get("-lf"); }
     private boolean insert = false;
-    private HashMap<String, BasicAttributes> imap =  new HashMap();
+    private HashMap<String, BasicAttributes> imap =  new HashMap<>();
     private void insertMod() {
         final String func=getFunc("insertMod()"); 
         Iterator<String> itter = imap.keySet().iterator();
@@ -239,7 +239,7 @@ public class LdapModify extends LdapMain {
                                 if ( sp[0].equals("dn:") ) {
                                      dn  = sp[ sp.length -1 ];
                                      nam = new CompositeName().add( dn );
-                                     ar = new ArrayList(); ops=""; 
+                                     ar = new ArrayList<>(); ops=""; 
                                      op = DirContext.REPLACE_ATTRIBUTE;
                                 } else if ( sp[0].equals("") || sp[0].equals("-")) {
                                     if ( nam != null ) {

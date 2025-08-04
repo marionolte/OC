@@ -51,11 +51,14 @@ package com.macmario.net.ssl;
  */
 
 
+import com.macmario.general.Version;
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -67,18 +70,21 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Formatter;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
-public class TestSSLServer {
+public class TestSSLServer extends Version{
 
 	static void usage()
 	{
@@ -99,7 +105,7 @@ public class TestSSLServer {
         public TestSSLServer(String ho, int po) {
                this.name=ho;
                this.port=po;
-               this.map=new HashMap();
+               this.map=new HashMap<>();
         }
         
         static public boolean isValid() { return _success; }
@@ -176,7 +182,9 @@ public class TestSSLServer {
 			if (lastSuppCS == null || !lastSuppCS.equals(vsc)) {
 				System.out.println("  " + versionString(v));
 				for (int c : vsc) {
-					System.out.println("     " + cipherSuiteString(c));
+                                        String txt = cipherSuiteString(c);
+                                        String b  = ( isSecureCipher(txt) )?"(OK)":"(WEAK)";
+					System.out.printf("     %-50s\t%s\n",txt,b);
 				}
 				lastSuppCS = vsc;
 			} else {
@@ -216,11 +224,17 @@ public class TestSSLServer {
                                 if ( imap != null ) {
                                     sw.append("\n\t Serial:\t").append(imap.get("serial"));
                                     long d = getCalendar(imap.get("notbefore"));  certOK = ( certOK && now > d );
+                                    
                                     sw.append("\n\t NotBefore:\t").append(imap.get("notbefore"))
                                             .append(" (").append( ((now>d)?"OK":"FAILED") ).append(")"); 
                                          d = getCalendar(imap.get("notafter")); certOK = ( certOK && now < d );
                                     sw.append("\n\t NotAfter:\t").append(imap.get("notafter"))
                                             .append(" (").append( ((now<d)?"OK":"FAILED") ).append(")");
+                                    sw.append("\n\t Issuer:\t").append(imap.get("issuer"))
+                                                               .append(" (")
+                                                               .append( ( (imap.get("trusted").equals("true") )?"":"not ") )
+                                                               .append("trusted)");
+                                    //System.out.println("imap:"+imap);
                                 } else {
                                     System.out.println("ERORR: no certificates for :"+cc);  certOK=false;
                                 }
@@ -241,11 +255,42 @@ public class TestSSLServer {
                 
         }
         
+        private static List<String> SECURE_CIPHER_SUITES = null;
+        
+        private static boolean isSecureCipher(String txt) {
+            if ( isNotNullOrEmpty(txt)){
+               if ( isNullOrEmpty(SECURE_CIPHER_SUITES ) ) {
+                   SECURE_CIPHER_SUITES= getAllLineList( TestSSLServer.class.getResourceAsStream("/com/macmario/net/ssl/ciphersuites.properties") );
+                   if ( isNullOrEmpty(SECURE_CIPHER_SUITES ) ) { 
+                       return false;
+                   }
+               }
+               return SECURE_CIPHER_SUITES.contains(txt);
+            }
+            return false;
+        }
+        
+        private static List<String> getAllLineList(InputStream in) {
+            try ( BufferedReader reader = new BufferedReader(new InputStreamReader(in)) ) {
+                return reader.lines().collect(Collectors.toList());              
+            } catch(IOException|NullPointerException io) {
+                return null;    
+            }            
+        }
+        
         private static long getCalendar(String date) {
-            //System.out.println("date income: "+date);
+            //System.out.println("date income |"+date+"|");
             Calendar cal = Calendar.getInstance();
-            SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM dd HH:mm:ss z yyyy");
-            try { cal.setTime( sdf.parse(date) ); } catch(Exception e) {}
+            if ( isNotNullOrEmpty(date)) {
+                SimpleDateFormat sdf = sdf = new SimpleDateFormat("EEE MMM dd HH:mm:ss z yyyy", Locale.ENGLISH); 
+                try { cal.setTime( sdf.parse(date) ); } catch(Exception e) {
+                     //System.out.println("Parsing ERROR "+date+" reason:"+e.getMessage());
+                     sdf = new SimpleDateFormat("EEE MMM dd HH:mm:ss z yyyy");
+                     try { cal.setTime( sdf.parse(date) ); } catch(Exception ex) {
+                         //System.out.println("Parsing ERROR "+date+" reason:"+ex.getMessage());
+                     }
+                }
+            }    
             //System.out.println("date return: "+cal.getTime().toString());
             return cal.getTimeInMillis();
         } 
@@ -279,8 +324,7 @@ public class TestSSLServer {
 	 * selected. We keep on until the server can no longer respond
 	 * to us with a ServerHello.
 	 */
-	static Set<Integer> supportedSuites(InetSocketAddress isa, int version,
-		Set<String> serverCertID)
+	static Set<Integer> supportedSuites(InetSocketAddress isa, int version, Set<String> serverCertID)
 	{
 		Set<Integer> cs = new TreeSet<Integer>(CIPHER_SUITES.keySet());
 		Set<Integer> rs = new TreeSet<Integer>();
@@ -353,6 +397,9 @@ public class TestSSLServer {
                     imap.put("notbefore", sh.serverNotBefore.toString() );
                     imap.put("notafter" , sh.serverNotAfter.toString()  );
                     imap.put("serial",    sh.serverSerial);
+                    imap.put("issuer",    sh.serverIssuer);
+                    imap.put("trusted",  sh.serverCertTrusted);
+                    
                     
                     map.put(sh.serverCertHash, imap);
                     //System.out.println("key:"+sh.serverCertHash+":  cert:"+imap);
@@ -828,6 +875,8 @@ public class TestSSLServer {
 		int compression;
 		String serverCertName;
 		String serverCertHash;
+                String serverIssuer;
+                String serverCertTrusted;
                 Date   serverNotAfter;
                 Date   serverNotBefore;
                 String serverSerial="NOT";
@@ -946,12 +995,15 @@ public class TestSSLServer {
                                 serverNotBefore = xc.getNotBefore();
                                 serverNotAfter  = xc.getNotAfter();
                                 serverSerial    = ""+xc.getSerialNumber();
-                                
+                                serverIssuer    = xc.getIssuerX500Principal().getName();
+                                serverCertTrusted ="false";
                                 xc.checkValidity();
+                                serverCertTrusted ="true";
                                 
 			} catch (CertificateException e) {
                                 System.out.println("CertificateError : "+e.getMessage());
 				// ignored
+                                serverCertTrusted ="false";
 				return;
 			}
 		}

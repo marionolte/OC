@@ -18,7 +18,7 @@ public class SecDBFile extends Version{
     final private WriteFile db; 
     private final Crypt  crypt;
     
-    final private HashMap<String, HashMap<String,HashMap<String,String>>> ind = new HashMap();
+    final private HashMap<String, HashMap<String,HashMap<String,String>>> ind = new HashMap<>();
 
     public SecDBFile(ReadFile dbFile) {
          db= dbFile.getWriteFile();
@@ -55,7 +55,7 @@ public class SecDBFile extends Version{
     
     private HashMap<String,String> getArray(String ind1, String ind2 ) {
          HashMap<String, HashMap<String,String>> map = ind.get(ind1);
-         if ( map == null ) {  map=new HashMap();  ind.put(ind1, map); }
+         if ( map == null ) {  map=new HashMap<>();  ind.put(ind1, map); }
          HashMap<String,String> ar = map.get(ind2);
          if (  ar == null ) { 
                 ar=new HashMap<String,String>(); 

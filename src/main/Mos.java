@@ -14,7 +14,6 @@ import com.macmario.net.ssh.SSHshell;
 import com.macmario.general.Updater;
 import com.macmario.comm.mail.Imap;
 import com.macmario.io.Console;
-import com.macmario.io.account.PasswordTyp;
 import com.macmario.io.crypt.Crypt;
 import com.macmario.io.crypt.GetPassword;
 import com.macmario.io.db.SecDb;
@@ -40,6 +39,7 @@ import com.macmario.net.wls.WlsToolConfig;
 import com.macmario.net.wls.WlsUserEnv;
 import org.eclipselabs.garbagecat.GCMain;
 import com.macmario.net.ldap.LdapSearch;
+import java.net.URI;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 
@@ -70,8 +70,23 @@ public class Mos extends Updater{
         lib.fillJarMap(jarfile);
     }
     
+    private boolean testssl(String url) {
+        //System.out.println("url:"+url+":");
+        URI u; String ho=null; int po=-1;
+        try {
+            u = new URI(url);
+            ho = u.getHost();
+            po =u.getPort();
+            po =( po == -1 )?443:po;
+        } catch ( java.net.URISyntaxException io ){
+            System.out.println("ERROR:  URI not correct with "+url+" - reason:"+io.getMessage());
+            return false;
+        }    
+        return testssl(ho, po); 
+    }
     private boolean testssl(String ho, String po) { return testssl(ho, Integer.parseInt(po)); }
     private boolean testssl(String ho, int po   ) { 
+        System.out.println("test server "+ho+":"+po);
             TestSSLServer t = new TestSSLServer(ho,po);
                           t.test(); 
                           
@@ -178,14 +193,32 @@ public class Mos extends Updater{
         final String func=getFunc("parseArgs()");
         parseCompleted=false;
         try {
-            int argu=0;
-            for( int i=0; i<args.length; i++ ) {
-                if ( args[i].matches("-d")        ){ debug++; argu++; }
-            }
-            if ( argu == args.length ) { this.usage(); }  // goes direct out
+            if ( args.length > 0 ){
+                ArrayList<String> ar = new ArrayList<>();
+                for( int i=0; i<args.length; i++ ) {
+                    if ( args[i].equals("-d")        ){ debug++; }
+                    else { ar.add(args[i]); }
+                }
+                if  ( ar.isEmpty() ) { this.usage(); }
+                else {
+                    args=new String[ar.size()];
+                    for ( int j=0; j<ar.size();j++){ args[j]=ar.get(j); }
+                }                    
+            }    
             for( int i=0; i<args.length; i++ ) {
                 printf(func,3,"test args["+i+"/"+args.length+"]:"+args[i]+":");
-                if      ( args[i].matches("-testssl") ) { _exit = ( testssl(args[++i],args[++i])     )?0:1;   fin=true; }
+                if      ( args[i].equals("-testssl") ) { 
+                                                          String a1= args[++i];
+                                                          
+                                                          String a2= ( args.length>(i+1) )?args[++i]:null;
+                                                          printf(func,3,"testssl a1->:"+a1+":  a2->"+a2);
+                                                          if ( isNotNullOrEmpty(a2) ) {
+                                                              _exit = (  testssl(a1,a2) )?0:1;   
+                                                          } else { 
+                                                              _exit = (  testssl(a1)    )?0:1;   
+                                                          }                                                          
+                                                          fin=true; 
+                }
                 else if ( args[i].matches("-debugssl")) { System.setProperty("javax.net.debug","ssl"); }
                 else if ( args[i].matches("-sshcomm") ) { _exit = (sshCommand(getArgsLower(args,++i)))?0:1;   fin=true; printf(func,3, "INFO: sshComm parseArgs closed"); }
                 else if ( args[i].matches("-sshpass") ) { _exit = (sshScript(getArgsLower(args,++i)) )?0:1;   fin=true; printf(func,3, "INFO: sshScript  parseArgs closed"); }
@@ -204,8 +237,16 @@ public class Mos extends Updater{
                                                           fin=true;
                                                           _exit=(b)?0:1;
                                                         }
-                else if ( args[i].matches("-genpassword")){    String pw=""; i++; if( args.length>i ){ pw=args[i]; }                    
-                                                               System.out.println( getNewPassword(12, pw )  );                           
+                else if ( args[i].matches("-genpassword")){    String pw=""; i++; 
+                                                               int len=12;
+                                                               if ( args.length>i ) {
+                                                                    for( int j=i; i<args.length; i++, j++ ) {
+                                                                      if ( args[i].equals("-len") ) { len=getInt(args[++i]); } 
+                                                                       else{ pw=args[i]; }                                                                    
+                                                                    }
+                                                               }
+                                                               //System.out.println("pw:"+pw+": "+len);
+                                                               System.out.println( getNewPassword(len, pw )  );                           
                                                                                                                fin=true; _exit=0; }
                 else if ( args[i].matches("-logrotate") ){       this.logRotate(getArgsLower(args,++i));        fin=true; _exit=0; }
                 else if ( args[i].matches("-portscan")  ){       this.portScanner(getArgsLower(args,++i));      fin=true; _exit=0; }
@@ -608,8 +649,8 @@ public class Mos extends Updater{
            printf(func,3,"transfer files");  
            try {
                
-               ArrayList<String> fr = new ArrayList();
-               ArrayList<String> fl = new ArrayList();  
+               ArrayList<String> fr = new ArrayList<>();
+               ArrayList<String> fl = new ArrayList<>();  
                int way=-1;
                for (String arg : ssh.getCommand().split(" ") ) {
                    if      ( arg.matches("scp")   ) { } 

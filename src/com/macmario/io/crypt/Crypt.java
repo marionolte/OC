@@ -10,6 +10,7 @@ import com.macmario.io.file.WriteFile;
 import java.util.UUID;
 import main.Mos;
 import com.macmario.net.tcp.Host;
+import java.util.Base64;
 
 /**
  *
@@ -17,6 +18,9 @@ import com.macmario.net.tcp.Host;
  */
 public class Crypt extends Version {
     final private CryptHigh ch;
+    final private byte[] base64Alphabet;
+    final private int base64Length=255;
+    
     //final private CryptLow  cl;
           private CryptHigh hostch;
     //      private CryptLow  hostcl;
@@ -40,6 +44,7 @@ public class Crypt extends Version {
         } else{ 
             cl=new CryptLow(uuid);
         }*/
+        base64Alphabet = new byte[base64Length];
         init();
     }
     public Crypt(Mos m) {
@@ -97,6 +102,13 @@ public class Crypt extends Version {
             hostch=null;
             userch=null;
         }*/
+        
+        for (int i=0;   i<base64Length; i++ ) { this.base64Alphabet[i]=(byte) -1; }
+        for (int i='Z'; i>='A';         i-- ) { this.base64Alphabet[i]=(byte) (i-'A');    }
+        for (int i='z'; i>='a';         i-- ) { this.base64Alphabet[i]=(byte) (i-'a'+26); }
+        for (int i='9'; i>='0';         i-- ) { this.base64Alphabet[i]=(byte) (i-'0'+52); }
+        this.base64Alphabet[62]=(byte) '+';
+        this.base64Alphabet[63]=(byte) '/';
     }
     
     private UUID getUUIDCode(String info) {
@@ -134,13 +146,23 @@ public class Crypt extends Version {
     public boolean isCrypted(byte[] b) {
         boolean br=false;
         for (int i=0; i<b.length; i++) {
-            if ( ! Base64.isBase64(b[i]) ) {
+            if ( ! isBase64(b[i]) ) {
                 return false;
             } 
         } 
         //System.out.println("br last:"+b[ b.length-1 ]);
         if ( b[ b.length-1 ] == 61 ) { br=true; }
         return br;
+    }
+    
+    final private byte PAD = (byte)'=';
+    public boolean isBase64(byte oct) {
+        boolean ret=false;
+        if      ( oct == PAD                ) { ret=true; }
+        else if ( oct < 0                   ) { ret=false;}
+        else if ( base64Alphabet[oct] == -1 ) { ret=false;}
+        else                                  { ret=true; }
+        return ret;
     }
     
     public String getCrypted(String txt) {
@@ -205,11 +227,17 @@ public class Crypt extends Version {
         
         //String out=( cl == null )? ch.getUnCrypted(info) : cl.getUnCrypted(info);
         */
+        //System.out.println("in:"+info);
         String out= ch.getUnCrypted(info); 
+        //System.out.println("out1:"+out);
                out=getUnCryptedCust(out);
+        //System.out.println("out2:"+out);       
                out=getUnCryptedHost(out);
+        //System.out.println("out3:"+out);       
                out=getUnCryptedUser(out);
+        //System.out.println("out4:"+out);       
                out=getUnCryptedHost(out);
+        //System.out.println("outZ:"+out);       
         return out;
     }
     private String getUnCryptedHost(String info) {
@@ -275,7 +303,9 @@ public class Crypt extends Version {
     
     public void runArgs(String[] args) {
         boolean test = false;  String cust=Host.getHostname()+"1234@456789-0";
-         
+         for ( int i=0; i<args.length; i++ ) {
+             if ( args[i].equals("-d") ){ debug++;  ch.debug++; }
+         }
          for ( int i=0; i<args.length; i++ ) {
              if ( args[i].matches("-max") ) {
                     setCryptLevel(Integer.parseInt(args[++i]));
@@ -287,7 +317,7 @@ public class Crypt extends Version {
                  int j=args.length;
                  for( j=++i; j<args.length; j++) {
                    String s=args[j];
-                   if ( s.matches("\\-d") ){ debug++;  ch.debug++; } else { //if(cl!=null){cl.debug++;} } else { 
+                   if ( s.equals("-d") ){  } else { //if(cl!=null){cl.debug++;} } else { 
                      String en = getCrypted(s);
                      String de = getUnCrypted(en);
                      String ma = ( s.equals(de) )?"YES":"NO";
@@ -316,8 +346,9 @@ public class Crypt extends Version {
              else if (args[i].matches("-uncrypt") && ! test ) { 
                 WriteFile fa = new WriteFile(args[++i]);
                 if ( ! fa.isReadableFile() ) {
+                    //System.out.println("incoming:"+args[i]);
                     String s= getUnCrypted(args[i]);
-                    System.out.println(s);
+                    //System.out.println("outgoing:"+s);
                  } else {
                     if ( ! fa.isBinaryFile() )  {
                        String s= fa.readOut().toString();

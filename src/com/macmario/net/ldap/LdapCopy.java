@@ -158,7 +158,7 @@ public class LdapCopy extends LdapMain{
     
     private String[] getAuthHash(boolean b,String f) {
         
-        ArrayList<String> a = new ArrayList();
+        ArrayList<String> a = new ArrayList<>();
              for ( int i=1; i<= debug; i++) { a.add("-d"); }
      if ( protocol.equals("ldaps") ){ a.add("-ssl"); }
              a.add("-h"); a.add(    (b)?hostname:modhost );
@@ -299,12 +299,12 @@ public class LdapCopy extends LdapMain{
         printf(func,4,"copy complete");
     }
     
-    private ArrayList<Name> ReadOK    = new ArrayList();
-    private ArrayList<Name> ReadNOK   = new ArrayList();
-    private ArrayList<Name> ModOK     = new ArrayList();
-    private ArrayList<Name> ModNOK    = new ArrayList();
-    private ArrayList<Name> LookupOK  = new ArrayList();
-    private ArrayList<Name> LookupNOK = new ArrayList();
+    private ArrayList<Name> ReadOK    = new ArrayList<>();
+    private ArrayList<Name> ReadNOK   = new ArrayList<>();
+    private ArrayList<Name> ModOK     = new ArrayList<>();
+    private ArrayList<Name> ModNOK    = new ArrayList<>();
+    private ArrayList<Name> LookupOK  = new ArrayList<>();
+    private ArrayList<Name> LookupNOK = new ArrayList<>();
     
     private HashMap<String,HashMap<String,String>> tmap = new HashMap<String,HashMap<String,String>>(); 
     
@@ -396,7 +396,7 @@ public class LdapCopy extends LdapMain{
          }
     }
     
-    private RingBuffer<Name> rbuf = new RingBuffer(this.getPageSize());
+    private RingBuffer<Name> rbuf = (RingBuffer<Name>) new RingBuffer(this.getPageSize());
     private RingBuffer<HashMap<String, ArrayList<String>>> mbuf = new RingBuffer<HashMap<String, ArrayList<String>>>(this.getPageSize());
     
     private HashMap<String, ArrayList<String>> getLdapHash(SearchResult entry) {
@@ -526,11 +526,11 @@ public class LdapCopy extends LdapMain{
         private boolean modifyHash(HashMap<String, ArrayList<String>> imp) throws InvalidNameException {
             final String func=getFunc("modifyHash(HashMap<String, ArrayList<String>> imp)"); 
             HashMap<String, ArrayList<String>> mp = new HashMap<String, ArrayList<String>>();
-            ArrayList<String> ar = new ArrayList();
+            ArrayList<String> ar = new ArrayList<>();
                               ar.add( lc.getNewDN( imp.get("dn").get(0), lc.map.get("-b"), lc.map.get("-bc")) );
                               mp.put("dn", ar);
             
-                               ar = new ArrayList();
+                               ar = new ArrayList<>();
             ArrayList<String> iar = imp.get("objectclass");
                               if ( iar == null ) { 
                                   printf(func,1,"iar map fpr objectclass missing ->"+mp );
@@ -577,7 +577,7 @@ public class LdapCopy extends LdapMain{
                                              }  
                                         }
                                         if ( lc.restiktCopy ) {
-                                            ArrayList<String> arm = new ArrayList();
+                                            ArrayList<String> arm = new ArrayList<>();
                                             while ( ar.size() > 0 ) {
                                                 String sf = ar.remove(0);
                                                 if ( oc.get(sf) != null) { arm.add(sf); }
@@ -630,7 +630,7 @@ public class LdapCopy extends LdapMain{
             return true;
         }
         
-        private HashMap<String,String> auto = new HashMap();
+        private HashMap<String,String> auto = new HashMap<>();
         
         private String updateValue(String val, HashMap<String, String> tmap, HashMap<String, ArrayList<String>> imp,HashMap<String, ArrayList<String>> mp,String attr) {
             final String func=getFunc("updateValue(String val, HashMap<String, String> tmap, HashMap<String, ArrayList<String>> imp,HashMap<String, ArrayList<String>> mp,String attr)");
@@ -769,7 +769,7 @@ public class LdapCopy extends LdapMain{
                  }
                  nam  = new CompositeName().add( mp.get("dn").get(0) );
                  
-                 ArrayList<BasicAttribute> ar = new ArrayList();
+                 ArrayList<BasicAttribute> ar = new ArrayList<>();
                  Iterator<String> itter = mp.keySet().iterator();
                  while(itter.hasNext()) {
                      String k = itter.next();

@@ -66,8 +66,8 @@ public abstract class TcpHost extends MainTask{
     }
     
     
-    private HashMap<String,String> map = new HashMap(); 
-    private ArrayList<InetAddress> addr=new ArrayList();
+    private HashMap<String,String> map = new HashMap<>(); 
+    private ArrayList<InetAddress> addr=new ArrayList<>();
     
     public boolean isLocalAddress(String host){
         if ( host == null || host.isEmpty() ) { throw new RuntimeException("NULL is not a valid name for a host"); }

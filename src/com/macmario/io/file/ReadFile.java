@@ -46,28 +46,29 @@ import java.util.zip.ZipInputStream;
 public class ReadFile extends Version {
      
             File filer;
-    private String dir;
+    //private String dir;
     private String file;
     private StringBuilder sb=null;
-    public  int debug=0;
+    
     public ReadFile(String dir, String file){
-        this(dir+((isUnix())?File.separator:"\\\\")+file);
+        this(dir+_FS+file);
     }
 
     public ReadFile(String nfile){
-        this( new File(nfile.replaceAll("^~", System.getProperty("user.home")+((isUnix())?File.separator:"\\\\"))) );
+        this( new File(nfile.replaceAll("^~", System.getProperty("user.home")+_FS)) );
     }
 
     public ReadFile(File file) {
         if ( file != null ) {
-            boolean b = file.isFile();
+             //System.out.println("ReadFile file:"+file.getAbsolutePath()+":");
+             boolean b = file.isFile();
              this.filer= ( b )? getCanonical(file):file;
              this.file = ( b )? file.getName():file.toString();
-             this.dir  = ( b )? file.getParent():getPar(file.toString());
+             //this.dir  = ( b )? file.getParent():getPar(file.toString());
         } else {
             this.filer=file;
             this.file ="NULL";
-            this.dir  ="NULL";
+            //this.dir  ="NULL";
         } 
          //System.out.println("file:"+filer.toString());
     }
@@ -90,14 +91,14 @@ public class ReadFile extends Version {
         final String sepa="__@@__";
         final ArrayList<String> ar = new ArrayList<>();
         
-        String[] sp= ((isUnix())? d.getAbsolutePath().replaceAll("^~", System.getProperty("user.home"))
+        String[] sp= ( (isUnix() && ! isCygwin() )? d.getAbsolutePath().replaceAll("^~", System.getProperty("user.home"))
                                         .replaceAll("^.$", System.getProperty("user.dir")+_FS )
                                         .replaceAll("^."+_FS, System.getProperty("user.dir")+_FS)
                                  : d.getAbsolutePath()
                       ).split(_FS);
         for(String s : sp) {
             if ( ! s.isEmpty() ) {
-                if      ( s.equals("..")) { ar.remove(ar.size()-1); }
+                if      ( s.equals("..")) { if ( ar.size()-1 > 0 ) ar.remove(ar.size()-1); }
                 else if ( s.equals(".") ) {}
                 else if ( s.equals("~") ) {}
                 else { ar.add(s); }
@@ -174,7 +175,7 @@ public class ReadFile extends Version {
                    sb.append(line);
                 }
          } while ( line != null );
-        } catch (Exception e){ }  
+        } catch (java.io.IOException|NullPointerException e){ }  
         return Pattern.compile(sb.toString());
     }
 
@@ -197,28 +198,8 @@ public class ReadFile extends Version {
                    }                    
             }
          } while ( line != null );
-        } catch (Exception e){ }   
-        /*int ln=0;
-        System.out.println("filer.toPath:"+filer.toPath());
-        try {
-            BufferedReader reader = Files.newBufferedReader(filer.toPath(), StandardCharsets.UTF_8);
-            LineNumberReader lineReader = new LineNumberReader(reader);
-           
-            String line = null;
-            while ((line = lineReader.readLine()) != null) {
-                if ( ! line.isEmpty() ) {
-                    ma.reset(line); //reset the input
-                    if (ma.find()) {
-                        ln=lineReader.getLineNumber();
-                        sw.append(ln).append(":").append(line.trim()).append("\n");
-                    }
-                }
-            }     
-            
-        } catch(java.io.IOException io) {
-            sw.append("Could not read from file at line:"+ln+" - IOERROR:"+io.getMessage()+"\n");
-            io.printStackTrace();
-        }*/
+        } catch (java.io.IOException|NullPointerException e){ }   
+        
         return sw.toString();
     }
 
@@ -253,12 +234,20 @@ public class ReadFile extends Version {
     
     public boolean exist() { return this.filer.exists();  }
     public boolean isExist() { return exist();  }
-    public boolean isReadableFile()  {  return ( filer.isFile() && filer.canRead()    )? true:false; }
-    public boolean isWriteableFile() {  return ( filer.isFile() && filer.canWrite()   )? true:false; }
-    public boolean isExecutableFile(){  return ( filer.isFile() && filer.canExecute() )? true:false; }
+    public boolean isReadableFile()  { 
+        File f=filer.getAbsoluteFile();
+        if ( isCygwin() ) {
+            f= new File(f.getAbsolutePath().replaceAll("\\\\" , "/") );
+        }
+        boolean b = ( f.isFile() && f.canRead() );
+        log(1, "ReadFile("+f.getAbsolutePath()+")->isReadableFile()->"+toString()+" =>"+b);
+        return b; 
+    }
+    public boolean isWriteableFile() {  return ( filer.isFile() && filer.canWrite()   ); }
+    public boolean isExecutableFile(){  return ( filer.isFile() && filer.canExecute() ); }
     
-    public boolean isReadableDirectory()  {  return ( filer.isDirectory() && filer.canRead() )? true:false; }
-    public boolean isWriteableDirectory() {  return ( filer.isDirectory() && filer.canWrite())? true:false; }
+    public boolean isReadableDirectory()  {  return ( filer.isDirectory() && filer.canRead() ); }
+    public boolean isWriteableDirectory() {  return ( filer.isDirectory() && filer.canWrite()); }
     
     public boolean isAsciiFile() { return ! isBinaryFile(); } 
     public boolean isBinaryFile() {
@@ -359,7 +348,7 @@ public class ReadFile extends Version {
         boolean r = filer.renameTo(moveFile);
         if (r) {
             this.file = filer.getName();
-            this.dir  = filer.getParent();
+            //this.dir  = filer.getParent();
         }
         return r;
     }
@@ -371,7 +360,7 @@ public class ReadFile extends Version {
     public long getCopyState() { return (dsize==0)? (long) 0 : (long) size * 100 / dsize; }
     
     public synchronized boolean copy(File copyFile){
-        boolean b=false; dsize=0;
+        boolean b; dsize=0;
         String meth="copy(File copyFile)";
         try {
             byte[] buf = new byte[ 64*1024 ];
@@ -386,8 +375,9 @@ public class ReadFile extends Version {
             out.flush();
             out.close();
             b=true;
-        } catch (Exception e) {
+        } catch (java.io.IOException e) {
             b=false;
+            log(1,meth+" - could not copy file "+this.file+" to "+copyFile.getAbsolutePath()+" - reason: "+e.getMessage());
         }
         return b;
     }
@@ -405,6 +395,18 @@ public class ReadFile extends Version {
         };
         
         return info;
+    }
+    @Override
+    public String toString(){
+        StringBuilder  sw = new StringBuilder();
+                       sw.append(filer.toString()).append("= { ");
+                       int i=0;
+                       for( String s : getInfo() ) {
+                           if ( i != 0 ) { sw.append(", "); }
+                           sw.append(s); i++;
+                       }
+                       sw.append(" }");
+        return sw.toString();
     }
 
     public File   getFile()         { return this.filer; }
@@ -434,9 +436,8 @@ public class ReadFile extends Version {
             out.write(sb.toString().getBytes());
             out.flush();
             out.close();
-        } catch (Exception ex) {
-            if ( debug >1)
-                System.err.println("storing cachefile ends with Exception : "+ex.toString());
+        } catch (java.io.IOException ex) {
+            log(1,func+" storing cachefile ends with Exception : "+ex.toString());
         }
           
     }
@@ -451,9 +452,8 @@ public class ReadFile extends Version {
                 ab.append(inputLine).append("\n");          
             }
             is.close();
-        }catch (Exception ex) {
-            if ( debug > 1)
-            System.err.println("reading file ends with Exception : "+ex.toString());
+        }catch (java.io.IOException ex) {
+           log(1,func+" reading file ends with Exception : "+ex.toString());
         } finally {
             return ab;
         }
@@ -461,6 +461,7 @@ public class ReadFile extends Version {
     }
     
     public  HashMap<String, String> getLines(int[] line) {
+        final String func="getLines(int[] line)";
         HashMap<String, String> imap = new HashMap<>();
         try {
             java.io.BufferedReader is = new java.io.BufferedReader(new java.io.InputStreamReader(new java.io.FileInputStream(filer)));
@@ -472,9 +473,8 @@ public class ReadFile extends Version {
                 }
             }
             is.close();
-        }catch (Exception ex) {
-            if ( debug > 1)
-                System.err.println("reading file ends with Exception : "+ex.toString());
+        }catch (java.io.IOException ex) {
+            log(1,func+" reading file ends with Exception : "+ex.toString());
         }
         for ( int i =0; i< line.length; i++ ) {
             if ( ! imap.containsKey((""+i)) ) { imap.put(""+i, _not); }
@@ -506,8 +506,7 @@ public class ReadFile extends Version {
             }
             is.close();
         }catch (Exception ex) {
-            if ( debug > 1)
-            System.err.println("reading file ends with Exception : "+ex.toString());
+            log(1,func+" reading file ends with Exception : "+ex.toString());
         }
     }
     

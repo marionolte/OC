@@ -17,8 +17,8 @@ public class HCLArray extends HCLMain {
     private String _begin="[";
     private String _end="]";
             
-    private ArrayList<HCLList> list = new ArrayList(); 
-    private HashMap<String,HCLMap>     map = new HashMap();
+    private ArrayList<HCLList> list = new ArrayList<>(); 
+    private HashMap<String,HCLMap>     map = new HashMap<>();
     
             
     public HCLArray() {

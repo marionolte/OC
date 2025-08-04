@@ -13,6 +13,7 @@ import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.util.Base64;
 import java.util.UUID;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -132,7 +133,7 @@ class CryptHigh extends Version {
         final String func="getCrypted(String txt)";
         printf(func,1,"doing:"+doing+":");
         
-         if ( ! doing ) { return new String(Base64.encode(txt.getBytes())); }
+         if ( ! doing ) { return new String(Base64.getEncoder().encode(txt.getBytes())); }
          byte[] b=encrypt(txt,uuid.toString(),pass);
          
         if ( b==null ) { 
@@ -141,14 +142,14 @@ class CryptHigh extends Version {
         }
         
         printf(func,1,"return:"+b.length+":"); 
-        return new String(Base64.encode(b));
+        return new String(Base64.getEncoder().encode(b));
     }
     
     public String getUnCrypted(String info) {
         final String func="CryptHigh::getUnCrypted(String info)";
         if ( ! doing ) { 
             if ( info != null ) {
-                byte[] b=Base64.decodeBase64(info); 
+                byte[] b=Base64.getDecoder().decode(info); 
                 StringBuilder sw= new StringBuilder(); 
                 for (int i=0; i<b.length; i++){ sw.append( (char) b[i] ); }
                 printf(func, 4, "return sw |"+sw.toString()+"|");
@@ -160,8 +161,9 @@ class CryptHigh extends Version {
         }
         byte[] b =null;
         try {
-            b=Base64.decodeBase64(info);
+            b=Base64.getDecoder().decode(info);
         }catch ( NullPointerException | IllegalArgumentException   np ){
+            printf(func,0,"error base64 - "+np.getMessage());
             b=null;
         }
         
@@ -186,7 +188,7 @@ class CryptHigh extends Version {
     
     public byte[] getUnCryptedByte(String info) {
         if ( info != null && info.endsWith("=")) {
-            byte[] b=Base64.decodeBase64(info);
+            byte[] b=Base64.getDecoder().decode(info);
                    if ( ! doing ) { return b; }
                    b=decryptByte(b,uuid.toString(),pass);
             return b;       
@@ -194,7 +196,7 @@ class CryptHigh extends Version {
         return new byte[0];
     }
     
-    private byte[] enBase64(byte[] b   ) { return Base64.encodeBase64(b); }
+    private byte[] enBase64(byte[] b   ) { return Base64.getEncoder().encode(b); }
 
     
     private  byte[] encrypt(String plainText, String enkey, String pw) {
@@ -210,7 +212,7 @@ class CryptHigh extends Version {
             printf(func,4,"init completed");
         //System.out.println("Base64 encoded: "+ java.util.Base64.getEncoder().encode(data.getBytes()).length);
 
-            byte[] original = java.util.Base64.getEncoder().encode(ci.doFinal(plainText.getBytes()));
+            byte[] original = Base64.getEncoder().encode(ci.doFinal(plainText.getBytes()));
             return original;
         }
         catch( java.security.NoSuchAlgorithmException 
@@ -297,17 +299,17 @@ class CryptHigh extends Version {
             printf(func,1,"init cipher ci complete");
             
             //System.out.println("Base64 decoded: "+java.util.Base64.getDecoder().decode( encData ).length );
-            byte[] original = ci.doFinal(java.util.Base64.getDecoder().decode(encData));
+            byte[] original = ci.doFinal(Base64.getDecoder().decode(encData));
             printf(func,1,"return "+( (original!=null)?original.length:"NULL" ) );
             return original;
         } 
         catch ( NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
-            printf(func,1,"ERROR: "+e.getMessage(),e);
+            printf(func,0,"ERROR: "+e.getMessage(),e);
         }
         return "".getBytes();
     }
     
-    private byte[] deBase64(String text) { return  Base64.decodeBase64(text); }
+    private byte[] deBase64(String text) { return  Base64.getDecoder().decode(text); }
     private String decrypt1(byte[] cipherText, String encryptionKey, String pass) {
          final String func="decrypt(byte[] cipherText, String encryptionKey, String pass)";
          SecretKeySpec key;IvParameterSpec iv;

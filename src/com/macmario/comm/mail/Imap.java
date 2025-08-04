@@ -76,7 +76,7 @@ public class Imap extends Version {
         ReadFile fa= new ReadFile(storefile);
         if ( fa.isReadableFile() ) {
              println(2, func+"like to load objects from "+storefile);
-             Iterator<LMessage> itter = fa.loadObjects();
+             Iterator<LMessage> itter = (Iterator<LMessage>) fa.loadObjects();
              println(1, func+"has objects "+itter.hasNext() );
              while(itter.hasNext()) { 
                  LMessage lmsg = itter.next();

@@ -167,7 +167,7 @@ public class Connection extends Version
 	 * @return whether the connection is now authenticated.
 	 * @throws IOException
 	 * 
-	 * @deprecated You should use one of the
+	 * deprecated You should use one of the
 	 *             {@link #authenticateWithPublicKey(String, File, String) authenticateWithPublicKey()}
 	 *             methods, this method is just a wrapper for it and will
 	 *             disappear in future builds.
@@ -793,10 +793,12 @@ public class Connection extends Version
 
 			try
 			{
+                                log(2, "Connection INFO - like to initialize");
 				tm.initialize(cryptoWishList, verifier, dhgexpara, connectTimeout, getOrCreateSecureRND(), proxyData);
 			}
 			catch (SocketTimeoutException se)
 			{
+                                log(2, "Connection ERROR - Socket Timeout "+se.getMessage());
 				throw (SocketTimeoutException) new SocketTimeoutException(
 						"The connect() operation on the socket timed out.").initCause(se);
 			}
@@ -811,6 +813,8 @@ public class Connection extends Version
 
 			if (token != null)
 			{
+                                log(2, "Connection WARN - no Token initialized");
+                                
 				TimeoutService.cancelTimeoutHandler(token);
 
 				/* Were we too late? */
@@ -836,6 +840,7 @@ public class Connection extends Version
 		}
 		catch (IOException e1)
 		{
+                        log(1, "Connection error - reason "+e1.getMessage()  );
 			/* This will also invoke any registered connection monitors */
 			close(new Throwable("There was a problem during connect."), false);
 

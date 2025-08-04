@@ -206,23 +206,26 @@ public class Cache extends Version {
             synchronized(mapLocked) {
                 synchronized(updateLock) {
                     HashMap nmap = new HashMap();
-                    Iterator<String> itter = map.keySet().iterator();
+                    Iterator<String> itter = (Iterator<String>) map.keySet().iterator();
                     count=0;
                     while( itter.hasNext() ) {
                         String m = itter.next();
-                        HashMap lmap = (HashMap) map.get(m);
-                        HashMap imap = new HashMap();
-                        Iterator et = lmap.entrySet().iterator();
-                        while ( et.hasNext() ) {
-                            String n = (String) et.next();
-                            CacheEntry ce = (CacheEntry) lmap.get(n);
-                            if ( ce != null && ! ce.isExpired() ) {
-                                imap.put(n, ce); count++;
+                        if ( isNotNullOrEmpty(m) ) {
+                            HashMap lmap = (HashMap) map.get(m);
+                            HashMap imap = new HashMap<>();
+                            Iterator et = lmap.entrySet().iterator();
+                            while ( et.hasNext() ) {
+                                String n = (String) et.next();
+                                CacheEntry ce = (CacheEntry) lmap.get(n);
+                                if ( isNotNullOrEmpty(ce) && ! ce.isExpired() ) {
+                                    imap.put(n, ce); 
+                                    count++;
+                                }
                             }
-                        }
-                        if ( imap.size() > 0 ) {
-                            nmap.put(m, imap);
-                        }
+                            if ( ! imap.isEmpty() ) {
+                                nmap.put(m, imap);
+                            }
+                        }    
                     }
                     if ( nmap.size() > 0 ) { map = nmap; } else { map = new HashMap(); }
                     lastClean=System.currentTimeMillis();

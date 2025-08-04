@@ -84,7 +84,7 @@ public class LdapSearch  extends LdapMain{
         //printf("aaa",0,"filter:"+ls.getFilter()+":  scope:"+ls.getMyScope()+":"+ls.getScope()+":");
         
         LdapSearch lm=getInstance(ls.getProtocol(),ls.getHostname(),ls.getPort(),ls.getUserDN(),ls.getUserPass(),ls.getFilter(),ls.getAuth(),ls.getBaseDN());
-                   lm.objList=ls.getAttrList();
+                   lm.objList=(ArrayList<String>)ls.getAttrList();
                    lm.getScope(ls.getScope());
        return lm;
     }
@@ -250,8 +250,8 @@ public class LdapSearch  extends LdapMain{
                
                
                System.out.println("dn: "+(imp.get("dn")).get(0));
-               ArrayList<String> a  = super.getAttrList();
-               ArrayList<String> ab = new ArrayList();
+               ArrayList<String> a  = (ArrayList<String>) super.getAttrList();
+               ArrayList<String> ab = new ArrayList<>();
                for ( String af : a ) { ab.add(af.toLowerCase()); }
                if ( debug >= 0 ) {
                    printf(func,1,"objList is Empty ? :"+a.isEmpty()+":  ");

@@ -5,6 +5,7 @@
  */
 package com.macmario.net.ssh;
 
+import com.macmario.general.MyVersion;
 import com.trilead.ssh2.Connection;
 import com.trilead.ssh2.HTTPProxyData;
 import com.trilead.ssh2.KnownHosts;
@@ -52,7 +53,7 @@ public class SSHshell  extends RunnableT {
     private InputStream in;
     private InputStream err;
     private File keyFile=null;
-    private String keyFileString="";
+    //private String keyFileString="";
     
     public KnownHosts database = new KnownHosts();
     
@@ -64,7 +65,7 @@ public class SSHshell  extends RunnableT {
           
     private SSHDB sshdb ;      
     
-   static public String confDir=System.getProperty("user.home")+File.separator+".ssh";
+   static public String confDir=System.getProperty("user.home")+_FS+".ssh";
    
     private boolean _success = false;  
     
@@ -85,13 +86,13 @@ public class SSHshell  extends RunnableT {
         
         //this.console=new Console();
     
-        knownHostPath=SSHshell.confDir+File.separator+"known_hosts";
-        idDSAPath    =SSHshell.confDir+File.separator+"id_dsa";
-        idRSAPath    =SSHshell.confDir+File.separator+"id_rsa";
+        knownHostPath=SSHshell.confDir+_FS+"known_hosts";
+        idDSAPath    =SSHshell.confDir+_FS+"id_dsa";
+        idRSAPath    =SSHshell.confDir+_FS+"id_rsa";
         
         printf(func,1," knownHostPath:\t"+knownHostPath+"\nidDSAPath:\t\t"+idDSAPath+"\nidRSAPath:\t\t"+idRSAPath);
         
-        sshdb = new SSHDB(SSHshell.confDir+File.separator+".local.sdb");
+        sshdb = new SSHDB(SSHshell.confDir+_FS+".local.sdb");
         init();
         printf(func,1,"end Constructor");
     }
@@ -102,12 +103,12 @@ public class SSHshell  extends RunnableT {
         
         Properties p = con.getProperties();
         
-        knownHostPath=SSHshell.confDir+File.separator+"known_hosts";
-        idDSAPath    = p.getProperty("DKEY", SSHshell.confDir+File.separator+"id_dsa");
-        idRSAPath    = p.getProperty("KEY", SSHshell.confDir+File.separator+"id_rsa");
+        knownHostPath=SSHshell.confDir+_FS+"known_hosts";
+        idDSAPath    = p.getProperty("DKEY", SSHshell.confDir+_FS+"id_dsa");
+        idRSAPath    = p.getProperty("KEY", SSHshell.confDir+_FS+"id_rsa");
         
-        idDSAPathProxy    = p.getProperty("PROXYDKEY", SSHshell.confDir+File.separator+"id_dsa");
-        idRSAPathProxy    = p.getProperty("PROXYKEY", SSHshell.confDir+File.separator+"id_rsa");
+        idDSAPathProxy    = p.getProperty("PROXYDKEY", SSHshell.confDir+_FS+"id_dsa");
+        idRSAPathProxy    = p.getProperty("PROXYKEY", SSHshell.confDir+_FS+"id_rsa");
         
         int po;
         try{ po=Integer.parseInt(p.getProperty("PORT", "22")); } catch(java.lang.NumberFormatException ne) { po=22;}
@@ -116,11 +117,17 @@ public class SSHshell  extends RunnableT {
         this.port=(po >0 && po < 64*1024-1)?po:22;
         this.user=p.getProperty("USER", System.getProperty("user.name") );
         String pa=p.getProperty("PASS", "" );
+        printf(func,2,"pass:"+pa+":");
         ReadFile fa = new ReadFile(pa);
                  if ( fa.isReadableFile() ) {
-                      SecFile fp = new SecFile(fa);
+                    printf(func,2,"a readable File :"+pa+": - read pass from"); 
+                    SecFile fp = new SecFile(fa);
+                              pa=fp.readOut().toString();
+                 }else {
+                    printf(func,2,"not a readable File :"+pa+": - set direct");
                  }
-        this.pass=p.getProperty("PASS", "" );
+                 
+        this.pass=pa;
         this.guiMode=false;
         
         try{ po=Integer.parseInt(p.getProperty("PROXYPORT", "22")); } catch(java.lang.NumberFormatException ne) { po=22;}
@@ -130,7 +137,16 @@ public class SSHshell  extends RunnableT {
         this.puser=p.getProperty("PROXYUSER", System.getProperty("user.name") );
         this.ppass=p.getProperty("PROXYPASS", "" );
         
-        sshdb = new SSHDB(SSHshell.confDir+File.separator+".local.sdb");
+        sshdb = new SSHDB(SSHshell.confDir+_FS+".local.sdb");
+        
+        String ky =p.getProperty("KEY", "" );
+        if ( ! ky.isEmpty() ) { 
+              printf(func,2,"setKeyFile:"+ky+":");
+              setKeyFile(new File(ky));
+        }  else {
+            printf(func,1,"keyFile is EMPTY");
+        }
+            
         
         init();
         printf(func,1,"end Constructor");
@@ -253,13 +269,13 @@ public class SSHshell  extends RunnableT {
         printf(func,4,"setSession return");
     }
     
-    public void setKeyFile(String k) { this.keyFileString=k;}
-    public void setKeyFile(File k) { this.keyFile=k;}
+    public void setKeyFile(String k) { setKeyFile(new File(k));}
+    public void setKeyFile(File   k) { this.keyFile=k; }
     public boolean login(){
         if( isLogin() ) { return isLogin(); }
         
         final String func=getFunc("login()");
-        printf(func,3,"host:"+host+":"+port+" u="+user+": p:"+pass+": keyfile:"+keyFile);
+        printf(func,3,"host:"+host+":"+port+" u="+user+": p:"+pass+": keyfile:"+this.keyFile);
              if ( host == null || host.isEmpty() ) { printf(func,1,"ERROR: hostname are not set");          _success=false; return _success; }
              if ( user == null || user.isEmpty() ) { printf(func,1,"ERROR: user are not set");              _success=false; return _success;  }
              if ( pass == null || pass.isEmpty() ) { printf(func,1,"ERROR: password are not set or empty"); _success=false; return _success;  }
@@ -580,62 +596,37 @@ public class SSHshell  extends RunnableT {
     }
     
     public static SSHshell getInstance(String[] args) {
+           MyVersion v = new MyVersion();
            final String func="SSHshell::getInstance(String[] args) - ";
-           //Crypt crypt=new Crypt();
+           v.log(1,func+"start");
+           
            String  ho = "localhost";  int  po = 22;  int debug=0;  File kFile=null;
            String u=System.getProperty("user.name");  String p=""; StringBuilder comm = new StringBuilder();
-           String conf=System.getProperty("user.dir")+File.separator+"config";
+           String conf=System.getProperty("user.dir")+_FS+".ssh";
            String scom="ssh";
-           SecFile fsec = null;
+           Properties prop=null;
            if ( args.length > 0 ) {
+                    v.log(1,func+"parse args lenght "+args.length);
                     for(int i=0; i<args.length; i++) {
-                        if ( debug > 0 ) {
-                            System.out.println("DEBUG[1/"+debug+"] "+func+"parse args["+i+"/"+args.length+"]="+args[i]);
-                        }
-                        if      ( args[i].startsWith("host=") || args[i].matches("-h") ) { ho=args[i].substring("host=".length());}
-                        else if ( args[i].matches("-d")      ) { SSHshell.debug++; debug++; }
-                        else if ( args[i].startsWith("user=")  ) { u=args[i].substring("user=".length());}
-                        else if ( args[i].matches("-u")        ) { u=args[++i];}
-                        else if ( args[i].startsWith("pass=")  ) { p=args[i].substring("pass=".length());}
-                        else if ( args[i].matches("-pass")     ) { p=args[++i]; }
-                        else if ( args[i].startsWith("port=")) { po= Integer.parseInt( args[i].substring("port=".length()) ); }
-                        else if ( args[i].matches("-p")      ) { po= Integer.parseInt( args[++i] ); }
-                        else if ( args[i].startsWith("dir=") ) { conf=  ( new ReadDir( args[i].substring("dir=".length()) )).getFQDNDirName(); }
-                        else if ( args[i].matches("-j") ) { 
-                                    SecFile f=new SecFile(args[++i]); 
-                                    p = f.readOut().toString();
-                        } 
-                        else if (args[i].matches("-key") ) { ReadFile rf = new ReadFile(args[++i]); if ( rf.isReadableFile()) { kFile=new File(rf.getFQDNFileName()); } }
-                        else if (args[i].matches("-help")) {  String prog = System.getProperty("prog");
+                        v.log(1,func+"parse args["+i+"/"+args.length+"]="+args[i]);
+                        
+                        if      ( args[i].equals("-host")     ) { ho=args[++i]; }
+                        else if ( args[i].equals("-d")        ) { debug++; v.debug=debug; SSHshell.debug=debug;}
+                        else if ( args[i].equals("-user")     ) { u=args[++i];}
+                        else if ( args[i].equals("-pass")     ) { p=args[++i]; }
+                        else if ( args[i].equals("-port")     ) { po= Integer.parseInt( args[++i] ); }
+                        else if ( args[i].equals("-j")        ) { SecFile f=new SecFile(args[++i]);  p = f.readOut().toString(); }
+                        else if ( args[i].equals("-key")      ) { kFile=new File(args[++i]); }
+                        else if ( args[i].startsWith("host=") ) { ho=args[i].substring("host=".length());}                        
+                        else if ( args[i].startsWith("user=") ) { u=args[i].substring("user=".length());}                        
+                        else if ( args[i].startsWith("pass=") ) { p=args[i].substring("pass=".length());}                        
+                        else if ( args[i].startsWith("port=") ) { po= Integer.parseInt( args[i].substring("port=".length()) ); }
+                        else if ( args[i].startsWith("dir=")  ) { conf=  ( new ReadDir( args[i].substring("dir=".length()) )).getFQDNDirName(); }                        
+                        else if ( args[i].equals("-help")     ) {  String prog = System.getProperty("prog");
                                                               System.out.println( ( (prog==null)?"":prog ) +usage()); 
                                                               return null;
                         }
-                        else if (args[i].matches("-conn") ) {
-                             fsec = new SecFile(args[++i]);
-                             /*Properties prop = fsec.getProperties();
-                             //System.out.println("conn: "+fsec.getFQDNFileName()+"  read:"+fsec.isReadableFile() + " all:"+prop+ " check:"+prop.containsKey("HOST"));
-                             if ( prop.containsKey("HOST") ) {  ho=prop.getProperty("HOST");
-                                 //System.out.println("comn: Host:"+ ho);
-                             }
-                             if ( prop.containsKey("USER") ) {  u=prop.getProperty("USER"); 
-                                 //System.out.println("conn: User:"+u);
-                             }
-                             if ( prop.containsKey("KEY")  ) {  ReadFile rf = new ReadFile( prop.getProperty("KEY") ); 
-                                 //System.out.println("conn: keyfile:"+rf.getFQDNFileName()+" read:"+rf.isReadableFile() );
-                                                             if ( rf.isReadableFile() ) { kFile=new File(rf.getFQDNFileName()); }
-                             }
-                             if ( prop.containsKey("PASS") ) { 
-                                    SecFile fpass = new SecFile( prop.getProperty("PASS") );
-                                    if ( fpass.isReadableFile() ) {
-                                         p=fpass.readOut().toString();
-                                    } else {
-                                         p=prop.getProperty("PASS") ; 
-                                    }
-                                    
-                             }
-                             if ( prop.contains("PORT") ) { po= Integer.parseInt( prop.getProperty("PORT") ); }
-                              */  
-                        }
+                        else if (args[i].equals("-conn") ) { SecFile fs= new SecFile(args[++i]); prop=fs.getProperties(); }
                         else { 
                             if ( comm.length() > 0 ) { comm.append(" "); }
                             comm.append(args[i]);
@@ -648,10 +639,28 @@ public class SSHshell  extends RunnableT {
            }
            SSHshell.confDir=conf;
            SSHshell.debug=debug;
-           if ( debug > 0 ) {
-                System.out.println("DEBUG[1/"+debug+"] "+func+"ssh to "+u+"@"+ho+":"+po+"  with p>|"+p+"|<  command:"+comm.toString()+":");
+           
+           v.log(1,func+"direct found "+u+"@"+ho+":"+po+"  with p>|"+p+"|<  command:"+comm.toString()+":");
+           if ( prop != null ) {
+               v.log(1,func+"read properties from from connection file ->"+prop+"<-");
+               for( String k: prop.stringPropertyNames() ) {
+                   v.log(1,func+"from SecFile ->"+k+"<->"+prop.getProperty(k)+"<-");
+                   if      ( k.equals("KEY")  ) { kFile=new File( prop.getProperty(k) ); }
+                   else if ( k.equals("USER") ) {     u=prop.getProperty(k,u); }                   
+                   else if ( k.equals("HOST") ) {    ho=prop.getProperty(k,ho); }
+                   else if ( k.equals("PORT") ) {    po=getInt(prop.getProperty(k,""+po)); }
+                   else if ( k.equals("PASS") ) {    
+                                                    String fa=prop.getProperty(k,p); 
+                                                    SecFile sec = new SecFile(fa);
+                                                    String fs=sec.readOut().toString();
+                                                    p=( isNotNullOrEmpty(fs) )?fs:fa;
+                   }
+               }
            }
-           SSHshell ssh = (fsec == null ) ? (new SSHshell(ho,po,u,p,false)): new SSHshell(fsec);
+           
+           v.log(1,func+"final ssh to "+u+"@"+ho+":"+po+"  with p>|"+p+"|<  command:"+comm.toString()+":");
+           
+           SSHshell ssh = (new SSHshell(ho,po,u,p,false));
                     ssh.debug=debug;
                     ssh.setProxy();
                     ssh.sCommand=comm;

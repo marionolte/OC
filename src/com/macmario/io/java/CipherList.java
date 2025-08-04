@@ -17,7 +17,7 @@ import java.util.TreeSet;
 public class CipherList {
 
     public String getAlgorithmList() {
-            TreeSet<String> tree = new TreeSet();
+            TreeSet<String> tree = new TreeSet<>();
             for ( Provider provider : Security.getProviders() ) {
                 for ( Service serv : provider.getServices() ) {
                     tree.add(serv.getAlgorithm());

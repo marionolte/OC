@@ -142,7 +142,7 @@ abstract public class LdapMain extends Version{
     
      public ArrayList<String> getLinesFromFile(String fname) {
         String line; 
-        ArrayList<String> a = new ArrayList();
+        ArrayList<String> a = new ArrayList<>();
         SecFile f = new SecFile(fname);
         if  ( f.isReadableFile() ) {
              for ( String s :f.readOut().toString().split("\n") ){ a.add(s); }
@@ -195,7 +195,7 @@ abstract public class LdapMain extends Version{
      public    String filter=null;
      public    String auth="simple";
      public    String baseDN=null;
-     public ArrayList<String> objList = new ArrayList();
+     public ArrayList<String> objList = new ArrayList<>();
      public HashMap<String, HashMap<String,String> > attrList =null; //= new ArrayList();
      public    String operationfile=null;
      public   boolean usage=false;
@@ -338,7 +338,7 @@ abstract public class LdapMain extends Version{
                         printf(func,3,("operator:"+sp[0]+":\ndn:"+dn+":\nattr:"+attr+":\nval:"+val+":"));
 
                         HashMap<String,String> m=attrList.get(dn);
-                        if ( m==null ) { m=new HashMap(); }
+                        if ( m==null ) { m=new HashMap<>(); }
                         int j = m.size()/2+1;
                         //System.out.println("j:"+j+"  m"+(m.size()%2+1)+"  m1:"+(m.size()/2+1) );
                         m.put("op"+j+"attr", attr+": "+ val);
@@ -374,7 +374,7 @@ abstract public class LdapMain extends Version{
            
               printf(func,3,"map:"+map);
               if ( debug > 0 ) {
-                  ArrayList<String> a = getAttrList();
+                  ArrayList<String> a = (ArrayList<String>)getAttrList();
                   for(String s: a) {
                       printf(func,1,"attribut list contains:"+s+":   "+a.contains(s) );
                   }

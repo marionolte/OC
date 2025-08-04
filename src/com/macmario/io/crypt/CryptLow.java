@@ -15,6 +15,7 @@ import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 import java.util.UUID;
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
@@ -119,15 +120,15 @@ class CryptLow extends Version {
           //byte[] b=encrypt(txt,uuid.toString(),pass);
           //byte[] b=encrypt(txt,Ukey,pass);
           if ( b==null ) { return ""; }
-          return new String(Base64.encode(b));
+          return new String(Base64.getEncoder().encode(b));
         } catch(Exception e) {
-          return new String(Base64.encode(txt.getBytes())); 
+          return new String(Base64.getEncoder().encode(txt.getBytes())); 
         } 
     }
     
     public String getUnCrypted(String info) {
         final String func="getUnCrypted(String info)";
-        byte[] b=Base64.decodeBase64(info);
+        byte[] b=Base64.getDecoder().decode(info);
         try { 
             return this.decrypt(b);
         } catch (Exception e) {
@@ -138,7 +139,7 @@ class CryptLow extends Version {
     
     public byte[] getUnCryptedByte(String info) {
         final String func="getUnCrypted(String info)";
-        byte[] b=Base64.decodeBase64(info);
+        byte[] b=Base64.getDecoder().decode(info);
         try { 
             return this.decryptByte(b);
         } catch (Exception e) {
@@ -218,7 +219,7 @@ dec_len += cipher.doFinal(decrypted, dec_len);
 */
     
     
-    private byte[] enBase64(byte[] b   ) { return Base64.encodeBase64(b); }
+    private byte[] enBase64(byte[] b   ) { return Base64.getEncoder().encode(b); }
     private byte[] encrypt(String plainText, String enkey, String pw)  {
           final String func="encrypt(String plainText, String encryptionKey, String pass)";
           
@@ -271,7 +272,7 @@ dec_len += cipher.doFinal(decrypted, dec_len);
         return output;
     }
     
-    private byte[] deBase64(String text) { return  Base64.decodeBase64(text); }
+    private byte[] deBase64(String text) { return  Base64.getDecoder().decode(text); }
     private String decrypt(byte[] cipherText, String encryptionKey, String pass) {
          final String func="decrypt(byte[] cipherText, String encryptionKey, String pass)";
          SecretKeySpec key;IvParameterSpec iv;
