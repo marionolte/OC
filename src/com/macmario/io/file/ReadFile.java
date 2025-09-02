@@ -700,6 +700,36 @@ public class ReadFile extends Version {
                   catch( NullPointerException ne){}
         return p;
     }
+    
+    public Properties getProperties(String section) {
+        Properties p = new Properties();
+            boolean start = false;
+            for ( String s: readOut().toString().split("\n") ) {
+                s=s.trim();
+                if ( start ) {
+                    if ( isNotNullOrEmpty(s) ) { start=false; } else {
+                        String[] sp = s.split("="); 
+                        String k = sp[0];
+                        String v = s.substring(k.length()+1).replaceAll("^\"", "").replaceAll("\"$", "");
+                        p.put(k, v);
+                    }
+                } else {
+                    if ( s.startsWith(section)) { start=true; }
+                }
+            }
+        return p;
+    }
+    
+    public ArrayList<String> getSectionBasedOn(String section){
+        ArrayList<String> ar = new ArrayList<>();
+        if ( isNotNullOrEmpty(section)){
+          for ( String s: readOut().toString().split("\n") ) {
+                s=s.trim();
+                if ( s.startsWith(section) ) { ar.add(s); }
+          }      
+        }
+        return ar;
+    }
    
     public boolean extractZip(String target) {
        ReadDir goal = new ReadDir(target);
@@ -803,6 +833,17 @@ public class ReadFile extends Version {
     public String tail() {
         if ( tailer == null || (tailer != null && tailer.onError)) { if (tailer!=null){ tailer.setClosed(); } ;tailer = new TailTask(this); tailer.start(); }
         return tailer.read();
+    }
+    
+    public static ReadFile getTempFile(){
+         File tmp = new File(System.getProperty("java.io.tmpdir"));
+         try {
+              tmp = File.createTempFile("tmp", ".sdb", tmp );
+         } catch (java.io.IOException io) {
+             return null;
+         }     
+         ReadFile rf = new ReadFile( tmp );
+         return rf;
     }
     
     public static void main(String[] args)  throws Exception {

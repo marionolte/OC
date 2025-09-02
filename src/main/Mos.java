@@ -19,6 +19,7 @@ import com.macmario.io.crypt.GetPassword;
 import com.macmario.io.db.SecDb;
 import com.macmario.io.file.ReadDir;
 import com.macmario.io.file.ReadFile;
+import com.macmario.io.file.SecDBFile;
 import com.macmario.io.file.SecFile;
 import com.macmario.io.file.WriteFile;
 import com.macmario.io.git.Git;
@@ -88,8 +89,7 @@ public class Mos extends Updater{
     private boolean testssl(String ho, int po   ) { 
         System.out.println("test server "+ho+":"+po);
             TestSSLServer t = new TestSSLServer(ho,po);
-                          t.test(); 
-                          
+                          t.test();                                   
             silent=true; 
             return  t.isValid();
     }
@@ -269,6 +269,7 @@ public class Mos extends Updater{
                 else if ( args[i].matches("-gcfile")    ){ this.checkGCFile(getArgsLower(args,++i));      fin=true; }
                 else if ( args[i].matches("-checker")   ){ this.runChecker(getArgsLower(args,++i));       fin=true; }
                 else if ( args[i].matches("-secdb")     ){ this.getSecDb(getArgsLower(args,++i));         fin=true; }
+                else if ( args[i].matches("-secdbfile") ){ this.getSecDbFile(getArgsLower(args,++i));     fin=true; }
                 else if ( args[i].startsWith("-ldap")   ){ this.runLdap(args[i].substring(1),getArgsLower(args,++i));  fin=true; }
                 else if ( args[i].matches("-d")         ){ } // needs empty - run in pre-scan
                 else if ( args[i].matches("-monitor")   ){ this.runMonitor(getArgsLower(args,++i));       fin=true; }
@@ -318,6 +319,12 @@ public class Mos extends Updater{
         System.out.println("secDB init");
         try { sdb.run(); } catch(Exception e) { printf("getSecDb( String[] ar)",0,"ERROR:"+e.getMessage(),e);}
         System.out.println("secDB fin");
+   }
+   
+   private void  getSecDbFile( String[] ar) { 
+        System.out.println("secDBFile");
+        SecDBFile.main(ar);
+        System.out.println("secDBFile fin");
    }
    
    private void checkGCFile(String[] ar) {

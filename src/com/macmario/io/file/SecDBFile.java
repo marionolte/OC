@@ -81,6 +81,8 @@ public class SecDBFile extends Version{
     
     public void update(String key, String value) { add(key,value); }
     public void add(String key,String value) {
+        final String func="add(String key,String value)";
+         log(4,func+" start add");
          if ( key   == null ) { return; }
          if ( value == null ) { value=""; }
          String[] fp = key.split("/");
@@ -91,7 +93,9 @@ public class SecDBFile extends Version{
          HashMap<String,String> ar = getArray(sp[0],sp[1]);
          String s = this.crypt.getCrypted(value);
          ar.put(sp[2],s);
-         db.addToZip(sp[0]+"/"+sp[1]+"/"+sp[2], getSecure(value));
+         log(2,func+" add to zip - k:"+key+": v:"+value+":  path:/"+sp[0]+"/"+sp[1]+"/"+sp[2]);
+         db.addToZip("/"+sp[0]+"/"+sp[1]+"/"+sp[2], getSecure(value));
+         log(4,func+" end add");
     }
     
     
@@ -125,14 +129,29 @@ public class SecDBFile extends Version{
     } 
     
     public static void main(String[] args) {
-        SecDBFile sdb=new SecDBFile(new ReadFile(args[0]));
-        
+        debug=1;
+        SecDBFile sdb;
+        if ( args.length > 0 ){                
+                sdb=new SecDBFile(new ReadFile(args[0]));
+                sdb.log(1,"SecDBFile:main - "+args[0]);
+        } else {
+                
+                sdb=new SecDBFile(ReadFile.getTempFile());
+                sdb.log(1,"SecDBFile:main - tmpfile");
+        }        
+        sdb.log(1,"SecDBFile:main - add entry 33/AD/first");
+        sdb.add("33/AD/first","auchnixda7");
+        sdb.log(1,"SecDBFile:main - add entry myhost");
         sdb.add("myhost", "abcd1234!#%");
+        sdb.log(1,"SecDBFile:main - add entry nohost");
         sdb.add("nohost", "fdb17");
+        sdb.log(1,"SecDBFile:main - add entry 33/AD/std");
         sdb.add("33/AD/std","nixda7");
+        sdb.log(1,"SecDBFile:main - collect entry myhost");
         System.out.println(":"+sdb.getUnSecKey(sdb.getShortValue("myhost"))+":");
         System.out.println(":"+sdb.getUnSecKey(sdb.getShortValue("33/AD/std"))+":");
-        sdb.remove("nohost");
+        sdb.log(1,"SecDBFile:main - remove entry nohost");
+        //sdb.remove("nohost");
     }
     
 }

@@ -349,41 +349,86 @@ public class WriteFile extends ReadFile{
         out.flush();
     }
     
-    public boolean addToZip(String fname, ByteArrayInputStream ar) {
-       try { 
-        File    tmp = File.createTempFile(filer.getName(), null);
-        tmp.delete();
-        if( this.isReadableFile() &&  ! filer.renameTo(tmp)) {
-            // only if exist an rename not working 
+    public boolean isZipFile() {  return isZipFile(filer); }
+    public boolean isZipFile(File f) {
+        try(ZipFile zip = new ZipFile(f)) {
+            return true;
+        } catch(IOException io){
+            log(1,"ERROR - isZip error "+io.getMessage());
             return false;
         }
+    }
+    public boolean createZipFile(){ return createZipFile(filer); }
+    public boolean createZipFile(File f){ 
+        boolean b=false;
+        try( FileOutputStream fos = new FileOutputStream(f); 
+             ZipOutputStream   zo = new ZipOutputStream(fos) ) {
+              zo.flush();
+              zo.close();
+            b=true;
+        } catch(IOException io){
+            log(1,"ERROR - could not create zip "+io.getMessage());
+        }
+        return b;
+    }
+    
+    public boolean addToZip(String fname, ByteArrayInputStream ar) {
+        final String func="addToZip(String fname, ByteArrayInputStream ar)";
+        
+        ZipOutputStream zout=null;
+           
+        //File    tmp = File.createTempFile(filer.getName(), null);
+        //tmp.deleteOnExit();
+        //if( this.isReadableFile() &&  ! filer.renameTo(tmp)) {
+        //    log(1, func+" return false - is reabale:"+this.isReadableFile()+" or rename not possible");
+            // only if exist an rename not working 
+        //    return false;
+        //}
+        if ( ! isZipFile() ) {
+             log(2, func+" create zipfile");
+             createZipFile();
+        } else {
+          try {
+            File tmp = File.createTempFile(filer.getName(), "tmp");
+               filer.renameTo(tmp);
+               if ( isReadableFile()  ) {
+                    zout= new ZipOutputStream(new FileOutputStream(filer)); 
+                    //in case 
+                    ZipFile zip = new ZipFile(tmp);
+                    Enumeration<? extends ZipEntry> ent = zip.entries();
+                    while( ent.hasMoreElements() ) {
+                         ZipEntry e = ent.nextElement();
+                         if ( ! e.getName().equals(fname)) {
+                              zout.putNextEntry(e);
+                              if ( ! e.isDirectory() ) {
+                                   copy( zip.getInputStream(e) , zout );
+                              }
+                              zout.closeEntry();
+                         }
+                    }
+                    zip.close();
+                }
+                tmp.deleteOnExit();
+          } catch (IOException io){
+              log(1,func+" Error could not transfer old to new zip - "+io.getMessage());
+          } 
+        }
+      try { 
+        log(2, func+" like to add "+fname+"to zipfile ");
         //ZipInputStream  zin = new ZipInputStream(new FileInputStream (tmp));
-        ZipOutputStream zout= new ZipOutputStream(new FileOutputStream(filer));
-
-        if ( tmp.isFile() && tmp.canRead()  ) {
-            //in case 
-            ZipFile zip = new ZipFile(tmp);
-            Enumeration<? extends ZipEntry> ent = zip.entries();
-            while( ent.hasMoreElements() ) {
-                 ZipEntry e = ent.nextElement();
-                 if ( ! e.getName().equals(fname)) {
-                      zout.putNextEntry(e);
-                      if ( ! e.isDirectory() ) {
-                           copy( zip.getInputStream(e) , zout );
-                      }
-                      zout.closeEntry();
-                 }
-            }
-            zip.close();
-        }    
+        if ( zout == null ) {
+           zout= new ZipOutputStream(new FileOutputStream(filer));  
+        }   
         ZipEntry e = new ZipEntry(fname);
         zout.putNextEntry(e);
            copy( ar , zout );
-        zout.closeEntry();
-        
+        zout.closeEntry();        
         zout.flush(); zout.close();
         return true;
-       } catch( java.io.IOException io ) { return false;} 
+       } catch( java.io.IOException io ) {
+          log(1,func+" add to zip ERROR - "+io.getMessage(),io);
+       }       
+       return false;
     }
     
     public boolean removeFromZip(String fname) {
@@ -417,8 +462,11 @@ public class WriteFile extends ReadFile{
         }    
         zout.flush(); zout.close();
         return true;
-      } catch( java.io.IOException io ) { return false;} 
-        
+      } catch( java.io.IOException io ) {
+          log(1,"Remove from zip error - "+io.getMessage(),io);
+      } 
+      
+      return false;
     }
     
     

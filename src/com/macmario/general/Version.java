@@ -127,6 +127,12 @@ public abstract class Version  { //extends OraConst {
             log("DEBUG["+level+"/"+debug+"] "+msg);
         }
     }
+    
+    public boolean couldLog(){  return couldLog(1); }
+    public boolean couldLog(int l){  
+       return ( l >= 0 && ( l <= debug || debug > maxdebug )) ;       
+    }
+    
     final public static void log(String s) {
          //if ( debugTrace == null ) {
               System.out.println(s);  // log stdout

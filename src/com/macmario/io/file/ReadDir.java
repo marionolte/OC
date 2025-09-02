@@ -9,7 +9,6 @@ package com.macmario.io.file;
 import com.macmario.general.Version;
 import java.io.File;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
@@ -71,32 +70,38 @@ public class ReadDir extends Version{
     
     public ReadFile getFile(String file) {  return new ReadFile( this.getFQDNDirName()+_FS+file); }
 
+    
+    public File[] loadDirDirectory(){ return loadDirFiles(true); }
+    public File[] loadDirFiles(boolean dir){  
+        File[] files = this.readDir.listFiles();
+        ArrayList<File> ar = new ArrayList<>();
+        
+        if ( isNotNullOrEmpty(files) ) {
+            for ( File f : files ) {
+                if ( dir ) {
+                    if ( f.isDirectory() ) { ar.add(f); }
+                } else {
+                    if ( f.isFile()      ) { ar.add(f); }
+                }
+            }
+        }
+        File[] ret = new File[ar.size()];
+        for (int i=0; i<ar.size(); i++) { ret[i]=ar.get(i); }
+        return ret ; 
+    }
     public String[] loadDir(boolean dir){
-        String[] s = new String[] {};
+        String[] s; // = new String[] {};
+        fileList=""; dirList="";
 
         //System.out.println("readDir.lastModified():"+readDir.lastModified()+":  mod:"+modified+":");
         if ( this.readDir.lastModified() == 0 ||this.readDir.lastModified() > modified ) {
-             //System.out.println("read directory");
-             fileList=""; dirList="";
-             if (! this.file.equalsIgnoreCase(_FS) ) { dirList=".."; }
-             System.out.println("readDir:"+readDir);
-             for ( String f : readDir.list() ) {
-                 if ( f.equals(".") || f.equals("..") ) { continue; }
-                 File io =new File(file+_FS+f);
-                 if ( io.isFile() ) {
-                     if ( fileList.isEmpty() ) {
-                          fileList=""+f;
-                     } else {
-                          fileList=fileList+"@"+f;
-                     }
-                 } else if ( io.isDirectory() ) {
-                     if ( dirList.isEmpty() ) {
-                          dirList=""+f;
-                     } else {
-                          dirList=dirList+"@"+f;
-                     }
-                 }
-             }
+             for ( File f : loadDirFiles(dir) ) {
+                 if ( dir ) {
+                    dirList=(dirList.isEmpty()  )?f.getName():dirList+"@"+f.getName(); 
+                 } else {
+                    fileList=(fileList.isEmpty())?f.getName():fileList+"@"+f.getName();
+                 } 
+             }                          
         }
         if ( dir ) {
            s = dirList.split("@");
