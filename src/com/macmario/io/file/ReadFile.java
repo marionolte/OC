@@ -706,14 +706,17 @@ public class ReadFile extends Version {
             boolean start = false;
             for ( String s: readOut().toString().split("\n") ) {
                 s=s.trim();
+                //System.out.println("line:"+s+": start:"+start);
                 if ( start ) {
-                    if ( isNotNullOrEmpty(s) ) { start=false; } else {
+                    if ( isNullOrEmpty(s) ) { start=false; } else {
                         String[] sp = s.split("="); 
                         String k = sp[0];
                         String v = s.substring(k.length()+1).replaceAll("^\"", "").replaceAll("\"$", "");
+                        //System.out.println("pickup key:"+k+":  with value->|"+v+"|<-");
                         p.put(k, v);
                     }
                 } else {
+                    //System.out.println("verify line ->|"+s+"|<- with section->|"+section+"|<-");
                     if ( s.startsWith(section)) { start=true; }
                 }
             }
