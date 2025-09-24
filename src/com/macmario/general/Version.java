@@ -31,7 +31,7 @@ public abstract class Version  { //extends OraConst {
     final public static int majorVersion=0;
     final public static int minorVersion=0;
     final public static int patchVersion=6;
-    final public static int fixedVersion=0;
+    final public static int fixedVersion=1;
     final public static int   libVersion=0;
     final public static int  betaVersion=1;
     
@@ -42,6 +42,7 @@ public abstract class Version  { //extends OraConst {
        } catch(Exception e) {} 
        JAVAHOME    = System.getProperty("java.home");
        OSNAME      = System.getProperty("os.name").toLowerCase();
+       OSTYPE      = System.getenv("OSTYPE");
        JAVAVERSION = System.getProperty("java.version");
        USERKEY     = System.getProperty("user.name");
        HOSTKEY     = Host.getHostname(); //System.getProperty("os.name")+System.getProperty("os.version");
@@ -162,6 +163,7 @@ public abstract class Version  { //extends OraConst {
     private String betaMD5="";
     private static       String TEMPDIR  ;
     private static final String OSNAME   ;
+    private static final String OSTYPE   ;
     private static final String JAVAHOME ;
     private static final String JAVAVERSION;
     private static final String USERKEY;
@@ -203,7 +205,9 @@ public abstract class Version  { //extends OraConst {
     static public final boolean isSolaris() { return (OSNAME.contains("sunos")) || (OSNAME.contains("solaris")); } 
     static public final boolean isAIX()     { return OSNAME.contains("aix");}
     static public final boolean isLinux()   { return OSNAME.contains("linux");  }
-    static public final boolean isCygwin()  { return OSNAME.contains("cygwin"); }
+    static public final boolean isCygwin()  {         
+        return ( OSTYPE != null && ( OSTYPE.contains("cygwin") || OSTYPE.contains("msys") ) || OSNAME.contains("cygwin") || OSNAME.contains("msys") ); 
+    }
     
     
     public static String jarfile;
@@ -295,6 +299,15 @@ public abstract class Version  { //extends OraConst {
             catch(NullPointerException|NumberFormatException ne){} 
             return -1L;
     }
+    
+    public boolean isNumeric(String s) {
+        try {
+           Double.valueOf(s);
+           return true;
+        }catch(NullPointerException|NumberFormatException ne){}
+        return false;
+    }
+    
     final static public boolean isNullOrEmpty(Object s) { 
        boolean b=false;  
        if ( s == null ) { b=true; } else {       
@@ -310,5 +323,18 @@ public abstract class Version  { //extends OraConst {
     }
     final static public boolean isNotNullOrEmpty(Object s) { return ! isNullOrEmpty(s); }
     
-    public final static String _FS = (isUnix())?File.separator:"\\\\";
+    public final String stribeString(String input) {        
+        return  input.trim().replaceAll("^[ \\t]|[ \\t]$", "");
+    }
+    
+    public boolean isDebug(){ return isDebug(0); }
+    public boolean isDebug(int l){ return ( l>=0 && debug>l ); }
+        
+    public final String[] getStringArray(ArrayList<String> ar){
+        String[] ret = new String[ar.size()];
+                 for (int i=0; i<ret.length; i++) { ret[i]=ar.remove(0); }
+        return ret;         
+    }
+    
+    public final static String _FS = (isUnix()||isCygwin())?"/":"\\\\";
 }

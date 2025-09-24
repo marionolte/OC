@@ -710,17 +710,54 @@ public class ReadFile extends Version {
                 if ( start ) {
                     if ( isNullOrEmpty(s) ) { start=false; } else {
                         String[] sp = s.split("="); 
-                        String k = sp[0];
-                        String v = s.substring(k.length()+1).replaceAll("^\"", "").replaceAll("\"$", "");
+                        String k = sp[0].replaceAll("\t", "").replaceAll(" ", "");
+                        String v = stribeString(s.substring(sp[0].length()+1));
                         //System.out.println("pickup key:"+k+":  with value->|"+v+"|<-");
                         p.put(k, v);
                     }
                 } else {
-                    //System.out.println("verify line ->|"+s+"|<- with section->|"+section+"|<-");
+                    //System.out.print("verify line ->|"+s+"|<- with section->|"+section+"|<-");
                     if ( s.startsWith(section)) { start=true; }
+                    //System.out.println(" result:"+start);
                 }
             }
         return p;
+    }
+    
+    public HashMap<String, Properties> getConfigParts(){
+        HashMap<String, Properties> ma = new HashMap<>();
+                        Properties p = new Properties(); ma.put("global", p);
+                boolean start = false;        
+                for ( String s: readOut().toString().split("\n") ) {
+                    s=s.trim();
+                    if ( isNullOrEmpty(s) ){ start=false; } else {
+                       if ( s.startsWith("[") ) {
+                            String m = s.replace("[", "").replace("]", "").replaceAll("\t", "").replaceAll(" ", "");
+                            p = ma.get(m); 
+                            if ( isNullOrEmpty(p) ) {
+                                p = new Properties();
+                                ma.put(m, p);
+                            }
+                            start=true;
+                       }  else {
+                           if ( start && ! s.startsWith("#") && ! s.startsWith("//") ) {
+                               //System.out.println("s ->"+s+"<-");
+                               String[] sp = s.split("="); 
+                                String   k = sp[0].replaceAll("\t", "").replaceAll(" ", "");
+                                String   v = stribeString(s.substring(sp[0].length()+1));
+                                              
+                                if ( v.contains(" #") ){
+                                    sp = v.split(" #");
+                                    v  = stribeString(sp[0]); 
+                                }
+                                //System.out.println("pickup key:"+k+":  with value->|"+v+"|<-");
+                                p.put(k, stribeString(v.replace("^\"", "").replace("\"$", "")));
+                           }
+                       }
+                    }                    
+                }
+                        
+        return ma;
     }
     
     public ArrayList<String> getSectionBasedOn(String section){
@@ -733,7 +770,8 @@ public class ReadFile extends Version {
         }
         return ar;
     }
-   
+    
+     
     public boolean extractZip(String target) {
        ReadDir goal = new ReadDir(target);
        boolean b=false;
