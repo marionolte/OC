@@ -155,6 +155,15 @@ public class Crypt extends Version {
         return ret;
     }
     
+    public boolean isBase64(byte[] b) {
+        try {
+            Base64.getDecoder().decode(b);
+            return true;
+        } catch (IllegalArgumentException|NullPointerException io){            
+        }   
+        return false;
+    }
+    
     public String getCrypted(String txt) {
          String out = getUserCrypted(txt);
                 out = getHostCrypted(out);

@@ -707,19 +707,21 @@ public class ReadFile extends Version {
             for ( String s: readOut().toString().split("\n") ) {
                 s=s.trim();
                 //System.out.println("line:"+s+": start:"+start);
-                if ( start ) {
-                    if ( isNullOrEmpty(s) ) { start=false; } else {
-                        String[] sp = s.split("="); 
-                        String k = sp[0].replaceAll("\t", "").replaceAll(" ", "");
-                        String v = stribeString(s.substring(sp[0].length()+1));
-                        //System.out.println("pickup key:"+k+":  with value->|"+v+"|<-");
-                        p.put(k, v);
+                if ( ! s.startsWith("#") ) {
+                    if ( start ) {
+                        if ( isNullOrEmpty(s) ) { start=false; } else {
+                            String[] sp = s.split("="); 
+                            String k = sp[0].replaceAll("\t", "").replaceAll(" ", "");
+                            String v = stribeString(s.substring(sp[0].length()+1));
+                            //System.out.println("pickup key:"+k+":  with value->|"+v+"|<-");
+                            p.put(k, v);
+                        }
+                    } else {
+                        //System.out.print("verify line ->|"+s+"|<- with section->|"+section+"|<-");
+                        if ( s.startsWith(section)) { start=true; }
+                        //System.out.println(" result:"+start);
                     }
-                } else {
-                    //System.out.print("verify line ->|"+s+"|<- with section->|"+section+"|<-");
-                    if ( s.startsWith(section)) { start=true; }
-                    //System.out.println(" result:"+start);
-                }
+                }    
             }
         return p;
     }

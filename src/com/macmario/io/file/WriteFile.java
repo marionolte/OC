@@ -40,7 +40,7 @@ public class WriteFile extends ReadFile{
     public ReadFile getReadFile() { return (ReadFile) this; }
     
     public boolean append(StringBuilder buf,boolean leave) { return this.append(buf.toString(),leave); }
-    public boolean append(String buf, boolean leave) { return this.append(buf.getBytes(),true); }
+    public boolean append(String buf, boolean leave) { return this.append(buf.getBytes(),leave); }
     public boolean append(StringBuilder buf) { return this.append(buf.toString()); }
     public boolean append(String buf) { return this.append(buf.getBytes(),true); }
     public boolean append(byte[] buf, boolean leave) {

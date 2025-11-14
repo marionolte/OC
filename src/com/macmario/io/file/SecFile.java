@@ -70,7 +70,7 @@ public class SecFile extends ReadFile {
         if ( rFile.isReadableFile() ) {
             StringBuilder sw=rFile.readOut();
             if ( sw == null ) { sw=new StringBuilder(); }
-            boolean b=(sw.length()>0 && sw.toString().endsWith("=") && crypt.isCrypted(sw.toString()));
+            boolean b=(sw.length()>0 && crypt.isBase64(sw.toString().getBytes()) && crypt.isCrypted(sw.toString()));
             printf(func,2,"readout =>|"+sw.toString()+"|<=  crypted:"+b);
             return b;
         }

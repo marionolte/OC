@@ -32,7 +32,7 @@ public abstract class Version  { //extends OraConst {
     final public static int minorVersion=0;
     final public static int patchVersion=6;
     final public static int fixedVersion=1;
-    final public static int   libVersion=0;
+    final public static int   libVersion=1;
     final public static int  betaVersion=1;
     
     static {
