@@ -718,7 +718,7 @@ public class ReadFile extends Version {
                         }
                     } else {
                         //System.out.print("verify line ->|"+s+"|<- with section->|"+section+"|<-");
-                        if ( s.startsWith(section)) { start=true; }
+                        if ( s.startsWith(section) || s.startsWith("["+section+"]")) { start=true; }
                         //System.out.println(" result:"+start);
                     }
                 }    
