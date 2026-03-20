@@ -5,13 +5,14 @@
  */
 package com.macmario.io.account;
 
+import com.macmario.general.Version;
 import com.macmario.io.crypt.Crypt;
 
 /**
  *
  * @author SuMario
  */
-abstract public class User {
+abstract public class User extends Version {
     private String user=null;
     private String pass=null;
     volatile private Crypt crypt=new Crypt();
@@ -35,5 +36,10 @@ abstract public class User {
     
     public boolean isPasswordSet() { return (this.pass!=null);}
     public boolean isUsernameSet() { return (this.user!=null);}
+    
+    public boolean isPasswordCorrect(String pw) {
+        return ( isNotNullOrEmpty(pw) 
+                 && (this.pass.equals(pw) || crypt.getCrypted(pw).equals(this.pass)) );
+    }
     
 }
