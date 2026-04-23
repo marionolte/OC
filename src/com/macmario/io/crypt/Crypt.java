@@ -27,13 +27,14 @@ public class Crypt extends Version {
     
           
     final private UUID uuid;
-    private       String Ukey="5fa4a40a-53b4-4f7a-b132-61bd19b79a8e";
+    private       String Ukey; //Ukey="5fa4a40a-53b4-4f7a-b132-61bd19b79a8e";
     private       String host=Host.getHostname();
     private       String user=getUserKey();
     int maxKeyLen;
     
     private int cryptLevel=0;
     public Crypt() {
+        Ukey=(super.readPropertyFromRessource("com/macmario/main/main.properties")).getProperty("UKEY", "");
         uuid= UUID.fromString(Ukey);
         ch=new CryptHigh(uuid);
         base64Alphabet = new byte[base64Length];

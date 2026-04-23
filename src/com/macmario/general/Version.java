@@ -31,8 +31,8 @@ public abstract class Version  { //extends OraConst {
     final public static int majorVersion=0;
     final public static int minorVersion=0;
     final public static int patchVersion=6;
-    final public static int fixedVersion=1;
-    final public static int   libVersion=3;
+    final public static int fixedVersion=2;
+    final public static int   libVersion=0;
     final public static int  betaVersion=1;
     
     static {
@@ -346,4 +346,33 @@ public abstract class Version  { //extends OraConst {
     }
     
     public final static String _FS = (isUnix()||isCygwin())?"/":"\\\\";
+    
+    
+    synchronized public String readStringFromRessource(String ressource) {
+        StringBuilder sw = new StringBuilder();
+        if ( isNullOrEmpty(ressource) ){
+            try {
+                java.io.InputStream in = this.getClass().getResourceAsStream(ressource);
+                byte[] b = new byte[16*1024];
+                int n;
+                while ( ( n=in.read(b)) != -1 ) {
+                    for ( int i=0; i<n; i++ ) { sw.append( (char) b[i]); }
+                }
+                in.close();
+            } catch(java.io.IOException io){
+                log(1, "couldn't load ressource "+ressource);
+            }
+        }
+        return sw.toString();
+    }
+    synchronized public Properties readPropertyFromRessource(String ressource) {
+        Properties p = new Properties();
+            try {
+                p.load(  this.getClass().getResourceAsStream(ressource) );
+            } catch(java.io.IOException io){
+                log(1, "couldn't load ressource "+ressource);
+            }
+        return p;
+    }
+
 }
