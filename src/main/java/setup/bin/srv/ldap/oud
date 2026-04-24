@@ -1,0 +1,193 @@
+#!/usr/bin/env bash
+prog="$0"
+inst="$2"
+sinst="$3"
+
+progdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+
+if [[  "$USER" != "oracle" ]]; then
+        echo "ERROR: could not execute as user $USER"
+        exit -1
+fi
+
+function usage() {
+        echo "$prog [<start|stop|status|reindex> <instance>|sync <instance> <target instance>|backup <instance>|restore <instance|directory> [<backupID>] ]"
+        exit -1
+}
+
+function starting() {
+    echo "Starting instance $1 on $2 "
+    ( cd $2/bin && ./start-ds )
+}
+
+function stopping() {
+    echo "Stopping instance $1 on $2 "
+        ( cd $2/bin && ./stop-ds )
+}
+
+function reindex() {
+   stopping "$1" "$2"
+   INDEXLIST="cn uid mail sn givenname entryuuid displayname member uniquemeber telephonenumber orclmtuid"
+   echo "Reindexing"
+   ( cd $2/bin && for ind in $INDEXLIST; do echo "reindex $ind"; ./rebuild-index -b $baseDN -i $ind ; done ; )
+   starting "$1" "$2"
+}
+
+function reindexall() {
+   stopping "$1" "$2"
+   echo "Reindexing"
+   ( cd $2/bin && for ind in $INDEXLIST; do echo "reindex $ind"; ./rebuild-index -b $baseDN --rebuildAll ; done ; )
+   starting "$1" "$2"
+}
+
+ho=`hostname`
+sHost=""
+sPort=""
+dHost=""
+dPort=""
+baseDN="dc=oc,dc=com"
+admin="admin"
+admindn="cn=Directory Manager"
+TESTPW="$HOME/bin/.testpw.$$"
+PRODPW="$HOME/bin/.prodpw.$$"
+SECTESTPW="$HOME/bin/.testpw"
+SECPRODPW="$HOME/bin/.prodpw"
+AREA=`echo $ho | awk 'BEGIN{s="QA" }{ if ( $0 ~ /p[0-1][0-9]$/ ) {s="prod" } }END{print s}' `
+PWFILE="$TESTPW"
+
+function syncup() {
+        echo "Sync $1 to $2 "
+    getAdmin "$1" source
+    #echo "$1 $sHost $sPort"
+    getAdmin "$2" destination
+    #echo "$2 $dHost $dPort"
+
+    backup "$2"
+
+   getPW
+   (cd $1 && ./bin/dsreplication initialize -h $sHost -p $sPort -I $admin --adminPasswordFile $PWFILE -O $dHost -d $dPort --baseDN "$baseDN" -X -n )
+}
+
+function backup() {
+    echo "Backup instance $1"
+    ( cd $1 &&  mkdir -p backup/backup 2>/dev/null && ./bin/backup -a -d backup/backup )
+}
+
+function status() {
+    echo "Check Status of $1"
+    getPW
+        (cd $1 && ./bin/status -D "${admindn}" -j $PWFILE )
+
+   en=`(cd $1 && ./bin/status -D "${admindn}" -j $PWFILE ) | awk 'BEGIN{s="Disabled"}{if($1 == "Replication:" && $NF == "Enabled" ){ s=$NF; } }END{print s}' `
+   if [[ "$en" == "Enabled" ]]; then
+
+        (cd $1 && ./bin/dsreplication status -I $admin -j $PWFILE -X -n )
+   fi
+
+}
+
+function getPW() {
+   if [[ "$AREA" == "prod" ]]; then
+          oc -getunsecinfo "${SECPRODPW}" >  "${PRODPW}"
+                  PWFILE="${PRODPW}"
+    else
+          oc -getunsecinfo "${SECTESTPW}" >  "${TESTPW}"
+                  PWFILE="${TESTPW}"
+   fi
+}
+
+
+function restore() {
+   s="$1"
+   if [[ "$2" != "" ]]; then s="$2"; fi
+   if [ ! -d $s ]; then
+          echo "ERROR: backup directory $s not found"
+      exit -1
+   fi
+   if [ -d "$s/backup/backup/userRoot/" ]; then
+                   s="$s/backup/backup/userRoot/"
+   fi
+
+   if [[ "$3" == "" ]]; then
+          (cd $1 && ./bin/restore --listBackups --backupDirectory $s )
+    else
+      echo "like to restore $3 from Backup $s "
+      ex="$(cd $1 && ./bin/restore --listBackups --backupDirectory $s 2>&1 | grep "$3" )"
+      if [[ "$ex" == "" ]]; then
+                 echo "ERROR: backupID not exist"
+           else
+                 echo "INFO: backupID $3 found"
+                 (cd $1 && ./bin/restore --backupDirectory $s -I $3 -n )
+         ex=$?
+                 #ex=`(cd $1 && ./bin/restore --backupDirectory $s -I $3 -n && echo $? ) | awk 'BEGIN{s="-1"}{s=$NF}END{print s}' `
+         if [[ $ex -eq 0 ]]; then
+                        echo "INFO: backupID $3 checked - OK"
+                    getPW
+            # (./bin/restore  --backupDirectory /pkgmnt/IDM/mw/asinst_2/OUD/backup/backup/userRoot/ -D cn=orcladmin -j ~/bin/.testpw -h localhost -p 13444 -X -t 0 )
+                        (cd $1 && ./bin/restore --backupDirectory $s -I $3 -h $sHost -p $sPort -D "$admindn" -j $PWFILE -X -t 0 )
+                    ex=$?
+                    if [[ "$ex" == "0" ]]; then
+                                echo "INFO: restore command successful completed"
+                     else
+                            echo "ERROR:  restore command fails"
+                        fi
+          else
+                    echo "INFO: backupID $3 checked - faild - $ex "
+             fi
+          fi
+   fi
+}
+
+function getAdmin() {
+
+   a=`( cd $1 && egrep -C 10 "cn=Administration Connector" config/config.ldif  2>/dev/null ) `
+
+   h=`echo "$a" | grep "ds-cfg-listen-address"  | awk -v o="$ho" 'BEGIN {s=0}{s=$NF}END{if(s=="0.0.0.0" ||s~"::0"){s=o}; print s}' `
+   p=`echo "$a" | grep "ds-cfg-listen-port"     | awk 'BEGIN {s=0}{s=$NF}END{print s}'`
+
+  if [[ "$2" == "source" ]]; then
+         sHost=$( echo $h )
+     sPort=$( echo $p )
+   else
+         dHost=$( echo $h )
+     dPort=$( echo $p )
+  fi
+
+}
+
+
+instpath=""
+targetpath=""
+. $progdir/inst $inst $sinst
+
+if [[ "$inst" = "" ]] || [[ "$instpath" == "" ]]; then
+        echo "ERROR: could not terminate instance $inst or location $instpath"
+    usage
+fi
+
+if [[ "$instpath" == "" ]] || [ ! -d "$instpath" ]; then
+   echo "ERROR: unknown instance or intance path $instpath not found"
+   exit -1
+fi
+
+
+case "$1" in
+        'Start'|'start'|'START' ) starting $inst $instpath ;;
+    'Stop' |'stop' |'STOP'  ) stopping $inst $instpath ;;
+    'Sync' |'sync' |'SYNC'  ) if [[ "$targetpath" != "" ]]; then
+                                                                        syncup $instpath $targetpath
+                                                           else
+                                                                  echo "ERROR: target not set"
+                              fi
+                                                          ;;
+    'backup' ) backup $instpath ;;
+    'restore') getAdmin "$instpath" source; restore "$instpath" "$targetpath" "$4";;
+    'status' ) status $instpath ;;
+    'restart') stopping $inst $instpath ; sleep 3;  starting $inst $instpath  ;;
+    'reindex') reindex $inst $instpath ;;
+    'reindexall') reindexall $inst $instpath ;;
+        *) usage;;
+esac
+
+rm $TESTPW $PRODPW 2>/dev/null

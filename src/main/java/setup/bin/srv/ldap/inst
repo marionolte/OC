@@ -1,0 +1,39 @@
+instpath="";
+targetpath="";
+
+OUD1="$progdir/asinst_1/OUD/"
+OUD2="$progdir/asinst_2/OUD/"
+OUD3="$progdir/asinst_3/OUD/"
+OUD4="$progdir/asinst_4/OUD/"
+OUD5="$progdir/asinst_5/OUD/"
+OUDT="$progdir/testoud/OUD/"
+
+case "$1" in
+    'oud1'|'asinst_1' ) instpath="${OUD1}";;
+    'oud2'|'asinst_2' ) instpath="${OUD2}";;
+    'oud3'|'asinst_3' ) instpath="${OUD3}";;
+    'oud4'|'asinst_4' ) instpath="${OUD4}";;
+    'oud5'|'asinst_5' ) instpath="${OUD5}";;
+    'oudt' ) instpath="${OUDT}";;
+    *)   echo "ERROR:  could not terminate instance path"; exit -1 ;;
+esac
+
+case "$2" in
+    'oud1'|'asinst_1' ) targetpath="${OUD1}";;
+    'oud2'|'asinst_2' ) targetpath="${OUD2}";;
+    'oud3'|'asinst_3' ) targetpath="${OUD3}";;
+    'oud4'|'asinst_4' ) targetpath="${OUD4}";;
+    'oud5'|'asinst_5' ) targetpath="${OUD5}";;
+    'oudt' ) targetpath="${OUDT}";;
+    *)  if [ -d "$2" ]; then
+                   targetpath="${2}"
+            fi
+                ;;
+esac
+
+export instpath targetpath
+
+if [[ "$instpath" == "$targetpath" ]]; then
+   echo "ERROR: source and target equal";  exit -1
+fi
+
