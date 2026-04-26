@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+DOMAIN="@@DOMAIN@@"
+MAX=30
+MIN=3
+SIZE=2048
+
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+if [[ "$JAVA_HOME" == "" ]]; then JAVA_HOME="/usr/java"; fi
+
+$JAVA_HOME/bin/java -version 2>&1| egrep "1.[7-9].0_" >/dev/null 2>&1
+if [[ "$?" -ne 0 ]]; then
+        echo "ERROR: unsupport java version - minimum java 1.7 required"
+        exit -1
+fi
+
+. ${dir}/domain.info $DOMAIN 
+
+if [[ "$DOMAINHOME" == "" ]] || [ ! -d "$DOMAINHOME" ]; then 
+	echo "ERROR: no DOMAINHOME configured for domain $DOMAIN"
+	exit 1
+fi
+
+#-wlsrota  [-minsize <size 4k>] [-minold <days 3d>] [-maxold <days 30d>] [-savefile <pattern>] <domain dir> [<domain dir1> ..]
+$JAVA_HOME/bin/java -jar ${dir}/lib/OC.jar $@ -wlsrota -minsize $SIZE -minold $MIN -maxold $MAX $DOMAINHOME  2>/dev/null
+exit $?
