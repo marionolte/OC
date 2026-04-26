@@ -1,0 +1,473 @@
+#!/usr/bin/env bash 
+prog="$0"
+inst="$3"
+dom="$2"
+extraeval="$EVALEXTRA"
+if [[ "$extraeval" == "" ]]; then extraeval="0"; fi
+
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. ${dir}/oc_profile 2>/dev/null
+
+if [[  "$USER" != "oracle" ]]; then
+        echo "ERROR: could not execute as user $USER"
+        exit -1
+fi
+
+log="${dir}/log"
+
+if [[ "$JAVA_HOME" == "" ]]; then JAVA_HOME="/usr/java"; fi
+
+$JAVA_HOME/bin/java -version 2>&1| grep -E "1.[7-8].0_|9.0.|1[1-9].0." >/dev/null 2>&1
+if [[ "$?" -ne 0 ]]; then
+	echo "ERROR: unsupport java version - minimum java 1.7 required"
+	exit -1
+fi
+MEM_ARGS="-Dweblogic.security.SSL.ignoreHostnameVerification=true -Dweblogic.security.TrustKeyStore=DemoTrust"
+
+function usage() {
+        echo "$prog <start|stop> <domain> <instance> "
+        exit -1
+}
+
+function rolling(){
+	if [[ "$ADMINRUNNING" -ne 1 ]]; then 
+		echo "ERROR: Server $ADMINSERVER is not running"
+		exit 2
+	fi 
+	export EVALEXTRA=1
+   	WAITTIME=90
+	if [[ "$inst" != "" ]] && [ "`expr $inst + 1 2>/dev/null` " != "" ]; then WAITTIME=$inst; fi
+
+	f="${log}/rolling.py"
+	LOGFILE="$log/rolling.out"
+
+           echo "from time import sleep"									 >"${f}"
+	   echo "from interrupting now import timeout"								>>"${f}"
+	   echo "def getMSserverStatus(server):"								>>"${f}"
+           echo "  try:"											>>"${f}"
+           echo "    cd('/ServerLifeCycleRuntimes/' +server)"							>>"${f}"
+	   echo "  except:"											>>"${f}"
+	   echo "     dumpStack();"										>>"${f}"
+	   echo "  return cmo.getState()"									>>"${f}"
+	   echo " "												>>"${f}"
+	   echo "def loopUntil(state,server):"									>>"${f}"
+	   echo "  try:"											>>"${f}"
+	   echo "    with timeout(60*5, exception=RuntimeError):"						>>"${f}"
+           echo "	while True:"										>>"${f}"
+           echo "	   test = getMSserverStatus(server) "							>>"${f}"
+	   echo "            if test == state:"									>>"${f}"
+           echo "		     break"									>>"${f}"
+	   echo "	     except RuntimeError:"								>>"${f}"
+   	   echo "		      pass"									>>"${f}"
+
+           echo "wlsUserID = java.lang.System.getenv('wlsUserID')"                                              >>"${f}"
+           echo "wlsPassword = java.lang.System.getenv('wlsPassword')"                                          >>"${f}"
+           echo "connect(${userID} ${password} url='${ADMINSTOPURL}', adminServerName='${ADMINSERVER}')"        >>"${f}"
+
+	echo "$SERVERS" | awk 'BEGIN{FS=","} {for(i=1; i<=NF; i++) { if ( "$i" != "" ){ print $i}} }' | while read pa rest; do
+	     if [[ "$pa" != "" ]]; then
+		a="SERVER${pa}RUNNING"		 
+		#echo $pa $WAITTIME ${!a}
+		if [[ "${!a}" -eq 1 ]]; then 
+			#echo "$pa stopping"		
+			#"${prog}" stop $dom $pa 
+			#sleep $WAITTIME
+			echo "print \"shutdown server $pa\""
+			echo "shutdown('${pa}','Server', ignoreSessions='true',force='true')"                  
+			echo "loopUntil('SHUTDOWN',$pa)"
+			echo "sleep($WAITTIME)"									
+		fi 
+		#echo "$pa starting"
+		#"${prog}" stop $dom $pa
+		#sleep $WAITTIME
+		echo "print \"start server $pa\""
+		echo "start('$pa','Server')"									
+		echo "loopUntil('RUNNING', '$pa')"
+		echo "sleep($WAITTIME)"										
+	     fi
+	done													>>"${f}"
+        echo "exit()"                                                                                           >>"${f}"
+
+        ( cd $DOMAINHOME && . ./bin/setDomainEnv.sh 2>/dev/null && ${JAVA_HOME}/bin/java -classpath ${FMWCONFIG_CLASSPATH} ${MEM_ARGS} ${JVM_D64} ${JAVA_OPTIONS} $JAVAEX weblogic.WLST ${dir}/rolling.py  2>&1 >$LOGFILE )
+           WLSUP=$?
+}
+
+function startingNM() {
+	m1="SERVER${SERVER}NODE"
+	m=${!m1}
+	echo "Starting instance $SERVER over NodeManager $m"
+	r1="NODE${m}RUNNING" 
+	if [[ ${!r1} -eq 0 ]]; then
+		echo "ERROR: NodeManager $m not running"
+		exit 2
+	fi
+	us1="NODE${m}NODEUSER"
+	us=${!us1}
+	pa1="NODE${m}NODEPASS"
+	pa=${!pa1}
+	ho1="NODE${m}HOST"
+	ho=${!ho1}
+	po1="NODE${m}PORT"
+        po=${!po1}
+
+        prop=",props=prps"
+	if [[ "$SERVER" == "$ADMINSERVER" ]]; then prop=""; fi
+
+	f="${log}/start-${SERVER}.py"
+
+	echo "nmConnect('${us}','${pa}','${ho}','${po}','${dom}','${DOMAINHOME}', 'ssl')" 		  	  >"${f}"
+	echo "prps= makePropertiesObject(\"AdminURL=${ADMINURL}\")"                                              >>"${f}"
+        echo "nmStart('${SERVER}'${prop});"									 >>"${f}"
+        echo "exit();"												 >>"${f}"
+        RES=`( cd $DOMAINHOME 2>&1 && . ./bin/setDomainEnv.sh 2>&1 && ${JAVA_HOME}/bin/java -classpath ${FMWCONFIG_CLASSPATH} ${MEM_ARGS} ${JVM_D64} ${JAVA_OPTIONS} $JAVAEX weblogic.WLST  "${f}" 2>&1 ) `
+	
+	echo "$RES" | grep "denied" >/dev/null 2>&1
+ 	if [ "$?" -eq 0 ]; then
+		echo "ERROR:  nodemanager user wrong - update nmuser/nmpass in $DOMAINHOME/domainkeys with correct credentials"
+		rm "${f}" 2>/dev/null
+		exit 2
+	fi	
+	echo "$RES" | grep "Successfully started server ${SERVER}"  >/dev/null 2>&1
+	if [[ "$?" -eq 0 ]]; then
+	     echo "successfully started"
+	     rm "${f}" 2>/dev/null
+	     return
+	fi
+	echo "WARNING:  unknown state - please check log files"
+	rm "${f}" 2>/dev/null
+}
+
+function stoppingNM() {
+	m1="SERVER${SERVER}NODE"
+        m=${!m1}
+        echo "Stopping instance $SERVER over NodeManager $m ($NODEHOST/$NODEPORT)"
+        r1="NODE${m}RUNNING"
+        if [[ ${!r1} -eq 0 ]]; then
+                echo "ERROR: NodeManager $m not running"
+                exit 2
+        fi
+        us1="NODE${m}NODEUSER"
+        us=${!us1}
+        pa1="NODE${m}NODEPASS"
+        pa=${!pa1}
+        ho1="NODE${m}HOST"
+        ho=${!ho1}
+        po1="NODE${m}PORT"
+        po=${!po1}
+
+	f="${log}/shutdown-${SERVER}.py"
+
+        echo "nmConnect('${us}','${pa}','${ho}','${po}','${dom}','${DOMAINHOME}', 'ssl');"   	 	 >"${f}"
+	echo "nmKill('${SERVER}');"									>>"${f}"
+	echo "exit()" 											>>"${f}"
+	RES=`( cd $DOMAINHOME 2>&1 && . ./bin/setDomainEnv.sh 2>&1 && ${JAVA_HOME}/bin/java -classpath ${FMWCONFIG_CLASSPATH} ${MEM_ARGS} ${JVM_D64} ${JAVA_OPTIONS} $JAVAEX weblogic.WLST "${f}" 2>&1 )`
+	echo $RES
+
+	rm "${f}" 2>/dev/null
+}
+
+function starting() {
+    echo "Starting instance $SERVER on $DOMAINHOME "
+
+    ( cd $DOMAINHOME && mkdir -p ./servers/$SERVER/security 2>/dev/null && mkdir  ./servers/$SERVER/logs/ 2>/dev/null )
+   
+    if [ ! -s "$SECFILE" ] && [[ "$wlsUserId" != "" ]] && [[ "$wlsPassword" != "" ]]; then
+        ( cd $DOMAINHOME && mkdir -p ./servers/$SERVER/security 2>/dev/null )
+	echo "username=$wlsUserId"	 >$SECFILE 2>/dev/null
+	echo "password=$wlsPassword"	>>$SECFILE 2>/dev/null
+    fi
+    WLSUP=1
+    if [ -s "$SECFILE" ]; then
+	   ( cd $DOMAINHOME && mkdir -p ./servers/$SERVER/logs/ 2>/dev/null )
+           echo "********************************************************"
+           if [[ "$ADMINSERVER" == "$SERVER" ]]; then
+	          echo "* Starting the AdminServer : $SERVER ***"
+                  echo "********************************************************"
+                  ( cd $DOMAINHOME/bin && nohup ./startWebLogic.sh >$STARTFILE 2>&1 </dev/null & )
+            else
+		  echo "* Starting the Managed Server : $SERVER over Admin: $ADMINURL *"
+                  echo "********************************************************"
+                  ( cd $DOMAINHOME/bin && nohup ./startManagedWebLogic.sh $SERVER $ADMINURL >$STARTFILE 2>&1 </dev/null & )
+           fi
+
+       sleep 1
+       ENDTIME=$((`date '+%s' ` + 1200000 ))
+       while  [ $WLSUP -eq 1 ]; do
+                    TAIL=`tail -500 $STARTFILE 2>/dev/null | egrep -i "state|BEA-|error" `
+		    echo "${TAIL}" | grep "BEA-" | grep 'RUNNING' 
+                    if [ $? -eq 0 ]; then
+                        echo "Server $SERVER is RUNNING"
+                        WLSUP=0
+                    else
+		      #TAIL=`tail -500 $STARTFILE 2>/dev/null | grep -i error`
+		      echo "${TAIL}" | egrep "Error: Could not find or load main class" >/dev/null 2>&1
+ 		      if [ $? -eq 0 ]; then
+                                 echo "Server $SERVER in CONFIG ERROR"
+                                 WLSUP=3
+ 		       else 
+                        echo "${TAIL}" | egrep "FORCE_SHUTTING_DOWN|A critical service failed." >/dev/null 2>&1
+                        if  [ $? -eq 0 ]; then
+                        	echo "Server $SERVER in ERROR"
+                                WLSUP=2
+                         else
+                                CHECKPOINT=` date '+%s' `
+                                if [[ $CHECKPOINT -gt $ENDTIME ]]; then
+                                     echo "ERROR:  max waittime reached "
+                                     WLSUP=-1
+                                fi
+                        fi
+		      fi
+                    fi
+
+                    if  [ $WLSUP -eq 1 ]; then sleeper; fi 
+           done
+    else
+       echo "ERROR: server $SERVER not prepared for Autostart - missing $SECFILE"
+       WLSUP=1
+    fi
+
+    export wlsPassword=""
+    exit $WLSUP
+}
+
+function sleeper() {
+    printf '-'  ; sleep 1; printf "\b"
+    printf '\\' ; sleep 1; printf "\b"
+    printf '|'  ; sleep 1; printf "\b"
+    printf '/'  ; sleep 1; printf "\b"
+}
+
+function startNodeManager() {
+     echo "Starting NodeManager $SERVER on $NODEHOME"
+     ( cd $NODEMANAGER && nohup $NODEMANAGER/startNodeManager.sh >$STARTFILE 2>&1 </dev/null & )
+
+     # wlst startNodeManager(verbose=￢ﾀﾙtrue￢ﾀﾙ, NodeManagerHome=￢ﾀﾙ$NODEHOME￢ﾀﾙ, ListenPort=￢ﾀﾙ5556￢ﾀﾲ, ListenAddress=￢ﾀﾙlocalhost￢ﾀﾙ)
+     WLSUP=1
+     ENDTIME=$((`date '+%s' ` + 60000 ))
+     while  [ $WLSUP -eq 1 ]; do
+            TAIL=`tail -100 $STARTFILE 2>/dev/null `
+            echo "${TAIL}" | grep "listener started on port" 2>&1 >/dev/null
+            if [ $? -eq 0 ]; then
+                 echo "NodeManager $SERVER is RUNNING"
+                 WLSUP=0
+             else
+		echo "${TAIL}" | egrep "IOException|^\+\ status=1" 2>&1 >/dev/null
+		if [ $? -eq 0 ]; then
+		   echo "NodeManager $SERVER in ERROR "
+                   WLSUP=-1
+		 else
+			CHECKPOINT=` date '+%s' `
+                        if [[ $CHECKPOINT -gt $ENDTIME ]]; then
+                                     echo "ERROR:  max waittime reached "
+                                     WLSUP=-1
+                        fi
+		fi
+      	            if  [ $WLSUP -eq 1 ]; then sleeper; fi
+	    fi
+     done
+}
+
+function stopNodeManager() {
+    WLSUP=1
+    echo "Stopping NodeManager $SERVER on $NODEHOME"
+    if [ -x a$NODEMANAGER/stopNodeManager.sh ]; then 
+       ( cd $NODEMANAGER && nohup $NODEMANAGER/stopNodeManager.sh >$STOPFILE 2>&1 </dev/null & )
+    else 
+	PIDD=`ps -a -u $USER | grep "weblogic.NodeManager"  | grep -v "grep" | grep "${DOMAINHOME}" | awk 'BEGIN{s=""}{s=s","$2}END{if( s != "" ){ print substr(s,2,length(s)-1); }else{print s} }' `
+	if [[ "$PIDD" != "" ]]; then 
+	    kill -9 $PIDD >/dev/null 2>&1
+	    if [[ "$?" -eq 0 ]]; then 
+	    	echo "INFO: NodeManager on ${DOMAINHOME} stopped" 
+		rm $NODEHOME/*.lck 2>/dev/null
+		WLSUP=0
+	     else
+		echo "ERROR: NodeManager pid $PIDD could not stopped"
+		WLSUP=-1
+	    fi
+	 else 
+	   echo "WARNING: no NodeManager is Running for domain $dom on ${DOMAINHOME}"
+	   WLSUP=-1
+	fi
+	
+    fi
+
+    if [[ "$WLSUP" -eq 1 ]]; then
+       while  [ $WLSUP -eq 1 ]; do
+            TAIL=`tail -100 $STOPFILE 2>/dev/null | grep state `
+            echo "${TAIL}" | grep "Sending signal TERM to" 2>&1 >/dev/null
+            if [ $? -eq 0 ]; then
+                 echo "INFO: NodeManager $SERVER is stopped"
+                 WLSUP=0
+             else
+                    if  [ $WLSUP -eq 1 ]; then sleeper; fi
+            fi
+        done
+    fi
+}
+
+
+function stopping() {
+	if [[ "$ADMINRUNNING" == "0" ]]; then
+		stoppingNM
+		return	
+	fi
+           echo "********************************************************"
+           echo "* Stopping the AdminServer/Managed Server : $SERVER *"
+           echo "* DOMAINHOME: $DOMAINHOME *"
+           echo "********************************************************"
+       if [[ "$ADMINRUNNING" == "1" ]]; then 
+	   f="${log}/shutdown-${SERVER}.py"
+           echo "wlsUserID = java.lang.System.getenv('wlsUserID')" 						 >"${f}" 
+	   echo "wlsPassword = java.lang.System.getenv('wlsPassword')" 						>>"${f}" 
+	   echo "connect(${userID} ${password} url='${ADMINSTOPURL}', adminServerName='${ADMINSERVER}')" 	>>"${f}" 
+	   echo "shutdown('${SERVER}','Server', ignoreSessions='true',force='true')" 				>>"${f}" 
+	   echo "exit()" 											>>"${f}" 
+
+	   ( cd $DOMAINHOME && . ./bin/setDomainEnv.sh 2>/dev/null && ${JAVA_HOME}/bin/java -classpath ${FMWCONFIG_CLASSPATH} ${MEM_ARGS} ${JVM_D64} ${JAVA_OPTIONS} $JAVAEX weblogic.WLST "${f}"  2>&1 >$STOPFILE )
+	   WLSUP=$?
+       
+	   if [[ "$ADMINSERVER" == "$SERVER" ]]; then
+              ( cd $DOMAINHOME && . ./bin/setDomainEnv.sh && . ${WL_HOME}/common/derby/bin/stopNetworkServer.sh  >"${DOMAINHOME}/derbyShutdown.log" 2>&1 )
+	   fi
+
+           #cleanup
+	   rm -fr "${f}" 2>/dev/null
+
+	   exit $WLSUP
+       else 
+	   echo "ERROR: AdminServer $ADMINSERVER on $ADMINURL/console not running"
+	   exit -1
+       fi
+
+}
+
+function killRemote() {
+    echo "$DOMAIN at $DOMAINHOME as "
+
+}
+
+function status() {
+
+           echo "********************************************************"
+           echo "* Print Domain $DOM status information *"
+           echo "********************************************************"
+
+	 printf "DOMAIN    \t: %s\n" "$DOM"
+	 printf "DOMAINHOME\t: %s\n" "$DOMAINHOME"
+	 printf "\n"
+         ST="Down"
+	 if [[ "${ADMINRUNNING}" == "1" ]]; then ST="Up and Running"; fi
+	 printf "AdminServer\t: %s ( %sconsole )  state: %s\n" "$ADMINSERVER" "$ADMINURL" "$ST"
+
+	   echo 
+	   echo "NodeManagers: ${NODES}"
+     echo "${NODES}" | awk 'BEGIN{FS=","} {for(i=1; i<=NF; i++) { if ( "$i" != "" ){ print $i}} }' | while read pa rest; do
+       if [[ "$pa" != "" ]]; then
+	   S1="NODE${pa}RUNNING" ;  SURL="NODE${pa}URL" ; ST="Down"
+	   if [[ "${!S1}" == "1" ]]; then ST="Up and Running"; 
+	     else 
+		if [[ "${!S1}" == "2" ]]; then ST="(Not tested)"; fi
+	   fi
+
+           printf " %s \t( %s ) \t\t\tstate: %s\n"  "$pa" "${!SURL}" "$ST"
+       fi
+     done
+
+	   echo
+	   echo "Servers: $SERVERS"
+     echo "$SERVERS" | awk 'BEGIN{FS=","} {for(i=1; i<=NF; i++) { if ( "$i" != "" ){ print $i}} }' | while read pa rest; do 
+       if [[ "$pa" != "" ]]; then 
+           S1="SERVER${pa}RUNNING" ;  SURL="SERVER${pa}URL" ; SNODE="SERVER${pa}NODE"; ST="Down"
+	   if [[ "${!S1}" == "1" ]]; then ST="Up and Running"; 
+	    else 
+		if [[ "${!S1}" == "2" ]]; then ST="(Not tested)"; fi
+	   fi
+
+	   printf " %s \t( %s  machine: %s ) \tstate: %s\n"  "$pa" "${!SURL}" "${!SNODE}" "$ST"
+       fi
+     done
+	   echo
+	   echo "********************************************************"
+}
+
+function init() {
+   SERVERHOME="${DOMAINHOME}/servers/${SERVER}/"
+      SECFILE="${SERVERHOME}/security/boot.properties"
+    STARTFILE="${SERVERHOME}/logs/${SERVER}.out"
+     STOPFILE="${SERVERHOME}/logs/${SERVER}.stop.out"
+     NODELOCK=""
+     NODEHOST=""
+     NODEPORT=""
+
+   srv="";
+   if [[ "$inst" != "" ]]; then srv="-server $inst"; fi
+   if [[ $extraeval -eq 0 ]]; then 
+      eval "$(${JAVA_HOME}/bin/java $JAVAEX -jar ${dir}/lib/OC.jar -wlsinfo $DOMAINHOME  2>/dev/null )" 2>/dev/null
+   fi
+
+   if [[ "$DOMKEYSFOUND" != "true" ]]; then
+	echo "ERROR: no domainkeys file found in $DOMAINHOME"
+	exit -1
+   fi
+
+   if [[ "$NODES" =~ "${SERVER}," ]]; then
+        if [ -d "${DOMAINHOME}/nodemanager/" ]; then
+            NODEMANAGER="${DOMAINHOME}/bin/"
+            NODEHOME="${DOMAINHOME}/nodemanager/"
+         else
+            NODEHOME="${WLHOME}/common/nodemanager/"
+	    NODEMANAGER="${WLHOME}/server/bin/"
+	fi
+	SERVERHOME="${NODEHOME}"
+	 STARTFILE="${SERVERHOME}/nodemanager.log"
+          STOPFILE="${SERVERHOME}/nodemanager.log.stop"
+           SECFILE=""
+	  NODELOCK="${SERVERHOME}/nodemanager.log.lck"
+
+          NODEHOST=`grep "ListenAddress=" "${SERVERHOME}/nodemanager.properties" | awk 'BEGIN{s="";FS="="}{s=$NF}END{print s}' `
+	  NODEPORT=`grep "ListenPort="    "${SERVERHOME}/nodemanager.properties" | awk 'BEGIN{s="";FS="="}{s=$NF}END{print s}' `
+   fi
+
+  ulimit -n 65535   2>/dev/null
+  ulimit -s 2048    2>/dev/null
+  ulimit -u 191336  2>/dev/null
+  export DOMAINHOME SERVERHOME ADMINURL ADMINSTOPURL SERVER NODEMANAGER SECFILE STARTFILE wlsUserId wlsPassword MWHOME WLHOME NODELOCK NODEHOME NODEHOST NODEPORT
+}
+
+
+. ${dir}/domain.info $dom $inst 
+
+if [[ "$DOMAINHOME" == "" ]]; then 
+   echo "ERROR: Domainhome and not configured -  update domain.info "
+   exit 1
+ else 
+   init;
+fi
+
+case "$1" in
+    'Start'|'start'|'START' )
+                if [[ "$NODEMANAGER" == "" ]]; then starting; else startNodeManager; fi
+        ;;
+    'nmStart'|'nmstart'|'NMSTART' )
+		startingNM;
+	;;
+    'Stop' |'stop' |'STOP'  )
+                if [[ "$NODEMANAGER" == "" ]]; then stopping; else stopNodeManager; fi
+        ;;
+    'nmStop'|'nmstop'|'NMSTOP' )
+                stoppingNM;
+        ;;
+    'Status'|'status'|'STATUS')
+	status 
+    ;;
+    'RollingRestart'|'rollingrestart'|'ROLLINGRESTART')
+		rolling;
+    ;;
+    'kill'|'Kill'|'KILL' ) 
+                killRemote
+    ;;
+        *) usage;;
+esac
+
+exit $WLSUP 
+

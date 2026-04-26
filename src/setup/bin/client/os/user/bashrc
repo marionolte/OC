@@ -1,0 +1,141 @@
+alias vi="vim"
+alias ussh='ssh -l $USER -i $HOME/.ssh/id_rsa'
+alias rssh='ssh -l root'
+alias ls='ls --color=auto'
+alias ll='ls -la --color=auto'
+alias la='ls -la --color=auto'
+alias grep='grep --color=auto'
+alias h="fc -l"
+alias m="nroff -man "
+alias c="clear"
+alias cls="cd; clear"
+alias depot="cd /swmnt/depot01/depot/"
+alias print="echo"
+alias swapinfo="cat /proc/swaps"
+alias bdf="df -h"
+alias top10='echo "USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND" && ps auxf | sort -nr -k 3 | head -10'
+alias top10m='echo "USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND" && ps auxf | sort -nr -k 4 | head -10'
+
+typeset -x http_proxy=http://localhost:8080/
+typeset -x https_proxy=http://localhost:8080/
+typeset -x ftp_proxy=http://localhost:8080/
+
+
+eval `dircolors ~/.dir_colors`
+
+## PS1
+PS1='\u@\h \w \$ '
+export PS1
+
+
+#JAVA HOME
+export JAVA_HOME="/usr/java/jdk1.7latest"
+
+#tset -w
+
+shopt -s checkwinsize
+shopt -s cdspell
+
+function wl() {
+echo ""
+echo "   running WL domains:"
+echo "      running WL instances:"
+echo "         WL log file:"
+echo "         ------------------"
+
+for i in `ps -fe |grep weblogic.Name |grep -v grep |grep -v print |awk -F "domains/" '{print $2}' |cut -d/ -f1`
+do
+  echo "   $i" |grep $i
+  j=`ps -fe |grep weblogic.Name |grep $i |grep -v grep |grep -v print |awk -F "weblogic.Name=" '{print $2}' |cut -d" " -f1`
+  echo "      $j" |grep $j
+  echo -n "         "
+  locate -er "/$j.log$" |'grep' $i
+  echo ""
+done
+}
+
+# User specific aliases and functions
+PATH=$HOME/bin:$PATH:.
+export PATH
+
+
+function cleanup  {
+   if [[ "$1" == "" ]] || [ ! -s "$1" ]; then
+        echo "usage() - cleanup <file> [<target>]"
+        return
+   fi
+   TARGET="."
+   if [[ "$2" != "" ]]; then
+        if [[ ! -d "$2" ]]; then
+          echo "please provide the target as created directory"
+          return
+         else
+          TARGET="$2"
+        fi
+   fi
+   da=`date '+%Y%m%d-%H%M%S' `
+
+   cat "$1" | gzip -9 - >"${TARGET}/$1.${da}.gz" && echo -n > "$1"
+}
+
+function prun  {
+   if [[ "$1" == "" ]]; then
+        echo "usage() -    prun <pattern>"
+        return
+   fi
+   pgrep $1 | while read pa rest; do pwdx $pa; done
+}
+
+function pargs {
+   if [[ "$1" == "" ]]; then
+        echo "usage() - pargs <pid>"
+        return
+   fi
+   awk 'BEGIN{FS="\0" }{ for(i=1; i<NF;i++){print "argv["i"]="$i } }' /proc/$1/cmdline
+}
+
+function cdp {
+    if [[ "$1" == "" ]]; then
+        echo "usage() - cdp <pid>"
+        return
+    fi
+
+    cd `pwdx $1|awk '{s=$NF}END{print s}'`
+}
+
+
+function findBig {
+   PA="."
+   if [[ "$@" != "" ]]; then PA="$@" ; fi
+   find ${PA} -type f -printf '%s %p\n'| egrep -v "/stage|/war|.jar$|.war$|/lib/|.so$" | sort -nr | head -20
+}
+
+function compressOld {
+   _OLD=30
+   _TARGET="."
+   _SIZE="500k"
+   while shift; do
+        case $1 in
+            -old)  shift;  _OLD="$1"; break;;
+            -size) shift; _SIZE="$1"; break;;
+            *)  _TARGET="$1"; break;;
+        esac
+   done
+   find "${_TARGET}" -maxdepth 1 -mtime +${_OLD} -size +${_SIZE} -type f | xargs gzip -9
+}
+
+
+function rmOld {
+   _OLD=30
+   _TARGET="."
+   while shift; do
+        case $1 in
+            -old)  shift;  _OLD="$1"; break;;
+            *)  _TARGET="$1"; break;;
+        esac
+   done
+   find "${_TARGET}" -maxdepth 1 -mtime +${_OLD} -type f | xargs rm 2>/dev/null
+}
+
+
+[ -f ~/.bash_aliases ] && . ~/.bash_aliases

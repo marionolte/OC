@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+opt="$1"
+dom="$2"
+comp="$3"
+
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. ${dir}/oc_profile 2>/dev/null
+
+if [[  "$USER" != "SuMario" ]]; then
+        echo "ERROR: could not execute as user $USER"
+        exit -1
+fi
+
+if [[ "$JAVA_HOME" == "" ]]; then JAVA_HOME="/usr/java"; fi
+
+$JAVA_HOME/bin/java -version 2>&1| egrep "1.[7-9].0_" >/dev/null 2>&1
+if [[ "$?" -ne 0 ]]; then
+        echo "ERROR: unsupport java version - minimum java 1.7 required"
+        exit -1
+fi
+
+function usage() {
+        echo "$prog <start|stop> <domain> <component> "
+        exit -1
+}
+
+
+function init()
+{
+    if [[ "$dom" == "" ]] || [[ "$comp" == "" ]]; then
+		usage
+    fi
+    . "${dir}/domain.info" $dom
+    
+}
+
+function startComponent() 
+{
+	init
+	RES=`(cd $DOMAINHOME 2>&1 && ./bin/startComponent.sh  $comp 2>&1 ) `
+	echo "$RES" | grep "Error: Cannot find system-component" >/dev/null 2>&1
+        if [[ "$?" -eq 0 ]]; then
+                echo "ERROR: component $comp not found"
+                exit 1
+        fi
+
+	#echo "$RES" | grep "Unsupported major.minor version " >/dev/null 2>&1 
+        #if [[ "$?" -eq 0 ]]; then
+        #        echo "ERROR: used java version not supported - please correct JAVA_HOME"
+        #        exit 1
+        #fi
+	echo "$RES"
+}
+
+function stopComponent()
+{
+	init
+	RES=`(cd $DOMAINHOME 2>&1 && ./bin/startComponent.sh  $comp 2>&1 )`
+
+	echo "$RES" | grep "Error: Cannot find system-component" >/dev/null 2>&1
+        if [[ "$?" -eq 0 ]]; then
+                echo "ERROR: component $comp not found"
+                exit 1
+        fi
+
+	#echo "$RES" | grep "Unsupported major.minor version " >/dev/null 2>&1 
+	#if [[ "$?" -eq 0 ]]; then
+	#	echo "ERROR: used java version not supported - please correct JAVA_HOME"
+	#	exit 1
+	#fi
+ 	echo "$RES"	
+}
+
+WUP=-1
+case "$1" in 
+	'start'|'Start'|'START' )   startComponent ;;
+	'stop' |'Stop' |'STOP'  )    stopComponent ;;
+	'restart'		)    stopComponent ; sleep 3; startComponent ;;
+	*) usage;;
+esac
+exit $WUP
+
+
+
