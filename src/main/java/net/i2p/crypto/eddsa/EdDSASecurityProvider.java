@@ -27,14 +27,14 @@ public class EdDSASecurityProvider extends Provider {
 
     public EdDSASecurityProvider() {
         super(PROVIDER_NAME, 0.3 /* should match POM major.minor version */, "str4d " + PROVIDER_NAME + " security provider wrapper");
-
-        AccessController.doPrivileged(new PrivilegedAction<Object>() {
+        setup();
+        /*AccessController.doPrivileged(new PrivilegedAction<Object>() {
             @Override
             public Object run() {
                 setup();
                 return null;
             }
-        });
+        });*/
     }
 
     protected void setup() {
