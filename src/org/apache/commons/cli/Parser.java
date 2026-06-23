@@ -45,7 +45,7 @@ public abstract class Parser implements CommandLineParser
     protected void setOptions(Options options)
     {
         this.options = options;
-        this.requiredOptions = new ArrayList(options.getRequiredOptions());
+        this.requiredOptions = options.getRequiredOptions();
     }
 
     protected Options getOptions()

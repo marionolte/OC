@@ -9,8 +9,9 @@ import com.trilead.ssh2.sftp.Packet;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Vector;
+//import java.util.Vector;
 
 
 /**
@@ -66,7 +67,7 @@ public class SFTPv3Client
 	OutputStream os;
 
 	int protocol_version = 0;
-	HashMap server_extensions = new HashMap();
+	HashMap<String, Object> server_extensions;
 
 	int next_request_id = 1000;
 
@@ -79,11 +80,12 @@ public class SFTPv3Client
 	 * @param debug
 	 * @throws IOException
 	 * 
-	 * @deprecated this constructor (debug version) will disappear in the future,
+	 * deprecated this constructor (debug version) will disappear in the future,
 	 *             use {@link #SFTPv3Client(Connection)} instead.
 	 */
 	public SFTPv3Client(Connection conn, PrintStream debug) throws IOException
 	{
+        this.server_extensions = new HashMap<>();
 		if (conn == null)
 			throw new IllegalArgumentException("Cannot accept null argument!");
 
@@ -114,6 +116,7 @@ public class SFTPv3Client
 	public SFTPv3Client(Connection conn) throws IOException
 	{
 		this(conn, null);
+        this.server_extensions = new HashMap<>();
 	}
 
 	/**
@@ -147,7 +150,7 @@ public class SFTPv3Client
 		{
 			Charset.forName(charset);
 		}
-		catch (Exception e)
+		catch (java.lang.Throwable e)
 		{
 			throw (IOException) new IOException("This charset is not supported").initCause(e);
 		}
@@ -699,9 +702,9 @@ public class SFTPv3Client
 		throw new SFTPException(tr.readString(), errorCode);
 	}
 
-	private final Vector scanDirectory(byte[] handle) throws IOException
+	private final ArrayList<SFTPv3DirectoryEntry> scanDirectory(byte[] handle) throws IOException
 	{
-		Vector files = new Vector();
+		ArrayList<SFTPv3DirectoryEntry> files = new ArrayList<>();
 
 		while (true)
 		{
@@ -752,7 +755,7 @@ public class SFTPv3Client
 					dirEnt.longEntry = tr.readString(charsetName);
 
 					dirEnt.attributes = readAttrs(tr);
-					files.addElement(dirEnt);
+					files.add(dirEnt);
 
 					if (debug != null)
 						debug.println("File: '" + dirEnt.filename + "'");
@@ -921,10 +924,10 @@ public class SFTPv3Client
 	 * @return A Vector containing {@link SFTPv3DirectoryEntry} objects.
 	 * @throws IOException
 	 */
-	public Vector ls(String dirName) throws IOException
+	public ArrayList<SFTPv3DirectoryEntry> ls(String dirName) throws IOException
 	{
 		byte[] handle = openDirectory(dirName);
-		Vector result = scanDirectory(handle);
+		ArrayList<SFTPv3DirectoryEntry> result = scanDirectory(handle);
 		closeHandle(handle);
 		return result;
 	}

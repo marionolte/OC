@@ -33,7 +33,7 @@ public class MyTrustManager extends Version implements X509TrustManager {
     private static String   trustStoreFile="mytruststore";
     private static String   trustType="SunX509";
     private static String   trustProvider="SunJSSE";
-    private static HashMap  trustedDom = new HashMap();
+    private static HashMap<String,String>  trustedDom = new HashMap<>();
     
     private X509TrustManager X509TM=null;
     private KeyStore         ks=null;

@@ -41,11 +41,11 @@ public class CVSReadFile extends ReadFile {
     
 
     public ArrayList<HashMap<String,String>> getCSV(boolean withHeader) {
-        ArrayList<HashMap<String,String>> ar = new ArrayList();
+        ArrayList<HashMap<String,String>> ar = new ArrayList<>();
         
         String[] sp = readOut().toString().split(LF);
         String[] mp = sp[0].split(SEPA);
-        HashMap<String,String> header = new HashMap();
+        HashMap<String,String> header = new HashMap<>();
         int len=mp.length;
         for ( int i=0; i<mp.length; i++ ) {
              header.put(mp[i], mp[i]);
@@ -56,7 +56,7 @@ public class CVSReadFile extends ReadFile {
             if ( mp.length < len ) {
                 mp = (sp[i]+sp[++i]).split(SEPA);
             }
-            HashMap<String,String> val = new HashMap();
+            HashMap<String,String> val = new HashMap<>();
             Iterator<String> it=header.keySet().iterator();
             int c = 0;
             while(it.hasNext()) {

@@ -23,7 +23,7 @@ public class Cache extends Version {
     private static boolean cacheReady=false;
     MessageDigest md = null;
     private static Cache mc=null;
-    private HashMap map=new HashMap<String, HashMap>();
+    private HashMap<String,HashMap<String,CacheEntry>> map=new HashMap<>();
     
     
     
@@ -54,7 +54,7 @@ public class Cache extends Version {
         final String loc=basedir.getFQDNDirName()+File.separator+ca+File.separator;
         ReadFile f = new ReadFile ( loc+"plist.info" );
         ArrayList ar=f.getMap( f.readOut() );
-        HashMap lmap=(HashMap) map.get(ca);
+        HashMap<String,CacheEntry> lmap= map.get(ca);
         boolean updateNeeded=false;
         if ( ar != null ) {
                 for(int i=0; i<ar.size(); i++) {
@@ -101,7 +101,7 @@ public class Cache extends Version {
             for(int i=0; i< sp.length; i++) {
                 if (  ! ( sp[i].matches(".") || sp[i].matches("..")) ) { 
                     printf(meth,2,"add now :"+sp[i]+":");
-                    map.put(sp[1], new HashMap() );
+                    map.put(sp[1], new HashMap<>() );
                     getFileCache(sp[i]); 
                 }
             }
@@ -174,8 +174,8 @@ public class Cache extends Version {
     
     private HashMap getMap(String b) {
         synchronized(mapLocked) {
-            HashMap a=(HashMap) map.get(b);
-            if ( a == null ) { a=new HashMap(); updateMap(b, a);}
+            HashMap<String, CacheEntry> a=(HashMap) map.get(b);
+            if ( a == null ) { a=new HashMap<>(); updateMap(b, a);}
             return a;
         }
     }
@@ -187,13 +187,13 @@ public class Cache extends Version {
 
     public void setEntryMap(CacheEntry entry, String a, String b) {
         synchronized(entryLock) {
-             HashMap lmap=(HashMap) getMap(b);
+             HashMap<String,CacheEntry> lmap=(HashMap) getMap(b);
              if ( lmap.get(a) == null ) { count++; }
              lmap.put(a, entry);
         }
     }
 
-    public void updateMap(String b, HashMap a) {
+    public void updateMap(String b, HashMap<String,CacheEntry> a) {
         synchronized ( updateLock ) {
              map.put(b, a);
         }
@@ -205,14 +205,14 @@ public class Cache extends Version {
         synchronized ( entryLock ) {
             synchronized(mapLocked) {
                 synchronized(updateLock) {
-                    HashMap nmap = new HashMap();
+                    HashMap<String,HashMap<String,CacheEntry>> nmap = new HashMap<>();
                     Iterator<String> itter = (Iterator<String>) map.keySet().iterator();
                     count=0;
                     while( itter.hasNext() ) {
                         String m = itter.next();
                         if ( isNotNullOrEmpty(m) ) {
                             HashMap lmap = (HashMap) map.get(m);
-                            HashMap imap = new HashMap<>();
+                            HashMap<String,CacheEntry> imap = new HashMap<>();
                             Iterator et = lmap.entrySet().iterator();
                             while ( et.hasNext() ) {
                                 String n = (String) et.next();
@@ -227,7 +227,8 @@ public class Cache extends Version {
                             }
                         }    
                     }
-                    if ( nmap.size() > 0 ) { map = nmap; } else { map = new HashMap(); }
+                    if ( !nmap.isEmpty() ) { map = nmap; } 
+                    else { map = new HashMap<>(); }
                     lastClean=System.currentTimeMillis();
                 }
             }

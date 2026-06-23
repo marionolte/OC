@@ -17,6 +17,8 @@ public class MapList {
     final private String _mkey;
     private MapList master=null; 
     public MapList() {
+        this.declare = new HashMap<>();
+        this.mapval = new HashMap<>();
         this._mkey=this.toString();
         map.add(this);
         maplist.put(_mkey, ""+0);
@@ -25,12 +27,13 @@ public class MapList {
     
     public MapList(MapList ml) {
         this();
+        this.declare = new HashMap<>();
         this.master=ml;
     }
     
-    private HashMap<String,String>  mapval  = new HashMap<String,String>();
-    private HashMap<String,String> maplist  = new HashMap<String,String>();
-    private ArrayList<MapList>      map     = new ArrayList();
+    private final HashMap<String,String>  mapval;
+    private final HashMap<String,String> maplist  = new HashMap<>();
+    private final ArrayList<MapList>      map     = new ArrayList<>();
     
     public MapList getMapList() { return this; }
     public MapList getMapList(int i) { return (i>=0 && i< map.size())?map.get(i):map.get(0);  }
@@ -72,7 +75,7 @@ public class MapList {
     public void   setComment(String s) {   _com.append(s.trim()).append("\n"); }
     public String getComment()         { return _com.toString(); }
     
-    private HashMap<String, String> declare = new HashMap();
+    private HashMap<String, String> declare;
     public void setValueType(String name, String typ) {
         declare.put(name, typ.toLowerCase());
     }

@@ -30,8 +30,8 @@ public abstract class Version  { //extends OraConst {
     final public static String prodauthor="Mario Nolte";
     final public static int majorVersion=0;
     final public static int minorVersion=0;
-    final public static int patchVersion=6;
-    final public static int fixedVersion=2;
+    final public static int patchVersion=7;
+    final public static int fixedVersion=1;
     final public static int   libVersion=0;
     final public static int  betaVersion=1;
     
@@ -368,6 +368,7 @@ public abstract class Version  { //extends OraConst {
     synchronized public Properties readPropertyFromRessource(String ressource) {
         Properties p = new Properties();
             try {
+                log(2,"like to load ressource :"+ressource+":");
                 p.load(  this.getClass().getResourceAsStream(ressource) );
             } catch(java.io.IOException io){
                 log(1, "couldn't load ressource "+ressource);

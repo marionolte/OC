@@ -25,12 +25,14 @@ import org.w3c.dom.NodeList;
  * @author SuMario
  */
 public class WlsDomainInfo extends TcpHost {
-    private final HashMap<String,String> map = new HashMap();
-    private final HashMap<String, HashMap<String,String>> smap = new HashMap();
+    private final HashMap<String,String> map;
+    private final HashMap<String, HashMap<String,String>> smap;
     private final ReadDir domloc;
     private XMLReadFile conf;
     
     WlsDomainInfo(String nl) {
+        this.map = new HashMap<>();
+        this.smap = new HashMap<>();
         final String func=getFunc("WlsDomainInfo(String nl)");
         printf(func,2,"info:"+nl);
         domloc = new ReadDir(nl);
@@ -48,7 +50,7 @@ public class WlsDomainInfo extends TcpHost {
         sw.append("Patches: ").append(this.getPatchlist()).append("\n");
         sw.append("Adminserver: "   ).append(this.map.get("AdminServerName")).append("\n");
         
-        HashMap<String,String> imap = new HashMap();
+        HashMap<String,String> imap = new HashMap<>();
         Iterator<String> itter = smap.keySet().iterator();
         while ( itter.hasNext() ) {
             String srv = itter.next();
@@ -95,7 +97,8 @@ public class WlsDomainInfo extends TcpHost {
         map.put("AdminServerName", nl.item(0).getTextContent());
         
         // servers
-        nl = conf.getNodeList("server");  HashMap<String,String> imap=new HashMap(); 
+        nl = conf.getNodeList("server");  
+        HashMap<String,String> imap=new HashMap<>(); 
         
         for ( int i=0; i < nl.getLength(); i++) {
              Node n=nl.item(i);
@@ -103,7 +106,7 @@ public class WlsDomainInfo extends TcpHost {
                   //if ( ! imap.isEmpty() ) {
                   //    smap.put(imap.get("name"), imap);
                   //}
-                  imap=new HashMap(); 
+                  imap=new HashMap<>(); 
                   NodeList nlc = n.getChildNodes();
                   for (int j=0; j < nlc.getLength(); j++ ) {
                       
@@ -151,7 +154,7 @@ public class WlsDomainInfo extends TcpHost {
                 }
 
                 printf(func,2,"domain:"+getDomainName());
-        ArrayList<String> m = new ArrayList();        
+        ArrayList<String> m = new ArrayList<>();        
         ReadFile rf = new ReadFile(domloc.getFQDNDirName()+File.separator+"bin"+File.separator+"setDomainEnv.sh"); 
                 final String fa= rf.readOut().toString();
                 final Matcher ma = Pattern.compile("JAVA_HOME=").matcher(fa);
@@ -162,7 +165,7 @@ public class WlsDomainInfo extends TcpHost {
                         //System.out.println("find =>|"+sp[0]+"|<=");
                         map.put("javahome", sp[0].replaceAll("\"", "") );
                         String ja=sp[0].replaceAll("\"", "")+File.separator+"bin"+File.separator+"java";
-                        m = new ArrayList(); m.add(ja); m.add("-version");
+                        m = new ArrayList<>(); m.add(ja); m.add("-version");
                         //System.out.println("findout "+ja);
                         String v=com.macmario.io.lib.IOLib.launch(m); //    .execReadToString( new String[]{ ja, "-version" } );
                         //System.out.println("findout =>|"+sp[0]+"|\n=>|"+v+"|<=");
@@ -225,8 +228,8 @@ public class WlsDomainInfo extends TcpHost {
     }
 
     
-    private ArrayList<String> patches = new ArrayList();
-    private ArrayList<String> prods   = new ArrayList();
+    private final ArrayList<String> patches = new ArrayList<>();
+    private final ArrayList<String> prods   = new ArrayList<>();
     
     void setOpatch(String opatch) {
         //System.out.println("opatch:"+opatch);

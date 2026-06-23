@@ -111,7 +111,7 @@ public class MwInfo extends Version {
     
     private static StringBuilder readDomains(String mwhome) {
         final String func=getFu("readDomains(String mwhome)");
-        ArrayList<String> m = new ArrayList();  
+        ArrayList<String> m = new ArrayList<>();  
                           m.add(mwhome+File.separator+"Opatch"+File.separator+"opatch");
                           m.add("lsinventory");
         String opatch = com.macmario.io.lib.IOLib.launch(m);

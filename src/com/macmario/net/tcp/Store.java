@@ -36,7 +36,7 @@ public class Store extends Version{
             throw new StoreException("could not get instance of a X509 CertificateFactory ");
         }
     }
-    private ArrayList mylist = null;
+    private ArrayList<Certificate> mylist = null;
     private FileInputStream is = null;
     private java.security.KeyStore keystore = null ;
 
@@ -79,10 +79,11 @@ public class Store extends Version{
     }
     public void readCertificate(FileInputStream in){
         try {
-            mylist = new ArrayList(); 
+            mylist = new ArrayList<>(); 
             Certificate c = cf.generateCertificate(in);
             mylist.add(c);
             CertPath cp = cf.generateCertPath(mylist);
+            cp.getCertificates();
         } catch (CertificateException ex) { }
     }
     public  ArrayList  getCertList(){ return mylist; }
@@ -129,7 +130,7 @@ public class Store extends Version{
             keystore = KeyStore.getInstance(KeyStore.getDefaultType());
            }catch(java.security.KeyStoreException ie){ keystoreerr=ie.getMessage();}
         }
-        return ( keystore == null )? false:true;
+        return (keystore != null);
     }
     public void setKeyStore(String typ){
          if ( typ.isEmpty() ){ typ="JKS";}

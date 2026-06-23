@@ -120,7 +120,7 @@ public class IOLib extends Version {
        //v.debug=2;
        final String func=v.getFunc("getClassFromPackage(String pack)");
        v.printf(func,4,"income for pack:"+pack);
-       ArrayList<String> ar = new ArrayList();
+       ArrayList<String> ar = new ArrayList<>();
        if (isPackageExist(pack)) {
             String[] at = pack.split("\\."); 
             v.printf(func,3,"is in pack :"+pack+":");
@@ -167,7 +167,7 @@ public class IOLib extends Version {
         Pattern pa = Pattern.compile("\\]|\\[|<|>");
         Matcher ma = pa.matcher(use);
         int pos=0;
-        HashMap<String,String> map = new HashMap();
+        HashMap<String,String> map = new HashMap<>();
         while(ma.find(pos)) {
             String msg = use.substring(pos,ma.start());
             v.printf(func,3," find |"+msg+"| pos:"+pos+" to:"+ma.start()+" "+msg.indexOf(" ") );
@@ -262,8 +262,8 @@ public class IOLib extends Version {
     }
     
     static public void getFileDiff(String[] ar) {
-        ArrayList<ReadFile> mar = new ArrayList();
-        HashMap<String,String> mp = new HashMap();
+        ArrayList<ReadFile> mar = new ArrayList<>();
+        HashMap<String,String> mp = new HashMap<>();
         for ( String f : ar ) {
             if ( ! mp.containsKey(f) ) {
                 ReadFile fr = new ReadFile(f);

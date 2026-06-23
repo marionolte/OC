@@ -114,7 +114,7 @@ public class LdapTrans extends LdapMain {
         
     }
     
-    private ArrayList objList=new ArrayList();
+    private ArrayList<String> objList=new ArrayList<>();
     private boolean trans(String user) throws NamingException, IOException {
         final String func="trans(String user) throws NamingException, IOException";
         String fi="(|(uid="+user+")(cn="+user+"))";

@@ -15,6 +15,7 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Vector;
@@ -54,19 +55,22 @@ public class KnownHosts
 		}
 	}
 
-	private LinkedList publicKeys = new LinkedList();
+	private final LinkedList publicKeys;
 
 	public KnownHosts()
 	{
+            this.publicKeys = new LinkedList();
 	}
 
 	public KnownHosts(char[] knownHostsData) throws IOException
 	{
+            this.publicKeys = new LinkedList();
 		initialize(knownHostsData);
 	}
 
 	public KnownHosts(File knownHosts) throws IOException
 	{
+        this.publicKeys = new LinkedList();
 		initialize(knownHosts);
 	}
 
@@ -245,9 +249,10 @@ public class KnownHosts
 		return result;
 	}
 
-	private Vector getAllKeys(String hostname)
+	private ArrayList<Object> getAllKeys(String hostname)
 	{
-		Vector keys = new Vector();
+		//Vector keys = new Vector();
+                ArrayList keys = new ArrayList<>();
 
 		synchronized (publicKeys)
 		{
@@ -259,8 +264,8 @@ public class KnownHosts
 
 				if (hostnameMatches(ke.patterns, hostname) == false)
 					continue;
-
-				keys.addElement(ke.key);
+                                
+				keys.add(ke.key);
 			}
 		}
 
@@ -526,16 +531,19 @@ public class KnownHosts
 	private String[] recommendHostkeyAlgorithms(String hostname)
 	{
 		String preferredAlgo = null;
-
-		Vector keys = getAllKeys(hostname);
+                
+            ArrayList<Object> keys = getAllKeys(hostname);
+            //Vector keys = getAllKeys(hostname);
 
 		for (int i = 0; i < keys.size(); i++)
 		{
 			String thisAlgo = null;
+                        
+                        Object o = keys.get(i);
 
-			if (keys.elementAt(i) instanceof RSAPublicKey)
+			if (o instanceof RSAPublicKey)
 				thisAlgo = "ssh-rsa";
-			else if (keys.elementAt(i) instanceof DSAPublicKey)
+			else if (o instanceof DSAPublicKey)
 				thisAlgo = "ssh-dss";
 			else
 				continue;

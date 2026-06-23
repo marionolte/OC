@@ -8,7 +8,7 @@ package com.macmario.io.crypt;
 import com.macmario.general.Version;
 import com.macmario.io.file.WriteFile;
 import java.util.UUID;
-import main.Mos;
+import com.macmario.main.Main;
 import com.macmario.net.tcp.Host;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -34,13 +34,13 @@ public class Crypt extends Version {
     
     private int cryptLevel=0;
     public Crypt() {
-        Ukey=(super.readPropertyFromRessource("com/macmario/main/main.properties")).getProperty("UKEY", "");
+        Ukey=(super.readPropertyFromRessource("/com/macmario/main/main.properties")).getProperty("UKEY", "");
         uuid= UUID.fromString(Ukey);
         ch=new CryptHigh(uuid);
         base64Alphabet = new byte[base64Length];
         init();
     }
-    public Crypt(Mos m) {
+    public Crypt(Main m) {
         this();
     }
     

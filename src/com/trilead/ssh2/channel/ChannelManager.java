@@ -34,7 +34,7 @@ public class ChannelManager implements MessageHandler
 	private int globalSuccessCounter = 0;
 	private int globalFailedCounter = 0;
 
-	private HashMap remoteForwardings = new HashMap();
+	private final HashMap remoteForwardings;
 
 	private Vector listenerThreads = new Vector();
 
@@ -42,6 +42,7 @@ public class ChannelManager implements MessageHandler
 
 	public ChannelManager(GenericTransportManager tm)
 	{
+                this.remoteForwardings = new HashMap<>();
 		this.tm = tm;
 		tm.registerMessageHandler(this, 80, 100);
 	}

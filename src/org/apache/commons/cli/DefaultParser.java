@@ -55,6 +55,7 @@ public class DefaultParser implements CommandLineParser
     /** The required options and groups expected to be found when parsing the command line. */
     protected List expectedOpts;
  
+    @Override
     public CommandLine parse(Options options, String[] arguments) throws ParseException
     {
         return parse(options, arguments, null);
@@ -103,7 +104,7 @@ public class DefaultParser implements CommandLineParser
         this.stopAtNonOption = stopAtNonOption;
         skipParsing = false;
         currentOption = null;
-        expectedOpts = new ArrayList(options.getRequiredOptions());
+        expectedOpts = options.getRequiredOptions();
 
         // clear the data from the groups
         for (OptionGroup group : options.getOptionGroups())

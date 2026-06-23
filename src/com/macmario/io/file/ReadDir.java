@@ -34,7 +34,7 @@ public class ReadDir extends Version{
     
     private File getCanonical(File d) {
         final String sepa="__@@__";
-        final ArrayList<String> ar = new ArrayList();
+        final ArrayList<String> ar = new ArrayList<>();
         String _userd = System.getProperty("user.dir");
         
         String[] sp= ((isUnix())? d.getAbsolutePath().replaceAll("^~", System.getProperty("user.home"))

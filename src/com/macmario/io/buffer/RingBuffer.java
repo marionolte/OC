@@ -15,12 +15,12 @@ import java.util.NoSuchElementException;
 
 /**
  *
- * @author mario
+ * @author SuMario
  */
 public class RingBuffer<Item> extends Version implements Iterable<Item> {
 
     // private RingBuffer<String> ring  ;
-    private Item[] elements;     // queue elements
+    private Object[] elements;     // queue elements
     private int number = 0;      // number of elements on queue
     private int first  = 0;      // first element in the queue
     private int last   = 0;      // last element in the queue
@@ -120,7 +120,7 @@ public class RingBuffer<Item> extends Version implements Iterable<Item> {
         getLock("release");
         printf(func,5,"have the release lock now\nget Item from "+this.first);
         
-        Item item = this.elements[ this.first ];
+        Item item = (Item) this.elements[ this.first ];
         this.elements[ this.first ] = null;      // cleanup for gc
         this.number--;
         this.first = ( this.first + 1 ) % this.elements.length; // set next element + wrap around
@@ -167,7 +167,7 @@ public class RingBuffer<Item> extends Version implements Iterable<Item> {
         public Item next() {
             if ( ! this.hasNext() ) { throw new NoSuchElementException(); }
 
-            return elements[i++];
+            return (Item) elements[i++];
         }
 
     }

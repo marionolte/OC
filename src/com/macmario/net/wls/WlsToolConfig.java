@@ -38,7 +38,7 @@ public class WlsToolConfig extends Version{
         WlsToolConfig w = new WlsToolConfig();
                       w.getLocation();
         if ( args.length > 0 ) {
-            ArrayList<String> dirs = new ArrayList();
+            ArrayList<String> dirs = new ArrayList<>();
             for(int i=0; i< args.length; i++) {
                 if ( args[i].matches("-dest")         ) { w.checkConfig(args[++i]); } 
                 else if ( args[i].matches("-d")       ) { debug++; }
@@ -65,6 +65,10 @@ public class WlsToolConfig extends Version{
     }
 
     private ReadDir loc = null;
+
+    public WlsToolConfig() {
+        this.ar = new HashMap<>();
+    }
     public  void setLocation(String dir) {
         if ( dir == null || dir.isEmpty() ) { loc = new ReadDir(System.getProperty("user.home")+File.separator+"bin"); }
     }
@@ -75,7 +79,7 @@ public class WlsToolConfig extends Version{
     
     
     
-    private HashMap<String,WlsDomain> ar = new HashMap();
+    private final HashMap<String,WlsDomain> ar;
     synchronized public void updateConfig(String dir){
         String[] sp = dir.split("=");
         String di = sp[sp.length-1];

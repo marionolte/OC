@@ -397,7 +397,7 @@ public class Session
 	 *            </ul>
 	 *            
 	 * @throws    IOException
-	 * @deprecated This method has been replaced with a much more powerful wait-for-condition
+	 * deprecated This method has been replaced with a much more powerful wait-for-condition
 	 *             interface and therefore acts only as a wrapper.
 	 * 
 	 */
