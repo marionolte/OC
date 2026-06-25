@@ -76,10 +76,10 @@ public class Imap extends Version {
         ReadFile fa= new ReadFile(storefile);
         if ( fa.isReadableFile() ) {
              println(2, func+"like to load objects from "+storefile);
-             Iterator<LMessage> itter = (Iterator<LMessage>) fa.loadObjects();
+             Iterator itter =  fa.loadObjects();
              println(1, func+"has objects "+itter.hasNext() );
              while(itter.hasNext()) { 
-                 LMessage lmsg = itter.next();
+                 LMessage lmsg = (LMessage) itter.next();
                  println(1, func+"load cached msg:"+lmsg.getID()+" =>"+lmsg);
                  mmap.put(lmsg.getID(), lmsg);
                  mailar.add(lmsg);

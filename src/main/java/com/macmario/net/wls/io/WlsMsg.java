@@ -45,7 +45,7 @@ class WlsMsg extends Version{
     void analyse() {
         final String func=getFunc("analyse()");
         if ( complete ) { return; }
-        ArrayList<String> ar = new ArrayList();
+        ArrayList<String> ar = new ArrayList<>();
         int i=sw.indexOf("<"); int j=0;
         while ( i < sw.length() && i >= 0 ) {
             

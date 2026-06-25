@@ -15,7 +15,6 @@ import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
-import java.security.InvalidParameterException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -87,8 +86,6 @@ public final class EdDSAEngine extends Signature {
      */
     public static final AlgorithmParameterSpec ONE_SHOT_MODE = new OneShotSpec();
 
-   
-
     private static class OneShotSpec implements AlgorithmParameterSpec {}
 
     /**
@@ -148,8 +145,8 @@ public final class EdDSAEngine extends Signature {
     @Override
     protected void engineInitVerify(PublicKey publicKey) throws InvalidKeyException {
         reset();
-        if (publicKey instanceof EdDSAPublicKey) {
-            key = (EdDSAPublicKey) publicKey;
+        if (publicKey instanceof EdDSAPublicKey edDSAPublicKey) {
+            key = edDSAPublicKey;
 
             if (digest == null) {
                 // Instantiate the digest from the key parameters
@@ -171,7 +168,7 @@ public final class EdDSAEngine extends Signature {
             }
             engineInitVerify(parsedPublicKey);
         } else {
-            throw new InvalidKeyException("cannot identify EdDSA public key: " + publicKey.getClass());
+            throw new InvalidKeyException("cannot identify EdDSA public key: " + ((publicKey!=null)?publicKey.getClass():"NULLPublicKey") );
         }
     }
 
@@ -462,6 +459,7 @@ public final class EdDSAEngine extends Signature {
     }
 
     /**
+     * @param spec
      * @throws InvalidAlgorithmParameterException if spec is ONE_SHOT_MODE and update() already called
      * @see #ONE_SHOT_MODE
      */
@@ -476,7 +474,8 @@ public final class EdDSAEngine extends Signature {
         }
     }
 
-    /**
+    /*
+     **
      * deprecated
      */
     @Override
@@ -491,6 +490,5 @@ public final class EdDSAEngine extends Signature {
     protected Object engineGetParameter(String param) {
         throw new UnsupportedOperationException("engineSetParameter unsupported");
     }
-    
     
 }

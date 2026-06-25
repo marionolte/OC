@@ -9,7 +9,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>17</maven.compiler.release>
-        <exec.mainClass>com.macmario.main.Mos</exec.mainClass>
+        <exec.mainClass>com.macmario.main.Main</exec.mainClass>
     </properties>
     
      <dependencies>
@@ -28,6 +28,12 @@
             <groupId>com.madgag.spongycastle</groupId>
             <artifactId>core</artifactId>
             <version>1.58.0.0</version>
+        </dependency>
+        <!-- KeePassJava2: full KDBX 3.1 + 4.x (Argon2/ChaCha20) read/write support -->
+        <dependency>
+            <groupId>org.linguafranca.pwdb</groupId>
+            <artifactId>KeePassJava2-jackson</artifactId>
+            <version>2.2.4</version>
         </dependency>
     </dependencies>
      <build>

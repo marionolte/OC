@@ -15,7 +15,7 @@ public class GitConfig {
     
     final private ReadFile conf;
           private long read;
-          private final HashMap<String, HashMap> map;
+          private final HashMap<String, HashMap<String,String>> map;
     GitConfig(String file) { 
          conf = new ReadFile(file);
          map  = new HashMap<>();
@@ -50,7 +50,7 @@ public class GitConfig {
     private void read() {
         if ( conf.isReadableFile() && read < conf.getLastModified() ) {
              String _mkey="global";
-             HashMap<String, String> _map = (HashMap<String, String>) map.get(_mkey);
+             HashMap<String, String> _map =  map.get(_mkey);
              for ( String line : conf.readOut().toString().split("\n") ) {
                  if ( ! line.startsWith("#")) {
                    if ( line.startsWith("[") ) {

@@ -39,7 +39,7 @@ public class MyClassLoader extends ClassLoader {
          return findClass(className);
     }
     
-    public HashMap jarmap=new HashMap();
+    public HashMap<String,String> jarmap=new HashMap<>();
     public void addJar(String jar) throws IOException { if( jar != null && ! jar.isEmpty() ) addJar(new ReadFile(jar)); }
     public void addJar(ReadFile jar) throws IOException, FileNotFoundException {
         final String func="MyClassLoader::addJar(ReadFile jar)";
@@ -72,7 +72,7 @@ public class MyClassLoader extends ClassLoader {
         
         try{
             return findSystemClass(className);
-        }catch(Exception e){ 
+        }catch(java.lang.ClassNotFoundException|NullPointerException e){ 
            if ( debug > 0 ) {log(func+" system resource for "+className+" with exception "+e.getMessage() ); }
         }
         if ( debug > 1 ) {log(func+" system resource - resource not found for "+className); }
@@ -93,7 +93,7 @@ public class MyClassLoader extends ClassLoader {
             } else { 
                if ( debug > 0 ) { log(func+" not found with URLClassLoader classPath: =>"+classPath+"<= (URL)"  );} 
             }
-        }catch(Exception e){
+        }catch(java.lang.ClassNotFoundException|java.io.IOException|NullPointerException e){
            if (debug > 0 ) { log(func+"could not get my resource from url - "+e.getMessage() );  e.printStackTrace(); }
         } 
         
@@ -108,7 +108,7 @@ public class MyClassLoader extends ClassLoader {
                classes.put(className,result);
                return result;
             }
-        }catch(Exception e){
+        }catch(NullPointerException e){
            if (debug > 0 ) log(func+"could not get my resource "+e.getMessage() );
            //throw new RuntimeException("could not get my resource "+e.getMessage());
         } 
@@ -124,7 +124,7 @@ public class MyClassLoader extends ClassLoader {
             result = defineClass(className,classByte,0,classByte.length,null);
             classes.put(className,result);
             return result;
-        }catch(Exception e){
+        }catch(java.io.IOException|NullPointerException e){
            if (debug > 0 ) log(func+"could no get system resource "+e.getMessage() );
         } 
         
@@ -147,7 +147,7 @@ public class MyClassLoader extends ClassLoader {
             //result = defineClass(className, classByte, 0, classByte.length, null);  
             //classes.put(className, result);  
             //return result;  
-        } catch (Exception e) {  
+        } catch (java.io.IOException|NullPointerException e) {  
             return null;  
         }  
     }
@@ -165,7 +165,7 @@ public class MyClassLoader extends ClassLoader {
         return buff;
     }
  
-    public Hashtable classes = new Hashtable();
+    public Hashtable<String,Object> classes = new Hashtable<>();
 
     /*final private void log(String s) {
          //if ( debugTrace == null ) {

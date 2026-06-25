@@ -10,7 +10,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import com.macmario.main.Mos;
+import com.macmario.main.Main;
 
 
 /**
@@ -19,19 +19,21 @@ import com.macmario.main.Mos;
  */
 public class Console extends RunnableT {
     private volatile boolean keepOn = true;
-    private volatile ArrayList<String> map = new ArrayList<String>();
+    private volatile ArrayList<String> map;
     private BufferedReader reader;
     private Thread term=null;
     private boolean silient;
-    private Mos mos;
-    public Console( Mos mos ) {
+    private Main mos;
+    public Console( Main mos ) {
         this();
+        this.map = new ArrayList<>();
         this.mos=mos;
         this.silient=mos.silent;
         this.lock="Console";
     }
     
     public Console() {
+        this.map = new ArrayList<>();
         // System.console();
         InputStreamReader isr = new InputStreamReader(System.in);
         reader = new BufferedReader(isr);

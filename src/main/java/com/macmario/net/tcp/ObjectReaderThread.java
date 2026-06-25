@@ -74,7 +74,7 @@ public class ObjectReaderThread extends RunnableT {
     
     public synchronized Object[] readAll() {
         synchronized(lock) {
-            ArrayList req = new ArrayList();
+            ArrayList<Object> req = new ArrayList<>();
             while ( ! buf.isEmpty() ) {
                 req.add( buf.pop());
             }

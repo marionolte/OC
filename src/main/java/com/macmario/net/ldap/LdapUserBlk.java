@@ -135,7 +135,7 @@ public class LdapUserBlk extends RunnableT{
      
      DirContext ctxmod = null;
      
-     Hashtable env = new Hashtable();
+     Hashtable<String,String> env = new Hashtable();
      
      public void mod(SearchResult entry, ArrayList ar) {
         Name name=null;   
@@ -466,7 +466,7 @@ public class LdapUserBlk extends RunnableT{
                           }    
                       } else {
                           if ( lbMain.debug ) System.out.println(getThread().getName()+"  mod:"+modAr.size()+"  (last thread)");
-                          if ( modAr.size() > 0 ) {
+                          if ( !modAr.isEmpty() ) {
                               if (sr != null ) {
                                 lbMod.checkEntry(sr, modAr);
                               } else {
@@ -505,7 +505,7 @@ public class LdapUserBlk extends RunnableT{
      private Thread thread=null;
      public void setThread(Thread th ){ this.thread=th;}
      
-     ArrayList lbList = new ArrayList();
+     ArrayList<LdapUserBlk> lbList = new ArrayList<>();
      private int order=0;
      public void setOrder(int ord) { this.order=ord; }
      
@@ -658,16 +658,16 @@ public class LdapUserBlk extends RunnableT{
 
     static ArrayList getSW(String fname) {
         String line; 
-        ArrayList a = new ArrayList();
+        ArrayList<String> a = new ArrayList<>();
         if ( ! fname.isEmpty() ) {
             try {
                 //System.out.println("verify file:"+fname);
                 java.io.BufferedReader rb = new java.io.BufferedReader( new java.io.FileReader(fname) );
                 do {
                     line=rb.readLine();
-                    if ( line != null ) {  a.add(line); }
-                } while ( line != null );
-            } catch (Exception e){
+                    if ( isNotNullOrEmpty(line) ) {  a.add(line); }
+                } while ( !isNotNullOrEmpty(line) );
+            } catch (java.io.IOException e){
                 System.out.println("ERROR: problems to read from file "+fname+" \nreason:"+e.toString());
             }    
         }

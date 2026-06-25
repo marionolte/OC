@@ -6,10 +6,16 @@ package com.macmario.net.tcp;
 
 //import java.security.KeyStore;
 import com.macmario.general.Version;
+import java.io.IOException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
@@ -33,7 +39,7 @@ public class MyTrustManager extends Version implements X509TrustManager {
     private static String   trustStoreFile="mytruststore";
     private static String   trustType="SunX509";
     private static String   trustProvider="SunJSSE";
-    private static HashMap  trustedDom = new HashMap();
+    private static HashMap<String,String>  trustedDom = new HashMap<>();
     
     private X509TrustManager X509TM=null;
     private KeyStore         ks=null;
@@ -55,12 +61,12 @@ public class MyTrustManager extends Version implements X509TrustManager {
             tms = tmf.getTrustManagers();  
    
             for (int i = 0; i < tms.length; i++) {  
-                if (tms[i] instanceof X509TrustManager) {  
-                    X509TM = (X509TrustManager) tms[i];  
+                if (tms[i] instanceof X509TrustManager x509TrustManager) {  
+                    X509TM = x509TrustManager;  
                     i=tms.length;  
                 }  
             }
-         } catch (Exception e ) {
+         } catch (KeyStoreException | NoSuchAlgorithmException | NoSuchProviderException e ) {
              log("MyTrustManager(boolean trustall)",1,"set trustall certificates, because problems to load trust store - reason:"+e.toString());
              this.trustAll=true;
          }   
@@ -83,15 +89,15 @@ public class MyTrustManager extends Version implements X509TrustManager {
            while(i.hasNext()) {
                 Map.Entry me = (Map.Entry)i.next();
                 String s = ((String) me.getKey()).toLowerCase();
-                String v = (String) me.getValue();
-                log("getTrustManager(HashMap map)",3,"use key:"+s+":  value:"+v);
-                if      ( s.matches("provider")      ) { tms[0].trustProvider=  v; }
-                else if ( s.matches("trusttype")     ) { tms[0].trustType=      v; }
-                else if ( s.matches("truststore")    ) { tms[0].ksType=         v; }
-                else if ( s.matches("truststorefile")) { tms[0].trustStoreFile= v; }
-                else if ( s.matches("password")      ) { tms[0].passwd=         v; }
-                else if ( s.matches("trustall")      ) { tms[0].trustAll=       v.toLowerCase().matches("true")?true:false; }
-                else if ( s.matches("trustmydomain") ) { tms[0].trustMyDomain=  v.toLowerCase().matches("true")?true:false; }
+                var va = (String) me.getValue();
+                log("getTrustManager(HashMap map)",3,"use key:"+s+":  value:"+va);
+                if      ( s.matches("provider")      ) { tms[0].trustProvider=  va; }
+                else if ( s.matches("trusttype")     ) { tms[0].trustType=      va; }
+                else if ( s.matches("truststore")    ) { tms[0].ksType=         va; }
+                else if ( s.matches("truststorefile")) { tms[0].trustStoreFile= va; }
+                else if ( s.matches("password")      ) { tms[0].passwd=         va; }
+                else if ( s.matches("trustall")      ) { tms[0].trustAll=       va.toLowerCase().matches("true")?true:false; }
+                else if ( s.matches("trustmydomain") ) { tms[0].trustMyDomain=  va.toLowerCase().matches("true")?true:false; }
                 else if ( s.matches("domaincount")   ) { 
                         int j = Integer.parseInt( (String) map.get("domaincount") );
                         for ( int k=0; k<j; k++){
@@ -163,40 +169,48 @@ public class MyTrustManager extends Version implements X509TrustManager {
     
     
     
-    private boolean isMyDomainTrusted(X509Certificate[] chain) {
+    private boolean checkTrusted(String sn) {
+            return     isNotNullOrEmpty(sn) 
+                    && isNotNullOrEmpty(this.trustedDom) 
+                    && ( this.trustedDom.containsValue(sn)|| this.trustedDom.containsKey(sn));
+    }        
+    private boolean isMyDomainTrusted(X509Certificate[] chain) throws CertificateParsingException {
         if (trustAll) { return true; }
         String meth="isMyDomainTrusted(X509Certificate[] chain)";
         
         boolean b=false;
         log(meth,3,"validate IsMyDoamin certified domains:"+this.trustedDom.size()+" certificate:"+chain[0]);
-        if ( MyTrustManager.trustMyDomain && MyTrustManager.trustedDom.size() > 0  && chain != null && chain.length >0 ) {
+        if ( MyTrustManager.trustMyDomain && MyTrustManager.trustedDom.size() > 0  
+                && isNotNullOrEmpty(chain) && chain.length >0 ) {
           try {
             Iterator i;
-            log(meth,2,"like to test SubjectDN :"+chain[0].getSubjectDN().getName().toLowerCase()+": ");
+            final String sn=chain[0].getSubjectX500Principal().getName().toLowerCase();
+            log(meth,2,"like to test SubjectDN :"+sn+": ");
           
-            /*b=chain[0].getSubjectDN().getName().toLowerCase().contains( trustedDom[0]);
+            b= checkTrusted(sn);
             if ( ! b && chain[0].getSubjectAlternativeNames() != null ) {
                  log(meth,2,"like to test SubjectAlternativeNames :"+chain[0].getSubjectAlternativeNames()+":");
                  i=chain[0].getSubjectAlternativeNames().iterator();
                  while(i.hasNext() ) {
                     List li = (List) i.next();
-                    if ( li.get(0).toString().toLowerCase().contains(trustDomain) ) { b=true; break; }
+                    if ( checkTrusted(li.get(0).toString().toLowerCase()) ) { b=true; break; }
                  }
             }
             
             if ( ! b ) {   
-                log(meth,2,"like to test IssuerDN :"+chain[0].getIssuerDN()+":");
-                b=chain[0].getIssuerDN().getName().toLowerCase().contains(trustDomain);
+                final String issuer = chain[0].getIssuerX500Principal().getName().toLowerCase();
+                log(meth,2,"like to test IssuerDN :"+issuer+":");
+                b=checkTrusted(issuer);
             }
             if ( ! b  && chain[0].getIssuerAlternativeNames() != null ) {
                 log(meth,2,"like to test IssuerAlternativeNames :"+chain[0].getIssuerAlternativeNames()+":");
                 i= chain[0].getIssuerAlternativeNames().iterator();
                 while(i.hasNext()) {
                     List li = (List) i.next();
-                    if ( li.get(0).toString().toLowerCase().contains(trustDomain) ) { b=true; break; }
+                    if ( checkTrusted(li.get(0).toString().toLowerCase() ) ) { b=true; break; }
                 }
-            }  */  
-           } catch(Exception ex) {
+            }   
+           } catch(NullPointerException ex) {
               log(meth,1,"could not validate the first certificate chain[0]:"+chain[0].toString()+"\nexception :"+ex.toString());
            } 
         }

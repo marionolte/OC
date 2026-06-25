@@ -22,11 +22,12 @@ public class SSHCluster extends RunnableT {
     private  ReadDir  userConndir;
     private  boolean  valid=true;
     private  ReadFile hostsfile;
-    private  ArrayList<SSHshell> hostlist=new ArrayList();
+    private final  ArrayList<SSHshell> hostlist;
     private  final HashMap<String, String> imap;
-    private  final HashMap<String, HashMap<String, String>> hmap=new HashMap();
+    private  final HashMap<String, HashMap<String, String>> hmap=new HashMap<>();
     
     private SSHCluster(String[] args) {
+        this.hostlist = new ArrayList<>();
         final String func=getFunc("SSHCluster(String[] args)");
         imap = com.macmario.io.lib.IOLib.scanner(args, myusage);
         printf(func,3,"imap =>"+imap);

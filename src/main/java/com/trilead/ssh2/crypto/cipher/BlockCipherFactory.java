@@ -1,7 +1,8 @@
 
 package com.trilead.ssh2.crypto.cipher;
 
-import java.util.Vector;
+import java.util.ArrayList;
+//import java.util.Vector;
 
 /**
  * BlockCipherFactory.
@@ -27,24 +28,28 @@ public class BlockCipherFactory
 		}
 	}
 
-	static Vector ciphers = new Vector();
+	//static Vector ciphers = new Vector();
+        static ArrayList<CipherEntry> ciphers = new ArrayList<>();
 
 	static
 	{
 		/* Higher Priority First */
+            
+                ciphers.add(new CipherEntry("aes256-ctr", 16, 32, "com.trilead.ssh2.crypto.cipher.AES"));
+		ciphers.add(new CipherEntry("aes192-ctr", 16, 24, "com.trilead.ssh2.crypto.cipher.AES"));
+		ciphers.add(new CipherEntry("aes128-ctr", 16, 16, "com.trilead.ssh2.crypto.cipher.AES"));
+		ciphers.add(new CipherEntry("blowfish-ctr", 8, 16, "com.trilead.ssh2.crypto.cipher.BlowFish"));
 
-		ciphers.addElement(new CipherEntry("aes256-ctr", 16, 32, "com.trilead.ssh2.crypto.cipher.AES"));
-		ciphers.addElement(new CipherEntry("aes192-ctr", 16, 24, "com.trilead.ssh2.crypto.cipher.AES"));
-		ciphers.addElement(new CipherEntry("aes128-ctr", 16, 16, "com.trilead.ssh2.crypto.cipher.AES"));
-		ciphers.addElement(new CipherEntry("blowfish-ctr", 8, 16, "com.trilead.ssh2.crypto.cipher.BlowFish"));
-
-		ciphers.addElement(new CipherEntry("aes256-cbc", 16, 32, "com.trilead.ssh2.crypto.cipher.AES"));
-		ciphers.addElement(new CipherEntry("aes192-cbc", 16, 24, "com.trilead.ssh2.crypto.cipher.AES"));
-		ciphers.addElement(new CipherEntry("aes128-cbc", 16, 16, "com.trilead.ssh2.crypto.cipher.AES"));
-		ciphers.addElement(new CipherEntry("blowfish-cbc", 8, 16, "com.trilead.ssh2.crypto.cipher.BlowFish"));
+		ciphers.add(new CipherEntry("aes256-cbc", 16, 32, "com.trilead.ssh2.crypto.cipher.AES"));
+		ciphers.add(new CipherEntry("aes192-cbc", 16, 24, "com.trilead.ssh2.crypto.cipher.AES"));
+		ciphers.add(new CipherEntry("aes128-cbc", 16, 16, "com.trilead.ssh2.crypto.cipher.AES"));
+		ciphers.add(new CipherEntry("blowfish-cbc", 8, 16, "com.trilead.ssh2.crypto.cipher.BlowFish"));
 		
-		ciphers.addElement(new CipherEntry("3des-ctr", 8, 24, "com.trilead.ssh2.crypto.cipher.DESede"));
-		ciphers.addElement(new CipherEntry("3des-cbc", 8, 24, "com.trilead.ssh2.crypto.cipher.DESede"));
+                /*
+		
+		//ciphers.add(new CipherEntry("3des-ctr", 8, 24, "com.trilead.ssh2.crypto.cipher.DESede"));
+		//ciphers.add(new CipherEntry("3des-cbc", 8, 24, "com.trilead.ssh2.crypto.cipher.DESede"));
+                */
 	}
 
 	public static String[] getDefaultCipherList()
@@ -52,7 +57,7 @@ public class BlockCipherFactory
 		String list[] = new String[ciphers.size()];
 		for (int i = 0; i < ciphers.size(); i++)
 		{
-			CipherEntry ce = (CipherEntry) ciphers.elementAt(i);
+			CipherEntry ce = ciphers.get(i);
 			list[i] = new String(ce.type);
 		}
 		return list;
@@ -94,7 +99,7 @@ public class BlockCipherFactory
 	{
 		for (int i = 0; i < ciphers.size(); i++)
 		{
-			CipherEntry ce = (CipherEntry) ciphers.elementAt(i);
+			CipherEntry ce = ciphers.get(i);
 			if (ce.type.equals(type))
 				return ce;
 		}

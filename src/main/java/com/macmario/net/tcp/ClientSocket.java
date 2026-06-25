@@ -44,17 +44,21 @@ public class ClientSocket extends RunnableT{
     private ReaderThread rt;
     private WriterThread wt;
     private boolean onError=false;
-    private HashMap map = new HashMap();
+    private HashMap<String,String> map;
     private String localhostname ;
     private Proxy  proxy=null;
     private Socket proxysocket;
     
     
-    public ClientSocket(){ setMyHostName(); addSSLTrustedDomain(getMyDomainname()); }
-    public ClientSocket(String host, String port             ) throws UnknownHostException, IOException { this(host, Integer.valueOf( port ),false, false);}
-    public ClientSocket(String host, int port                ) throws UnknownHostException, IOException { this(host, port,                false, false);}
-    public ClientSocket(String host, int port, boolean inssl ) throws UnknownHostException, IOException { this(host, port,                inssl, false);}
+    public ClientSocket(){ this.map = new HashMap<>(); setMyHostName(); addSSLTrustedDomain(getMyDomainname()); }
+    public ClientSocket(String host, String port             ) throws UnknownHostException, IOException { this(host, Integer.valueOf( port ),false, false);this.map = new HashMap<>();
+}
+    public ClientSocket(String host, int port                ) throws UnknownHostException, IOException { this(host, port,                false, false);this.map = new HashMap<>();
+}
+    public ClientSocket(String host, int port, boolean inssl ) throws UnknownHostException, IOException { this(host, port,                inssl, false);this.map = new HashMap<>();
+}
     public ClientSocket(String host, int port, boolean inssl, boolean noproxy ) throws UnknownHostException, IOException {
+        this.map = new HashMap<>();
         this.inSSL=inssl;
          this.host=host;
          this.port=port;

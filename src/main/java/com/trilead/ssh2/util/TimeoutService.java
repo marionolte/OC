@@ -102,7 +102,7 @@ public class TimeoutService
 	}
 
 	/* The list object is also used for locking purposes */
-	private static final LinkedList todolist = new LinkedList();
+	private static final LinkedList<TimeoutToken> todolist = new LinkedList<>();
 
 	private static Thread timeoutThread = null;
 

@@ -326,8 +326,8 @@ public class LdapModify extends LdapMain {
         Name name =  new CompositeName().add( ( (entry != null)? entry.getNameInNamespace():dn ) );
         
         BasicAttribute  obj = new BasicAttribute("objectclass");
-        ArrayList ua  = new ArrayList();
-        Hashtable map = new Hashtable();
+        ArrayList<String> ua  = new ArrayList<>();
+        Hashtable<String,Object> map = new Hashtable<>();
         if ( entry == null ) {
              map.put("objectclass", obj); ua.add("objectclass");
         

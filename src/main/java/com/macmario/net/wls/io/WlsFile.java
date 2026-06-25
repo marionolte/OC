@@ -30,17 +30,23 @@ public class WlsFile extends ReadFile {
     
     public void analyze() {
         final String func=getFunc("analyze()");
-        ArrayList<WlsMsg> ar = new ArrayList(); 
+        ArrayList<WlsMsg> ar = new ArrayList<>(); 
         WlsMsg msg=null;    Pattern pa = Pattern.compile("^(\\d+.*|-\\d+.*)");
     
         for ( String s : super.readOut().toString().split("\n") ) {
             printf(func,3,"line >|"+s+"|<");
             if ( (pa.matcher(s)).find()                                                               ) { if (gcfile != null) { gcfile.addLine(s); } } // gclog
-            else if ( msg == null ||   s.startsWith("<") || s.startsWith("####<") || msg.isComplete() ) { msg = new WlsMsg(s.replace("####<", "<") );  ar.add(msg); }
-            else if ( msg != null && ! s.startsWith("<")                                              ) { boolean b = msg.add(s.replace("####<", "<"));  }
+            else if (    isNullOrEmpty(msg) 
+                        ||   s.startsWith("<") 
+                        || s.startsWith("####<") 
+                        || (isNotNullOrEmpty(msg) && msg.isComplete() ) ) { 
+                            msg = new WlsMsg(s.replace("####<", "<") );  
+                            ar.add(msg); 
+            }
+            else if ( isNotNullOrEmpty(msg) && ! s.startsWith("<")                                              ) { boolean b = msg.add(s.replace("####<", "<"));  }
             
         }
-        if ( ar.size() == 0 ) {
+        if ( ar.isEmpty() ) {
             System.out.println("INFO: no messages found");
             return;
         }
@@ -51,7 +57,7 @@ public class WlsFile extends ReadFile {
              ) { sleep(100); }
         printf(func,4,"closed WlsA - "+(System.currentTimeMillis()-starttime));
         for( WlsMsg ms : ar ) {
-            System.out.println("msg  >|"+ms.getMessage()+"|<");
+            printf(func,3,"msg  >|"+ms.getMessage()+"|<");
         }
         
     }
@@ -68,7 +74,7 @@ public class WlsFile extends ReadFile {
     
     class WlsA extends RunnableT {
         ArrayList<WlsMsg> ar; 
-         WlsA(ArrayList ar){
+         WlsA(ArrayList<WlsMsg> ar){
            this.ar=ar;  
          }
          
@@ -89,7 +95,7 @@ public class WlsFile extends ReadFile {
             int range= this.ar.size() / l +1;
             int i=0; 
             printf(func,3,"WlsA - range:"+range+" ");
-            ArrayList<WlsAnna> arm= new ArrayList();
+            ArrayList<WlsAnna> arm= new ArrayList<>();
             long d=System.currentTimeMillis();
             while(i < ar.size() ) {  
                 printf(func,4,"WlsA - add new WlsAnna["+i+"] - "+(System.currentTimeMillis()-d));
@@ -101,7 +107,7 @@ public class WlsFile extends ReadFile {
             }
             printf(func,3,"WlsA - have added "+arm.size()+" WlsAnna threads - runs:"+(System.currentTimeMillis()-d));
             i=0;
-            while( arm.size() > 0 ) {
+            while( ! arm.isEmpty() ) {
                 WlsAnna wa = arm.remove(0);
                 long fa = System.currentTimeMillis();
                 printf(func,4,"WlsAnna["+(i++)+"] - wait4complete:"+fa);
@@ -122,7 +128,7 @@ public class WlsFile extends ReadFile {
     
     class WlsAnna extends RunnableT {
          ArrayList<WlsMsg> ar; int start; int stop;
-         WlsAnna(ArrayList ar, int start, int stop){
+         WlsAnna(ArrayList<WlsMsg> ar, int start, int stop){
            this.ar=ar; this.start=start; this.stop=stop; 
          }
                  
