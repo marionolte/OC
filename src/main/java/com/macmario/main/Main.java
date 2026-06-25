@@ -272,6 +272,7 @@ public class Main extends Updater{
                 else if ( args[i].matches("-secdbfile") ){ this.getSecDbFile(getArgsLower(args,++i));     fin=true; }
                 else if ( args[i].startsWith("-ldap")   ){ this.runLdap(args[i].substring(1),getArgsLower(args,++i));  fin=true; }
                 else if ( args[i].matches("-d")         ){ } // needs empty - run in pre-scan
+                else if ( args[i].matches("-keepass")   ){ this.getKeePass(getArgsLower(args,++i));       fin=true; }
                 else if ( args[i].matches("-monitor")   ){ this.runMonitor(getArgsLower(args,++i));       fin=true; }
                 else if ( args[i].matches("-newpass")   ){ this.getNewPassword(getArgsLower(args,++i));   fin=true; }
                 else if ( args[i].matches("-diff")      ){ this.getFileDiff(getArgsLower(args,++i));      fin=true; }
@@ -296,6 +297,222 @@ public class Main extends Updater{
         }
         if ( fin ) { setClosed(); } 
         return;
+   }
+    
+   private void getKeePass(String[] ar) {
+        final String func = getFunc("getKeePass(String[] ar)");
+        final String prog = (System.getProperty("prog") == null) ? "" : System.getProperty("prog");
+        final String usage = "usage: " + prog + " -keepass <action> [options]\n"
+            + "  actions:\n"
+            + "    create      -db <file> (-pw <pw>|-j <secfile>) [-name <dbname>] [-format kdbx31|kdbx4]\n"
+            + "    list        -db <file> (-pw <pw>|-j <secfile>) [-group <path>]\n"
+            + "    get         -db <file> (-pw <pw>|-j <secfile>) [-group <path>] -title <title>\n"
+            + "    addentry    -db <file> (-pw <pw>|-j <secfile>) [-group <path>] -title <title>"
+            + " [-user <u>] [-epw <pw>] [-url <url>] [-notes <n>]\n"
+            + "    updateentry -db <file> (-pw <pw>|-j <secfile>) -uuid <uuid>"
+            + " [-title <t>] [-user <u>] [-epw <pw>] [-url <url>] [-notes <n>]\n"
+            + "    delentry    -db <file> (-pw <pw>|-j <secfile>) (-uuid <uuid> | -group <path> -title <title>)\n"
+            + "    addgroup    -db <file> (-pw <pw>|-j <secfile>) -group <path>\n"
+            + "    delgroup    -db <file> (-pw <pw>|-j <secfile>) -group <path>\n"
+            + "    passwd      -db <file> (-pw <pw>|-j <secfile>) -newpw <newpw>\n"
+            + "    attach      -db <file> (-pw <pw>|-j <secfile>) (-uuid <uuid> | -group <path> -title <title>) -file <file> [-att <name>]\n"
+            + "    listattach  -db <file> (-pw <pw>|-j <secfile>) (-uuid <uuid> | -group <path> -title <title>)\n"
+            + "    extract     -db <file> (-pw <pw>|-j <secfile>) (-uuid <uuid> | -group <path> -title <title>) -att <name> -out <file>\n"
+            + "    delattach   -db <file> (-pw <pw>|-j <secfile>) (-uuid <uuid> | -group <path> -title <title>) -att <name>\n";
+
+        if (ar == null || ar.length == 0) { System.out.println(usage); _exit = 1; return; }
+
+        String action = ar[0].toLowerCase();
+        String dbFile = null, pw = null, pwFile = null, newpw = null, dbName = null, format = null;
+        String group = null, title = null, user = null, epw = null, url = null, notes = null, uuid = null;
+        String attFile = null, attName = null, outFile = null;
+
+        try {
+            for (int i = 1; i < ar.length; i++) {
+                if      (ar[i].equals("-db")     && i + 1 < ar.length) { dbFile  = ar[++i]; }
+                else if (ar[i].equals("-pw")     && i + 1 < ar.length) { pw      = ar[++i]; }
+                else if (ar[i].equals("-j")      && i + 1 < ar.length) { pwFile  = ar[++i]; }
+                else if (ar[i].equals("-newpw")  && i + 1 < ar.length) { newpw   = ar[++i]; }
+                else if (ar[i].equals("-name")   && i + 1 < ar.length) { dbName  = ar[++i]; }
+                else if (ar[i].equals("-format") && i + 1 < ar.length) { format  = ar[++i]; }
+                else if (ar[i].equals("-group")  && i + 1 < ar.length) { group   = ar[++i]; }
+                else if (ar[i].equals("-title")  && i + 1 < ar.length) { title   = ar[++i]; }
+                else if (ar[i].equals("-user")   && i + 1 < ar.length) { user    = ar[++i]; }
+                else if (ar[i].equals("-epw")    && i + 1 < ar.length) { epw     = ar[++i]; }
+                else if (ar[i].equals("-url")    && i + 1 < ar.length) { url     = ar[++i]; }
+                else if (ar[i].equals("-notes")  && i + 1 < ar.length) { notes   = ar[++i]; }
+                else if (ar[i].equals("-uuid")   && i + 1 < ar.length) { uuid    = ar[++i]; }
+                else if (ar[i].equals("-file")   && i + 1 < ar.length) { attFile = ar[++i]; }
+                else if (ar[i].equals("-att")    && i + 1 < ar.length) { attName = ar[++i]; }
+                else if (ar[i].equals("-out")    && i + 1 < ar.length) { outFile = ar[++i]; }
+                else { printf(func, 2, "WARNING: ignoring unknown/!incomplete option: " + ar[i]); }
+            }
+
+            if (dbFile == null) { System.out.println("ERROR: -db <file> is required\n" + usage); _exit = 1; return; }
+            // -j reads the master password from a secure file (project convention); -pw takes it literally.
+            if (pw == null && pwFile != null) { pw = getPassword(pwFile); }
+            if (pw == null) { System.out.println("ERROR: master password required (-pw or -j)\n" + usage); _exit = 1; return; }
+
+            File db = new File(dbFile);
+
+            // ---- actions that do not require opening an existing database -----------------
+            if (action.equals("create") || action.equals("new")) {
+                com.macmario.io.crypt.KeePass.Format fmt = "kdbx31".equalsIgnoreCase(format)
+                        ? com.macmario.io.crypt.KeePass.Format.KDBX31
+                        : com.macmario.io.crypt.KeePass.Format.KDBX4;
+                com.macmario.io.crypt.KeePass kp = com.macmario.io.crypt.KeePass.create(dbName, fmt);
+                kp.save(db, pw);
+                System.out.println("created KeePass database: " + db + " (" + fmt + ")");
+                _exit = 0; return;
+            }
+            if (action.equals("passwd") || action.equals("chpw")) {
+                if (newpw == null) { System.out.println("ERROR: -newpw <newpw> is required\n" + usage); _exit = 1; return; }
+                com.macmario.io.crypt.KeePass.changeMasterPassword(db, pw, newpw);
+                System.out.println("master password changed for: " + db);
+                _exit = 0; return;
+            }
+
+            // ---- all remaining actions operate on an opened database ----------------------
+            com.macmario.io.crypt.KeePass kp = com.macmario.io.crypt.KeePass.open(db, pw);
+            boolean save = false;
+
+            switch (action) {
+                case "list":
+                    com.macmario.io.crypt.KeePass.Format f = kp.getFormat();
+                    System.out.println("database: " + (kp.getDatabaseName() == null ? "(unnamed)" : kp.getDatabaseName())
+                            + " [" + f + "]");
+                    keePassPrintTree(kp.findGroup(group), 0);
+                    break;
+
+                case "get": {
+                    if (title == null) { System.out.println("ERROR: -title <title> is required\n" + usage); _exit = 1; return; }
+                    org.linguafranca.pwdb.kdbx.jackson.JacksonEntry e = kp.findEntry(group, title);
+                    if (e == null) { System.out.println("entry not found: title=" + title + " group=" + (group == null ? "/" : group)); _exit = 1; return; }
+                    System.out.println("uuid    : " + e.getUuid());
+                    System.out.println("title   : " + e.getTitle());
+                    System.out.println("user    : " + e.getUsername());
+                    System.out.println("password: " + e.getPassword());
+                    System.out.println("url     : " + e.getUrl());
+                    System.out.println("notes   : " + e.getNotes());
+                    System.out.println("attach  : " + kp.listAttachments(e.getUuid()));
+                    break;
+                }
+                case "addentry":
+                    if (title == null) { System.out.println("ERROR: -title <title> is required\n" + usage); _exit = 1; return; }
+                    org.linguafranca.pwdb.kdbx.jackson.JacksonEntry added = kp.addEntry(group, title, user, epw, url, notes);
+                    System.out.println("added entry: " + added.getTitle() + " uuid=" + added.getUuid());
+                    save = true;
+                    break;
+
+                case "updateentry":
+                    if (uuid == null) { System.out.println("ERROR: -uuid <uuid> is required\n" + usage); _exit = 1; return; }
+                    boolean upd = kp.updateEntry(java.util.UUID.fromString(uuid), title, user, epw, url, notes);
+                    System.out.println(upd ? "updated entry: " + uuid : "entry not found: " + uuid);
+                    if (!upd) { _exit = 1; return; }
+                    save = true;
+                    break;
+
+                case "delentry":
+                    boolean delE = (uuid != null)
+                            ? kp.deleteEntry(java.util.UUID.fromString(uuid))
+                            : kp.deleteEntry(group, title);
+                    System.out.println(delE ? "deleted entry" : "entry not found");
+                    if (!delE) { _exit = 1; return; }
+                    save = true;
+                    break;
+
+                case "addgroup":
+                    if (group == null) { System.out.println("ERROR: -group <path> is required\n" + usage); _exit = 1; return; }
+                    kp.addGroup(group);
+                    System.out.println("added group: " + group);
+                    save = true;
+                    break;
+
+                case "delgroup":
+                    if (group == null) { System.out.println("ERROR: -group <path> is required\n" + usage); _exit = 1; return; }
+                    boolean delG = kp.deleteGroup(group);
+                    System.out.println(delG ? "deleted group: " + group : "group not found: " + group);
+                    if (!delG) { _exit = 1; return; }
+                    save = true;
+                    break;
+
+                case "attach": {
+                    if (attFile == null) { System.out.println("ERROR: -file <file> is required\n" + usage); _exit = 1; return; }
+                    java.util.UUID id = keePassResolveUuid(kp, uuid, group, title);
+                    if (id == null) { System.out.println("ERROR: entry not found (use -uuid or -group/-title)"); _exit = 1; return; }
+                    File fi = new File(attFile);
+                    kp.addAttachment(id, attName == null ? fi.getName() : attName, fi);
+                    System.out.println("attached " + (attName == null ? fi.getName() : attName) + " to " + id);
+                    save = true;
+                    break;
+                }
+                case "listattach": {
+                    java.util.UUID id = keePassResolveUuid(kp, uuid, group, title);
+                    if (id == null) { System.out.println("ERROR: entry not found (use -uuid or -group/-title)"); _exit = 1; return; }
+                    System.out.println("attachments: " + kp.listAttachments(id));
+                    break;
+                }
+                case "extract": {
+                    if (attName == null || outFile == null) { System.out.println("ERROR: -att <name> and -out <file> are required\n" + usage); _exit = 1; return; }
+                    java.util.UUID id = keePassResolveUuid(kp, uuid, group, title);
+                    if (id == null) { System.out.println("ERROR: entry not found (use -uuid or -group/-title)"); _exit = 1; return; }
+                    boolean ok = kp.extractAttachment(id, attName, new File(outFile));
+                    System.out.println(ok ? "extracted " + attName + " -> " + outFile : "attachment not found: " + attName);
+                    if (!ok) { _exit = 1; return; }
+                    break;
+                }
+                case "delattach": {
+                    if (attName == null) { System.out.println("ERROR: -att <name> is required\n" + usage); _exit = 1; return; }
+                    java.util.UUID id = keePassResolveUuid(kp, uuid, group, title);
+                    if (id == null) { System.out.println("ERROR: entry not found (use -uuid or -group/-title)"); _exit = 1; return; }
+                    boolean ok = kp.deleteAttachment(id, attName);
+                    System.out.println(ok ? "deleted attachment: " + attName : "attachment not found: " + attName);
+                    if (!ok) { _exit = 1; return; }
+                    save = true;
+                    break;
+                }
+                default:
+                    System.out.println("ERROR: unknown action: " + action + "\n" + usage);
+                    _exit = 1;
+                    return;
+            }
+
+            if (save) { kp.save(db, pw); printf(func, 3, "INFO: saved " + db); }
+            _exit = 0;
+
+        } catch (com.macmario.io.crypt.KeePass.KeePassException ke) {
+            System.out.println("ERROR: " + ke.getMessage());
+            printf(func, 1, "KeePass failure:", ke);
+            _exit = 1;
+        } catch (IllegalArgumentException iae) {
+            System.out.println("ERROR: " + iae.getMessage() + "\n" + usage);
+            _exit = 1;
+        } catch (Exception e) {
+            System.out.println("ERROR: " + e.getMessage());
+            printf(func, 1, "unexpected failure:", e);
+            _exit = -1;
+        }
+   }
+
+   /** Resolves a target entry UUID either directly or by group-path + title. Returns {@code null} if not found. */
+   private java.util.UUID keePassResolveUuid(com.macmario.io.crypt.KeePass kp, String uuid, String group, String title) {
+        if (uuid != null) { return java.util.UUID.fromString(uuid); }
+        if (title == null) { return null; }
+        org.linguafranca.pwdb.kdbx.jackson.JacksonEntry e = kp.findEntry(group, title);
+        return (e == null) ? null : e.getUuid();
+   }
+
+   /** Prints the group/entry tree under {@code group} with indentation; tolerates a {@code null} group. */
+   private void keePassPrintTree(org.linguafranca.pwdb.kdbx.jackson.JacksonGroup group, int depth) {
+        if (group == null) { System.out.println("(group not found)"); return; }
+        String pad = "  ".repeat(depth);
+        System.out.println(pad + "[" + (group.getName() == null ? "/" : group.getName()) + "]");
+        for (org.linguafranca.pwdb.kdbx.jackson.JacksonEntry e : group.getEntries()) {
+            System.out.println(pad + "  - " + e.getTitle() + "  (uuid=" + e.getUuid() + ")");
+        }
+        for (org.linguafranca.pwdb.kdbx.jackson.JacksonGroup g : group.getGroups()) {
+            keePassPrintTree(g, depth + 1);
+        }
    }
     
    private void getNewPassword(String[] ar) {
@@ -839,6 +1056,7 @@ public class Main extends Updater{
     }
     
     private void usage() {
+        
         System.out.println(this.getFullInfo()+"\n\nOptions:\n"
                 + "\t\t-version \t\t-\tprint version information\n\n"
                 + "\t\t-crypt "+crypt.usage(false)+"\n\t\t\t\t\t-\tcrypt or uncrypt a string or file\n\n"
@@ -859,6 +1077,7 @@ public class Main extends Updater{
                 + "\n\t\t-secure <filename>\t-\tgenerate a secure file from filename\n"
                 + "\n\t\t-unsecure <filename>\t-\tunsecure a secure file back to normal file\n"
                 + "\n\t\t-mwinfo \t\t-\tget Middleware information\n"
+                + "\n\t\t-keepass \t\t-\thandle KeePass database information\n"
                 //+ "\n\t\t-logrotate\t"+(new LogRotation(new String[]{}).usage(false) )
                 + "\n\n"
         );

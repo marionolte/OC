@@ -5,11 +5,14 @@
  */
 package com.macmario.comm.ssh;
 
+import com.macmario.io.thread.RunnableT;
+import java.io.IOException;
+
 /**
  *
  * @author SuMario
  */
-public class RemoteConsumer  extends Thread
+public class RemoteConsumer  extends RunnableT
 {
     int posy = 0;
     int posx = 0;
@@ -89,6 +92,8 @@ public class RemoteConsumer  extends Thread
 
     @Override
     public void run() {
+        setRunning();
+        
         byte[] buff = new byte[8192];
 
         try {
@@ -98,7 +103,8 @@ public class RemoteConsumer  extends Thread
                 
                 addText(buff, len);
             }
-        } catch (Exception e) { }
+        } catch (IOException e) { }
+        setClosed();
     }
 
     
