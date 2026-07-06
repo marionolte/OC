@@ -23,8 +23,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 public class IOLib extends Version {
-   private static MyVersion v;
-   private static  ClassLoader loader;
+   private static final MyVersion v;
+   private static final  ClassLoader loader;
    
    static {
        v      = new MyVersion();
@@ -93,7 +93,7 @@ public class IOLib extends Version {
         return sw.toString();
     }
    
-   private static final HashMap<String, String> _zipmap = new HashMap<String, String>();
+   private static final HashMap<String, String> _zipmap = new HashMap<>();
    
    static public void fillJarMap(String  f) throws IOException { fillJarMap(new ZipFile(f)); }
    static public void fillJarMap(File    f) throws IOException { fillJarMap(new ZipFile(f.toString())); }
@@ -148,16 +148,18 @@ public class IOLib extends Version {
    
    //static public String getFunc(String func){  return "IOLib::"+func;}
 
-    public String getValueFromClass(String cl, String key) {
+    static public String getValueFromClass(String cl, String key) {
         try {
           return getIno(loader.loadClass(cl), key);
-        } catch (Exception e) { return (String) null;}  
+        } catch (ClassNotFoundException 
+                | IllegalAccessException 
+                | IllegalArgumentException 
+                | NoSuchFieldException e) { return (String) null;}  
    }
     
-    private  String getIno(Class<?> cl, String name) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException  {
-        
+    static private  String getIno(Class<?> cl, String name) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException  {
         Field f = cl.getDeclaredField(name); 
-        return (String) ""+f.get(f);
+        return ""+f.get(f);
     }
     
     static public HashMap<String,String> scanner(String[] args,final String use) {    
@@ -250,15 +252,6 @@ public class IOLib extends Version {
             return f;
         }
         return "";
-    }
-    
-    static public boolean isNumber(String s) {
-        try {  
-            double d = Double.parseDouble(s);  
-            return true;
-        }  
-        catch(NumberFormatException nfe) { return false; }  
- 
     }
     
     static public void getFileDiff(String[] ar) {

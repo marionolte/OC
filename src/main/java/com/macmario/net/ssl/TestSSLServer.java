@@ -92,25 +92,29 @@ public class TestSSLServer extends Version{
 		System.exit(1);
 	}
         
-        static String name = "localhost";
-	static int    port = 443;
-        static boolean vulnBEAST  = false;
-        static boolean vulnPOODLE = false;
-        static boolean compress = false;
+         String name = "localhost";
+	 int    port = 443;
+         boolean vulnBEAST  = false;
+         boolean vulnPOODLE = false;
+         boolean compress = false;
         
-        static boolean _success=false;
+         boolean _success=false;
         
-        static HashMap<String, HashMap<String,String>> map;
+         HashMap<String, HashMap<String,String>> map;
         
+        private TestSSLServer() {
+            init();
+        }
         public TestSSLServer(String ho, int po) {
+            this();
                this.name=ho;
                this.port=po;
                this.map=new HashMap<>();
         }
         
-        static public boolean isValid() { return _success; }
+        public boolean isValid() { return _success; }
                 
-        public static void test() {
+        public  void test() {
                vulnBEAST  = false;
                vulnPOODLE = false;
                compress = false;
@@ -255,9 +259,9 @@ public class TestSSLServer extends Version{
                 
         }
         
-        private static List<String> SECURE_CIPHER_SUITES = null;
+        private  List<String> SECURE_CIPHER_SUITES = null;
         
-        private static boolean isSecureCipher(String txt) {
+        private  boolean isSecureCipher(String txt) {
             if ( isNotNullOrEmpty(txt)){
                if ( isNullOrEmpty(SECURE_CIPHER_SUITES ) ) {
                    SECURE_CIPHER_SUITES= getAllLineList( TestSSLServer.class.getResourceAsStream("/com/macmario/net/ssl/ciphersuites.properties") );
@@ -270,7 +274,7 @@ public class TestSSLServer extends Version{
             return false;
         }
         
-        private static List<String> getAllLineList(InputStream in) {
+        private  List<String> getAllLineList(InputStream in) {
             try ( BufferedReader reader = new BufferedReader(new InputStreamReader(in)) ) {
                 return reader.lines().collect(Collectors.toList());              
             } catch(IOException|NullPointerException io) {
@@ -278,7 +282,7 @@ public class TestSSLServer extends Version{
             }            
         }
         
-        private static long getCalendar(String date) {
+        private  long getCalendar(String date) {
             //System.out.println("date income |"+date+"|");
             Calendar cal = Calendar.getInstance();
             if ( isNotNullOrEmpty(date)) {
@@ -300,19 +304,20 @@ public class TestSSLServer extends Version{
 		if (args.length == 0 || args.length > 2) {
 			usage();
 		}
-		name = args[0];
+		String nam = args[0];
+                int po=-1;
 		if (args.length == 2) {
 			try {
-				port = Integer.parseInt(args[1]);
+				po = Integer.parseInt(args[1]);
 			} catch (NumberFormatException nfe) {
 				usage();
 			}
-			if (port <= 0 || port > 65535) {
+			if (po <= 0 || po > 65535) {
 				usage();
 			}
 		}
                 
-                TestSSLServer t = new TestSSLServer(name,port);
+                TestSSLServer t = new TestSSLServer(nam,po);
                               t.test();
                 
 	}
@@ -324,7 +329,7 @@ public class TestSSLServer extends Version{
 	 * selected. We keep on until the server can no longer respond
 	 * to us with a ServerHello.
 	 */
-	static Set<Integer> supportedSuites(InetSocketAddress isa, int version, Set<String> serverCertID)
+	Set<Integer> supportedSuites(InetSocketAddress isa, int version, Set<String> serverCertID)
 	{
 		Set<Integer> cs = new TreeSet<Integer>(CIPHER_SUITES.keySet());
 		Set<Integer> rs = new TreeSet<Integer>();
@@ -349,7 +354,7 @@ public class TestSSLServer extends Version{
 		return rs;
 	}
 
-	static int minStrength(Set<Integer> supp)
+        int minStrength(Set<Integer> supp)
 	{
 		int m = STRONG;
 		for (int suite : supp) {
@@ -364,7 +369,7 @@ public class TestSSLServer extends Version{
 		return m;
 	}
 
-	static int maxStrength(Set<Integer> supp)
+	int maxStrength(Set<Integer> supp)
 	{
 		int m = CLEAR;
 		for (int suite : supp) {
@@ -379,7 +384,7 @@ public class TestSSLServer extends Version{
 		return m;
 	}
         
-        static void testServer(InetSocketAddress isa, int version, Set<Integer> supp) {
+        void testServer(InetSocketAddress isa, int version, Set<Integer> supp) {
             List<Integer> stream = new ArrayList<Integer>();
             for (int suite : supp) {
                 CipherSuite cs = CIPHER_SUITES.get(suite);
@@ -407,7 +412,7 @@ public class TestSSLServer extends Version{
         }
 
         
-	static void testSrv(InetSocketAddress isa, int version, Set<Integer> supp)
+	void testSrv(InetSocketAddress isa, int version, Set<Integer> supp)
 	{
 		/*
 		 * TLS 1.1+ is not vulnerable to BEAST and Poodle.
@@ -453,7 +458,7 @@ public class TestSSLServer extends Version{
                 vulnPOODLE=  !strongCBC.contains(sh.cipherSuite);
 	}
 
-	static String versionString(int version)
+	String versionString(int version)
 	{
 		if (version == 0x0200) {
 			return "SSLv2";
@@ -470,7 +475,7 @@ public class TestSSLServer extends Version{
 	 * Connect to the server, send a ClientHello, and decode the
 	 * response (ServerHello). On error, null is returned.
 	 */
-	static ServerHello connect(InetSocketAddress isa,
+	ServerHello connect(InetSocketAddress isa,
 		int version, Collection<Integer> cipherSuites)
 	{
 		Socket s = null;
@@ -507,7 +512,7 @@ public class TestSSLServer extends Version{
 	 * Connect to the server, send a SSLv2 CLIENT HELLO, and decode
 	 * the response (SERVER HELLO). On error, null is returned.
 	 */
-	static ServerHelloSSLv2 connectV2(InetSocketAddress isa)
+	ServerHelloSSLv2 connectV2(InetSocketAddress isa)
 	{
 		Socket s = null;
 		try {
@@ -533,20 +538,20 @@ public class TestSSLServer extends Version{
 		return null;
 	}
 
-	static final void enc16be(int val, byte[] buf, int off)
+	final void enc16be(int val, byte[] buf, int off)
 	{
 		buf[off] = (byte)(val >>> 8);
 		buf[off + 1] = (byte)val;
 	}
 
-	static final void enc24be(int val, byte[] buf, int off)
+	final void enc24be(int val, byte[] buf, int off)
 	{
 		buf[off] = (byte)(val >>> 16);
 		buf[off + 1] = (byte)(val >>> 8);
 		buf[off + 2] = (byte)val;
 	}
 
-	static final void enc32be(int val, byte[] buf, int off)
+	final void enc32be(int val, byte[] buf, int off)
 	{
 		buf[off] = (byte)(val >>> 24);
 		buf[off + 1] = (byte)(val >>> 16);
@@ -554,20 +559,20 @@ public class TestSSLServer extends Version{
 		buf[off + 3] = (byte)val;
 	}
 
-	static final int dec16be(byte[] buf, int off)
+	final int dec16be(byte[] buf, int off)
 	{
 		return ((buf[off] & 0xFF) << 8)
 			| (buf[off + 1] & 0xFF);
 	}
 
-	static final int dec24be(byte[] buf, int off)
+	final int dec24be(byte[] buf, int off)
 	{
 		return ((buf[off] & 0xFF) << 16)
 			| ((buf[off + 1] & 0xFF) << 8)
 			| (buf[off + 2] & 0xFF);
 	}
 
-	static final int dec32be(byte[] buf, int off)
+	final int dec32be(byte[] buf, int off)
 	{
 		return ((buf[off] & 0xFF) << 24)
 			| ((buf[off + 1] & 0xFF) << 16)
@@ -575,18 +580,18 @@ public class TestSSLServer extends Version{
 			| (buf[off + 3] & 0xFF);
 	}
 
-	static final int CHANGE_CIPHER_SPEC = 20;
-	static final int ALERT              = 21;
-	static final int HANDSHAKE          = 22;
-	static final int APPLICATION        = 23;
+	final int CHANGE_CIPHER_SPEC = 20;
+	final int ALERT              = 21;
+	final int HANDSHAKE          = 22;
+	final int APPLICATION        = 23;
 
-	static final int MAX_RECORD_LEN = 16384;
+	final int MAX_RECORD_LEN = 16384;
 
 	/*
 	 * A custom stream which encodes data bytes into SSL/TLS records
 	 * (no encryption).
 	 */
-	static class OutputRecord extends OutputStream {
+	class OutputRecord extends OutputStream {
 
 		private OutputStream out;
 		private byte[] buffer = new byte[MAX_RECORD_LEN + 5];
@@ -610,6 +615,7 @@ public class TestSSLServer extends Version{
 			this.version = version;
 		}
 
+                @Override
 		public void flush()
 			throws IOException
 		{
@@ -621,6 +627,7 @@ public class TestSSLServer extends Version{
 			ptr = 5;
 		}
 
+                @Override
 		public void write(int b)
 			throws IOException
 		{
@@ -630,6 +637,7 @@ public class TestSSLServer extends Version{
 			}
 		}
 
+                @Override
 		public void write(byte[] buf, int off, int len)
 			throws IOException
 		{
@@ -646,13 +654,13 @@ public class TestSSLServer extends Version{
 		}
 	}
 
-	static void readFully(InputStream in, byte[] buf)
+	void readFully(InputStream in, byte[] buf)
 		throws IOException
 	{
 		readFully(in, buf, 0, buf.length);
 	}
 
-	static void readFully(InputStream in, byte[] buf, int off, int len)
+	void readFully(InputStream in, byte[] buf, int off, int len)
 		throws IOException
 	{
 		while (len > 0) {
@@ -671,7 +679,7 @@ public class TestSSLServer extends Version{
 	 * have the expected type (e.g. "handshake"); alert messages
 	 * are skipped.
 	 */
-	static class InputRecord extends InputStream {
+	class InputRecord extends InputStream {
 
 		private InputStream in;
 		private byte[] buffer = new byte[MAX_RECORD_LEN + 5];
@@ -723,6 +731,7 @@ public class TestSSLServer extends Version{
 			}
 		}
 
+                @Override
 		public int read()
 			throws IOException
 		{
@@ -732,6 +741,7 @@ public class TestSSLServer extends Version{
 			return buffer[ptr ++] & 0xFF;
 		}
 
+                @Override
 		public int read(byte[] buf, int off, int len)
 			throws IOException
 		{
@@ -745,13 +755,13 @@ public class TestSSLServer extends Version{
 		}
 	}
 
-	private static final SecureRandom RNG = new SecureRandom();
+	private final SecureRandom RNG = new SecureRandom();
 
 	/*
 	 * Build a ClientHello message, with the specified maximum
 	 * supported version, and list of cipher suites.
 	 */
-	static byte[] makeClientHello(int version,
+	byte[] makeClientHello(int version,
 		Collection<Integer> cipherSuites)
 	{
 		try {
@@ -761,7 +771,7 @@ public class TestSSLServer extends Version{
 		}
 	}
 
-	static byte[] makeClientHello0(int version,
+	byte[] makeClientHello0(int version,
 		Collection<Integer> cipherSuites)
 		throws IOException
 	{
@@ -840,12 +850,12 @@ public class TestSSLServer extends Version{
 	 * Compute the SHA-1 hash of some bytes, returning the hash
 	 * value in hexadecimal.
 	 */
-	static String doSHA1(byte[] buf)
+	String doSHA1(byte[] buf)
 	{
 		return doSHA1(buf, 0, buf.length);
 	}
 
-	static String doSHA1(byte[] buf, int off, int len)
+	String doSHA1(byte[] buf, int off, int len)
 	{
 		try {
 			MessageDigest md = MessageDigest.getInstance("SHA1");
@@ -866,7 +876,7 @@ public class TestSSLServer extends Version{
 	 * fields we are interested in are stored in the
 	 * package-accessible fields.
 	 */
-	static class ServerHello {
+	class ServerHello {
 
 		int recordVersion;
 		int protoVersion;
@@ -1022,7 +1032,7 @@ public class TestSSLServer extends Version{
 	 * not support that, instead of stalling for more data from the
 	 * client.
 	 */
-	private static final byte[] SSL2_CLIENT_HELLO = {
+	private final byte[] SSL2_CLIENT_HELLO = {
 		(byte)0x80, (byte)0x2E,  // header (record length)
 		(byte)0x01,              // message type (CLIENT HELLO)
 		(byte)0x00, (byte)0x02,  // version (0x0002)
@@ -1047,7 +1057,7 @@ public class TestSSLServer extends Version{
 	 $ SSLv2. It includes the list of cipher suites, and the
 	 * identification of the server certificate.
 	 */
-	static class ServerHelloSSLv2 {
+	class ServerHelloSSLv2 {
 
 		int[] cipherSuites;
 		String serverCertName;
@@ -1115,10 +1125,10 @@ public class TestSSLServer extends Version{
 		}
 	}
 
-	static Map<Integer, CipherSuite> CIPHER_SUITES =
+	Map<Integer, CipherSuite> CIPHER_SUITES =
 		new TreeMap<Integer, CipherSuite>();
 
-	static class CipherSuite {
+	class CipherSuite {
 
 		int suite;
 		String name;
@@ -1126,12 +1136,12 @@ public class TestSSLServer extends Version{
 		int strength;
 	}
 
-	static final int CLEAR  = 0; // no encryption
-	static final int WEAK   = 1; // weak encryption: 40-bit key
-	static final int MEDIUM = 2; // medium encryption: 56-bit key
-	static final int STRONG = 3; // strong encryption
+	final int CLEAR  = 0; // no encryption
+	final int WEAK   = 1; // weak encryption: 40-bit key
+	final int MEDIUM = 2; // medium encryption: 56-bit key
+	final int STRONG = 3; // strong encryption
 
-	static final String strengthString(int strength)
+	final String strengthString(int strength)
 	{
 		switch (strength) {
 		case CLEAR:  return "no encryption";
@@ -1143,7 +1153,7 @@ public class TestSSLServer extends Version{
 		}
 	}
 
-	static final String cipherSuiteString(int suite)
+	final String cipherSuiteString(int suite)
 	{
 		CipherSuite cs = CIPHER_SUITES.get(suite);
 		if (cs == null) {
@@ -1153,7 +1163,7 @@ public class TestSSLServer extends Version{
 		}
 	}
 
-	static final String cipherSuiteStringV2(int suite)
+	final String cipherSuiteStringV2(int suite)
 	{
 		CipherSuite cs = CIPHER_SUITES.get(suite);
 		if (cs == null) {
@@ -1164,7 +1174,7 @@ public class TestSSLServer extends Version{
 		}
 	}
 
-	private static final void makeCS(int suite, String name,
+	private final void makeCS(int suite, String name,
 		boolean isCBC, int strength)
 	{
 		CipherSuite cs = new CipherSuite();
@@ -1199,37 +1209,37 @@ public class TestSSLServer extends Version{
 		}
 	}
 
-	private static final void N(int suite, String name)
+	private final void N(int suite, String name)
 	{
 		makeCS(suite, name, false, CLEAR);
 	}
 
-	private static final void S4(int suite, String name)
+	private final void S4(int suite, String name)
 	{
 		makeCS(suite, name, false, WEAK);
 	}
 
-	private static final void S8(int suite, String name)
+	private final void S8(int suite, String name)
 	{
 		makeCS(suite, name, false, STRONG);
 	}
 
-	private static final void B4(int suite, String name)
+	private final void B4(int suite, String name)
 	{
 		makeCS(suite, name, true, WEAK);
 	}
 
-	private static final void B5(int suite, String name)
+	private final void B5(int suite, String name)
 	{
 		makeCS(suite, name, true, MEDIUM);
 	}
 
-	private static final void B8(int suite, String name)
+	private final void B8(int suite, String name)
 	{
 		makeCS(suite, name, true, STRONG);
 	}
 
-	static {
+	private void init() {
 		/*
 		 * SSLv2 cipher suites.
 		 */

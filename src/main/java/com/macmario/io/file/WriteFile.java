@@ -351,7 +351,8 @@ public class WriteFile extends ReadFile{
     
     public boolean isZipFile() {  return isZipFile(filer); }
     public boolean isZipFile(File f) {
-        try(ZipFile zip = new ZipFile(f)) {
+        try {
+            new ZipFile(f);
             return true;
         } catch(IOException io){
             log(1,"ERROR - isZip error "+io.getMessage());
@@ -364,7 +365,6 @@ public class WriteFile extends ReadFile{
         try( FileOutputStream fos = new FileOutputStream(f); 
              ZipOutputStream   zo = new ZipOutputStream(fos) ) {
               zo.flush();
-              zo.close();
             b=true;
         } catch(IOException io){
             log(1,"ERROR - could not create zip "+io.getMessage());

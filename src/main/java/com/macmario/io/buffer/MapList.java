@@ -5,6 +5,7 @@
  */
 package com.macmario.io.buffer;
 
+import com.macmario.general.Version;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -13,22 +14,25 @@ import java.util.Iterator;
  *
  * @author SuMario
  */
-public class MapList {
+public class MapList extends Version{
     final private String _mkey;
     private MapList master=null; 
     public MapList() {
         this.declare = new HashMap<>();
         this.mapval = new HashMap<>();
-        this._mkey=this.toString();
-        map.add(this);
+        this._mkey=toString();        
         maplist.put(_mkey, ""+0);
         this.name="unknown"+com.macmario.io.crypt.Crypt.getRandomID();
+        init();
     }
     
     public MapList(MapList ml) {
         this();
-        this.declare = new HashMap<>();
         this.master=ml;
+    }
+    
+    private void init(){
+        map.add(this);
     }
     
     private final HashMap<String,String>  mapval;
@@ -41,7 +45,7 @@ public class MapList {
     
     public String getValue(String name) { return getValue(name, getFirst() ); }
     public String getValue(String name, MapList list) {
-        if ( list != null || list.isValueEmpty() )  { return ""; }
+        if ( isNullOrEmpty(list) || list.isValueEmpty() )  { return ""; }
         String s=list.mapval.get(name);
         
         return (s!=null)?s:"";
@@ -71,11 +75,11 @@ public class MapList {
     public boolean isListEmpty()  {  return  maplist.size()>1; }
     public boolean isEmpty()      {  return ( isValueEmpty() && isListEmpty() ); }
     
-    private StringBuilder _com = new StringBuilder();
+    private final StringBuilder _com = new StringBuilder();
     public void   setComment(String s) {   _com.append(s.trim()).append("\n"); }
     public String getComment()         { return _com.toString(); }
     
-    private HashMap<String, String> declare;
+    private final HashMap<String, String> declare;
     public void setValueType(String name, String typ) {
         declare.put(name, typ.toLowerCase());
     }

@@ -53,8 +53,8 @@ public class CheckTimer {
         return found;    
     }
 
-    private ArrayList arrayB=null;
-    private ArrayList arrayE=null;
+    private ArrayList<String> arrayB=null;
+    private ArrayList<String> arrayE=null;
     
     private String getMonth(String m) {
         final String n =m.toUpperCase();
@@ -82,8 +82,8 @@ public class CheckTimer {
     // [20/Mar/2013:15:19:47
     // [2013-03-20T15:14:07.523+02:00]     
         if ( arrayB != null ) { return; }
-        arrayB=new ArrayList();
-        arrayE=new ArrayList();
+        arrayB=new ArrayList<>();
+        arrayE=new ArrayList<>();
         if ( begintest ) {
              String a = getTime(begin);
              StringBuilder sw = getDate(begin,a);

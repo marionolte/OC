@@ -19,7 +19,7 @@ import com.macmario.io.crypt.GetPassword;
 import com.macmario.io.db.SecDb;
 import com.macmario.io.file.ReadDir;
 import com.macmario.io.file.ReadFile;
-import com.macmario.io.file.SecDBFile;
+import com.macmario.io.file.SecDBZipFile;
 import com.macmario.io.file.SecFile;
 import com.macmario.io.file.WriteFile;
 import com.macmario.io.git.Git;
@@ -60,7 +60,6 @@ public class Main extends Updater{
     private String[] args=null;
     private int _exit=-1;
 
-    private final IOLib lib = new IOLib();
     
     public Main(String[] args) throws IOException {
         super();
@@ -68,7 +67,7 @@ public class Main extends Updater{
         this.crypt = new Crypt();
         this.console = new Console(this);
         this.console.setRunning();
-        lib.fillJarMap(jarfile);
+        IOLib.fillJarMap(jarfile);
     }
     
     private boolean testssl(String url) {
@@ -264,7 +263,7 @@ public class Main extends Updater{
                 else if ( args[i].matches("-secure")    ){ this.secureFile(getArgsLower(args,++i));    fin=true; }
                 else if ( args[i].matches("-getsecinfo")){ this.unsecureFile(getArgsLower(args,++i));  fin=true; }
                 else if ( args[i].matches("-pwfile")    ){ this.setPassword(args[++i]);                   fin=true; }
-                else if ( args[i].matches("-pwInfo")    ){ this.unsecureInfo(getArgsLower(args,++i));     fin=true; }
+                else if ( args[i].matches("-pwInfo")    ){ this.getPWFromFile(getArgsLower(args,++i));    fin=true; }
                 else if ( args[i].matches("-gclog")     ){ this.checkGC(getArgsLower(args,++i));          fin=true; }
                 else if ( args[i].matches("-gcfile")    ){ this.checkGCFile(getArgsLower(args,++i));      fin=true; }
                 else if ( args[i].matches("-checker")   ){ this.runChecker(getArgsLower(args,++i));       fin=true; }
@@ -489,7 +488,7 @@ public class Main extends Updater{
             _exit = 1;
         } catch (Exception e) {
             System.out.println("ERROR: " + e.getMessage());
-            printf(func, 1, "unexpected failure:", e);
+                printf(func, 1, "unexpected failure:", e);
             _exit = -1;
         }
    }
@@ -540,7 +539,7 @@ public class Main extends Updater{
    
    private void  getSecDbFile( String[] ar) { 
         System.out.println("secDBFile");
-        SecDBFile.main(ar);
+        SecDBZipFile.main(ar);
         System.out.println("secDBFile fin");
    }
    
@@ -646,13 +645,9 @@ public class Main extends Updater{
                     System.out.println("ERROR: "+foo+" not found");
                     this._exit=1;
             }
-        } catch(NamingException ne) {
+        } catch(NamingException|IOException ne) {
             System.out.println("ERROR: "+ne.getMessage());
             printf(func,1,"full message:",ne);
-            this._exit=-1;
-        } catch(IOException io) {
-            System.out.println("ERROR: "+io.getMessage());
-            printf(func,1,"full message:",io);
             this._exit=-1;
         }     
     }
@@ -710,6 +705,30 @@ public class Main extends Updater{
                         }
                     }    
             }
+        }
+    }
+    
+    private void getPWFromFile(String[] ar){
+        System.out.println("getPWFromFile");
+        for ( String f: ar ) {
+            System.out.println("f0:"+f);
+            if ( isNotNullOrEmpty(f)){
+                System.out.println("f1:"+f);
+                ReadFile rf = new ReadFile(f);
+                if ( rf.isReadableFile()) {
+                    System.out.println("f2:"+f);
+                    String s = rf.readOut().toString();
+                    System.out.println("s:"+s);
+                    if ( crypt.isCrypted(s) ) {
+                        System.out.println("is crypted");
+                        s= crypt.getUnCrypted(s);
+                        System.out.println("new s:"+s);
+                    }
+                    System.out.println(s);
+                }else {
+                    System.out.println("WARN: not a readable file: "+f);
+                }
+            }    
         }
     }
     
@@ -1111,15 +1130,15 @@ public class Main extends Updater{
         StringBuilder sw = new StringBuilder();
         printf(func,4,"incoming");
         try {
-            lib.fillJarMap(jarfile);
+            IOLib.fillJarMap(jarfile);
             String a = ("/"+pack).replaceAll("\\.", "\\/")+"/";
-            String[] cllist = lib.getClassFromPackage(pack);
+            String[] cllist = IOLib.getClassFromPackage(pack);
             for ( String cl : cllist ) {
-                String clret = lib.getValueFromClass(cl.replaceAll("/", "\\."),"free");
+                String clret = IOLib.getValueFromClass(cl.replaceAll("/", "\\."),"free");
                 //printf(func,3,"cl:"+cl+": free:"+( clret == null || (clret != null && clret.equals("true")))+" =>"+( clret == null )+"||"+(clret != null && clret.equals("true"))+" ==>"+((clret !=null)?clret:"NULL" ));
                         
                 if ( clret == null || (clret != null && clret.equals("true"))) {        
-                        clret = lib.getValueFromClass(cl.replaceAll("/", "\\."),key);
+                        clret = IOLib.getValueFromClass(cl.replaceAll("/", "\\."),key);
                         if ( clret != null ) {
                              printf(func,3,"cl:"+cl+": key:"+key+": clret:"+clret);
                              sw.append("class:"+cl.replaceAll("/", "\\.")+": attribute:"+key+":\n");
@@ -1128,7 +1147,7 @@ public class Main extends Updater{
                 }        
             }
 
-       } catch(Exception e) {
+       } catch(IOException e) {
             printf(func,1,"ERROR: "+e.getMessage(), e);
        }     
         

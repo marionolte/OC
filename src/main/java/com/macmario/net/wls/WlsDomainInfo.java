@@ -246,7 +246,7 @@ public class WlsDomainInfo extends TcpHost {
                String sp[] = s.split(" ");
                String p = "";
                for ( String pa : sp ) {
-                   if ( p.isEmpty() && com.macmario.io.lib.IOLib.isNumber(pa) ) {  p=pa; break; }
+                   if ( p.isEmpty() && isNumeric(pa) ) {  p=pa; break; }
                }
                if ( ! p.isEmpty() ) {
                    //System.out.println("s[patch]=>"+p);

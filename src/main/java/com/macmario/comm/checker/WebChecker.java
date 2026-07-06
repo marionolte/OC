@@ -23,10 +23,10 @@ import java.util.regex.Pattern;
  * @author SuMario
  */
 public class WebChecker extends Version{
-    private ArrayList<File> ar;
+    private final ArrayList<File> ar;
     private String profile;
     private WebChecker(String[] args) {
-        ar = new ArrayList<File>(); 
+        ar = new ArrayList<>(); 
         if ( args.length > 0 ) {
             for(int i=0; i<args.length ; i++ ) {
                  if ( args[i].matches("-d") ) { debug++; } 
@@ -54,13 +54,13 @@ public class WebChecker extends Version{
            log(0,"INFO: testing file "+f);
            boolean b=true;
            ArrayList<Header> hea = readFile(f);
-           if ( hea.size() > 0 ) {
+           if ( !hea.isEmpty() ) {
                 WebProfiler.validate(hea,profile);
            } else {
                log(0, "ERROR: file "+f+" are not an HTTP Header trace file");
            } 
            
-        } while(ar.size() > 0 );
+        } while(! ar.isEmpty() );
         
     }
     
@@ -114,7 +114,7 @@ public class WebChecker extends Version{
             UrlChecker.debug=debug;
     } 
     
-    private int debug=0;
+    @Override
     public void log(final int level, String msg) {
         super.log(level, "WebChecker::"+msg);
     }

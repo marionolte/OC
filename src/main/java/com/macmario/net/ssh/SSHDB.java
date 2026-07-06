@@ -8,7 +8,7 @@ package com.macmario.net.ssh;
 import com.macmario.general.Version;
 import com.macmario.io.file.ReadDir;
 import com.macmario.io.file.ReadFile;
-import com.macmario.io.file.SecDBFile;
+import com.macmario.io.file.SecDBZipFile;
 import java.io.File;
 import java.io.IOException;
 
@@ -20,7 +20,7 @@ public class SSHDB extends Version{
     private String sshdir=System.getProperty("user.home")+File.separator+".ssh";
     
     SSHDB(String file) {
-        SecDBFile f = new SecDBFile(new ReadFile(file));
+        SecDBZipFile f = new SecDBZipFile(new ReadFile(file));
     }
     SSHDB() {
          ReadDir d = new ReadDir(sshdir);
@@ -28,7 +28,7 @@ public class SSHDB extends Version{
                  d = new ReadDir(getTempDir()+File.separator+".ssh");
                  if ( ! d.isDirectory() ) { d.mkdirs(); }
          }
-         SecDBFile f = new SecDBFile(getDBFile(d));
+         SecDBZipFile f = new SecDBZipFile(getDBFile(d));
     }
     
     private ReadFile getDBFile(ReadDir d) {

@@ -31,9 +31,9 @@ import com.macmario.net.ssh.SSHshell;
  */
 public class TerminalDialog extends JPanel{
                 private static final long serialVersionUID = 1L;
-                private RemoteConsumer consumer=null;
+                private RemoteConsumer consumer;
                 private final String title;
-                private SSHshell ssh=null;
+                private SSHshell ssh;
                 
                 JPanel botPanel;
                 JButton logoffButton;

@@ -59,6 +59,8 @@ import java.util.UUID;
  * path or {@code null} addresses the root group itself.
  */
 public class KeePass extends Version {
+    
+    private static final long serialVersionUID = 4711L;
 
     /** KDBX format version used when writing. */
     public enum Format {

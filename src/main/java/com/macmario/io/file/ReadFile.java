@@ -73,20 +73,6 @@ public class ReadFile extends Version {
          //System.out.println("file:"+filer.toString());
     }
 
-    private String getPar(String f) {
-        StringBuilder sw = new StringBuilder();
-        if ( f.indexOf(_FS) > 0 ) {
-            String[] sp = f.split(_FS); 
-            for ( int i=0; i<sp.length-1; i++  ) {
-                if ( sw.capacity() > 0 ) { sw.append(_FS); }
-                if      ( sp[i].matches("~") ) { sw.append(System.getProperty("user.home")); } 
-                else if ( sp[i].matches(".") ) { sw.append(System.getProperty("user.dir"));  }
-                else { sw.append(sp[i]); }
-            }
-            
-        } else { return System.getProperty("user.dir"); }
-        return sw.toString();
-    }
     private File getCanonical(File d) {
         final String sepa="__@@__";
         final ArrayList<String> ar = new ArrayList<>();
@@ -98,15 +84,21 @@ public class ReadFile extends Version {
                       ).split(_FS);
         for(String s : sp) {
             if ( ! s.isEmpty() ) {
-                if      ( s.equals("..")) { if ( ar.size()-1 > 0 ) ar.remove(ar.size()-1); }
-                else if ( s.equals(".") ) {}
-                else if ( s.equals("~") ) {}
-                else { ar.add(s); }
+                switch (s) {
+                    case ".." -> {
+                        if ( ar.size()-1 > 0 ) ar.remove(ar.size()-1);
+                    }
+                    case "." -> {
+                    }
+                    case "~" -> {
+                    }
+                    default -> ar.add(s);
+                }
             }
         }
         
         StringBuilder sw = new StringBuilder(sepa);
-        while( ar.size() > 0 ) { sw.append(ar.remove(0)).append(sepa); }
+        while( !ar.isEmpty() ) { sw.append(ar.remove(0)).append(sepa); }
         
         return new File(sw.toString().replaceAll(sepa, _FS));
     }
@@ -133,7 +125,7 @@ public class ReadFile extends Version {
 
           if( sb.length() > 0) { sb.setLength(sb.length()-1); }   // remove last \n
 
-        } catch (Exception e){ }
+        } catch (IOException e){ }
 
         return sb;
     }
@@ -207,23 +199,23 @@ public class ReadFile extends Version {
 
     public String getString() { checkLog(); return (sb == null )? "":sb.toString() ; }
 
-    public ArrayList getMap(StringBuilder readOut) {
+    public ArrayList<String[]> getMap(StringBuilder readOut) {
         final String meth="getMap(StringBuilder readOut)";
         ArrayList<String[]> attr = new ArrayList<>();
         if ( readOut != null ) {
                 String[] sp = readOut.toString().split("\\n");
-                for ( int i=0; i<sp.length; i++) {
-                    if ( ! sp[i].isEmpty() && ! sp[i].startsWith("#")) {
-                            String sf[] = sp[i].split("=");
-                            String k=sf[0];
-                            int    j=k.length();
-                            if ( (k.length()+1) < sp[i].length() ) { j++; }
-                            
-                            String v=sp[i].substring( j );
-                            k=k.replaceAll(" ", "");
-                            v=v.replaceFirst(" ", "");
-                            attr.add( (new String[] {k,v})  );
-
+                for (var sp1 : sp) {
+                    if (!sp1.isEmpty() && !sp1.startsWith("#")) {
+                        String[] sf = sp1.split("=");
+                        String k=sf[0];
+                        int    j=k.length();
+                        if ((k.length()+1) < sp1.length()) {
+                            j++;
+                        }
+                        String v = sp1.substring(j);
+                        k=k.replaceAll(" ", "");
+                        v=v.replaceFirst(" ", "");
+                        attr.add( (new String[] {k,v})  );
                     }
                 }
         }
@@ -321,7 +313,7 @@ public class ReadFile extends Version {
         } catch(java.io.IOException io) {
         }
         if (debug >1) System.err.println("file "+getFQDNFileName()+" created :"+this.filer.exists() );
-        return this.filer.exists() ? true:false ;
+        return this.filer.exists() ;
     }
     
     
@@ -357,7 +349,7 @@ public class ReadFile extends Version {
     
     long size=0;
     long dsize=0;
-    public long getCopyState() { return (dsize==0)? (long) 0 : (long) size * 100 / dsize; }
+    public long getCopyState() { return (dsize==0)? (long) 0 : size * 100 / dsize; }
     
     public synchronized boolean copy(File copyFile){
         boolean b; dsize=0;
@@ -454,9 +446,9 @@ public class ReadFile extends Version {
             is.close();
         }catch (java.io.IOException ex) {
            log(1,func+" reading file ends with Exception : "+ex.toString());
-        } finally {
-            return ab;
         }
+        return ab;
+        
         
     }
     
@@ -496,7 +488,7 @@ public class ReadFile extends Version {
             String inputLine;
             int line=0;
             while(  ( inputLine = is.readLine() ) != null ) { line++;
-                 String m=md5.toMD5Hash(inputLine);
+                 String m=MD5.toMD5Hash(inputLine);
                  if ( lines.containsKey(m) ) {
                       lines.put(m, lines.get(m)+","+line);
                  } else {
@@ -505,7 +497,7 @@ public class ReadFile extends Version {
                  printf(func,0,line+":"+m+":"+lines.get(m));
             }
             is.close();
-        }catch (Exception ex) {
+        }catch (IOException ex) {
             log(1,func+" reading file ends with Exception : "+ex.toString());
         }
     }
@@ -576,8 +568,8 @@ public class ReadFile extends Version {
     
     
     private ObjectInputStream oin=null;
-    public Iterator loadObjects(){ return loadObjects(null); }
-    public Iterator loadObjects(Object o) {
+    public Iterator<Object> loadObjects(){ return loadObjects(null); }
+    public Iterator<Object> loadObjects(Object o) {
         final String func="loadObjects(Object o) - ";
         HashMap<Object,Object> m = new HashMap<>();
         try {
@@ -586,10 +578,7 @@ public class ReadFile extends Version {
            while ( (obj=oin.readObject() ) != null ) {
                  m.put(obj, obj);
            }
-        } catch (ClassNotFoundException ex) {
-            println(1,func+"read object error (ClassNotFoundException) - "+ex.getMessage() ); 
-            if ( debug >0) ex.printStackTrace(System.err); 
-        } catch(IOException io) {
+        } catch(IOException|ClassNotFoundException io) {
             println(1,func+"read object error (IOException) - "+io.getMessage()); 
             if ( debug >0 ) io.printStackTrace(System.err); 
         } 
@@ -663,11 +652,11 @@ public class ReadFile extends Version {
             byte[] mdbytes = md.digest();
 
             //convert the byte to hex format method 1
-            StringBuilder sb = new StringBuilder();
+            var sbi = new StringBuilder();
             for (int i = 0; i < mdbytes.length; i++) {
-              sb.append(Integer.toString((mdbytes[i] & 0xff) + 0x100, 16).substring(1));
+              sbi.append(Integer.toString((mdbytes[i] & 0xff) + 0x100, 16).substring(1));
             }
-            return sb.toString();
+            return sbi.toString();
         } catch(java.security.NoSuchAlgorithmException | IOException e){}
         return ret;
     }
@@ -682,11 +671,11 @@ public class ReadFile extends Version {
             byte[] mdbytes = md.digest();
 
             //convert the byte to hex format method 1
-            StringBuilder sb = new StringBuilder();
+            var sbi = new StringBuilder();
             for (int i = 0; i < mdbytes.length; i++) {
-              sb.append(Integer.toString((mdbytes[i] & 0xff) + 0x100, 16).substring(1));
+              sbi.append(Integer.toString((mdbytes[i] & 0xff) + 0x100, 16).substring(1));
             }
-            return sb.toString();
+            return sbi.toString();
         } catch( java.security.NoSuchAlgorithmException io ) {}
         return ret;
     }
@@ -696,8 +685,7 @@ public class ReadFile extends Version {
     public Properties getProperties() {
         Properties p = new Properties();
                   try { p.load(this.getInputStream()); } 
-                  catch( java.io.IOException  io) {} 
-                  catch( NullPointerException ne){}
+                  catch( java.io.IOException | NullPointerException  io) {}
         return p;
     }
     
@@ -824,7 +812,7 @@ public class ReadFile extends Version {
             while ( ze != null ) {
                 if ( ze.getName().equals(fil) || ze.getName().equals(fil.substring(1))) {
                     byte[] bn = new byte[8192];
-                    int r=0;
+                    int r;
                     try {
                         while( (r=ins.read(bn)) != -1 ) {
                             ot.write(bn, 0, r);
@@ -910,7 +898,7 @@ public class ReadFile extends Version {
         
         TailTask(ReadFile f) {
             this.f=f;
-            this.debug=f.debug;
+            TailTask.debug=ReadFile.debug;
         }    
         
         boolean onError=false;
@@ -919,9 +907,9 @@ public class ReadFile extends Version {
         
         String read() {
             synchronized(lock) {
-                if( ar.size() == 0) { return ""; }
+                if( ar.isEmpty()) { return ""; }
                 StringBuilder sw = new StringBuilder();               
-                while ( ar.size() > 0 ) { sw.append(ar.remove(0)); }
+                while ( !ar.isEmpty() ) { sw.append(ar.remove(0)); }
                 return sw.toString();
             }    
         }
@@ -941,7 +929,7 @@ public class ReadFile extends Version {
             setRunning(); 
             onError=false;
             RandomAccessFile raF=null;
-            long time = 0;
+            long time;
             String line = "";
 
             //go to the end of File
@@ -969,7 +957,7 @@ public class ReadFile extends Version {
                            sw.append(line.trim()).append("\n");
                         }
                         size=f.getSize();
-                     } catch(java.io.IOException io) { onError=true; }
+                     } catch(java.io.IOException|NullPointerException io) { onError=true; }
                      //System.out.println("have read:"+sw.toString()+":");
                      updateIO(sw.toString());
                      

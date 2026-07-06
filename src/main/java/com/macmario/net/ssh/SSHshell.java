@@ -77,7 +77,7 @@ public class SSHshell  extends RunnableT {
     }
     public SSHshell(String host, int port, String user, String pass,boolean gui) {
         final String func="SSHshell::";
-        this.debug=SSHshell.debug;
+        //SSHshell.debug=SSHshell.debug;
         this.host=host;
         this.port=(port >0 && port < 64*1024-1)?port:22;
         this.user=user;
@@ -99,7 +99,7 @@ public class SSHshell  extends RunnableT {
     
     public SSHshell(SecFile con) {
         final String func="SSHshell::";
-        this.debug=SSHshell.debug;
+        //this.debug=SSHshell.debug;
         
         Properties p = con.getProperties();
         
@@ -287,9 +287,9 @@ public class SSHshell  extends RunnableT {
             printf(func,3,"ssh connection open to "+getHost()+"  conn:"+conn);
             
             try {
-                Set<String> availableMethods = new HashSet<String>(Arrays.asList(conn.getRemainingAuthMethods(user)));
+                Set<String> availableMethods = new HashSet<>(Arrays.asList(conn.getRemainingAuthMethods(user)));
                 printf(func,2,"user auth:"+availableMethods+":   keyfile:"+((keyFile==null)?"NULL":keyFile.getCanonicalFile()));
-            } catch(Exception e) {
+            } catch(IOException e) {
                 printf(func,1,"ERROR: call methods fails with:"+e.getMessage());
             }    
             boolean isAuthenticated = false; 
@@ -298,7 +298,7 @@ public class SSHshell  extends RunnableT {
                     printf(func,3,"public key auth:"+user+":"+((pass.isEmpty())?"empty":"KeyPASS SET")+":  keyFile:"+keyFile);
                     isAuthenticated = conn.authenticateWithPublicKey(user, keyFile, pass);
                     printf(func,3,"public key auth for user:"+user+": end with :"+isAuthenticated);
-                } catch(Exception e) {
+                } catch(IOException e) {
                     System.out.println("key error "+e.getMessage());
                     printf(func,1,"ERROR: public key authentication:"+e.getMessage());
                     keyFile=null;
@@ -310,7 +310,7 @@ public class SSHshell  extends RunnableT {
                         printf(func,3,"user/pass auth");
                         try {
                             isAuthenticated = conn.authenticateWithPassword(user, pass);
-                        } catch(Exception e) {
+                        } catch(IOException e) {
                             printf(func,1,"ERROR: user/password authentication fails with:"+e.getMessage());
                         }    
                 } else if ( conn.isAuthMethodAvailable(user, "publickey") ) {
@@ -318,7 +318,7 @@ public class SSHshell  extends RunnableT {
                         printf(func,3,"public key auth:"+user+":"+((pass.isEmpty())?"empty":"KeyPASS SET")+":  keyFile:"+keyFile);
                         isAuthenticated = conn.authenticateWithPublicKey(user, keyFile, pass);
                         printf(func,3,"public key auth for user:"+user+": end with"+isAuthenticated);
-                    } catch(Exception e) {
+                    } catch(IOException e) {
                         System.out.println("key error "+e.getMessage());
                         printf(func,1,"ERROR: public key authentication:"+e.getMessage());
                     }    
@@ -339,7 +339,7 @@ public class SSHshell  extends RunnableT {
             
             login=true;
             
-        } catch(Exception io) {
+        } catch(IOException io) {
              printf(func,1,"ERROR: "+io.getMessage()); 
              setClosed();
              _success=false;
@@ -358,7 +358,8 @@ public class SSHshell  extends RunnableT {
         boolean b=true;    
         if ( isLogin() ) { setSession(); }
         try {  sess.requestPTY(shell); } catch (java.io.IOException io) { b=false; }
-        try {  sess.startShell();      } catch (java.io.IOException io) { b=false; } finally { return b; }
+        try {  sess.startShell();      } catch (java.io.IOException io) { b=false; } 
+        return b; 
     }
     
     public Connection getConnection() throws IOException {
@@ -378,9 +379,9 @@ public class SSHshell  extends RunnableT {
         return false;    
     }
     
-    public void setSubConnect( ) throws IOException{
+    /*public void setSubConnect( ) throws IOException{
          Connection con = getConnection();
-     }
+    }*/
     
     public SCPClient getSCPClient() throws IOException { 
         Connection con = getConnection();
@@ -476,7 +477,7 @@ public class SSHshell  extends RunnableT {
             outw.write(s);
             outw.flush();
             return true;
-        } catch(Exception ex) {
+        } catch(IOException ex) {
             printf(func,1,"ERROR - send fails with:"+ex.getMessage());
             return false;
         }
@@ -514,7 +515,7 @@ public class SSHshell  extends RunnableT {
     
     public void setProxy() {
         this.proxy=null;
-        return;
+        //return;
         /*String ho=""; int po=3180; String u=null; String p=null;
         if ( System.getProperty("https.proxyHost") != null ) {
             ho=System.getProperty("https.proxyHost");
@@ -546,7 +547,7 @@ public class SSHshell  extends RunnableT {
     public StringBuilder getFullResponse() {
         final String func="SSHshell::getFullResponse() - ";
         StringBuilder sw=new StringBuilder();
-        Pattern pa = Pattern.compile(lastLine);
+        //Pattern pa = Pattern.compile(lastLine);
         if ( isLogin() ) {
             int len=sw.length();
             boolean notComplete=false;
@@ -600,8 +601,11 @@ public class SSHshell  extends RunnableT {
            final String func="SSHshell::getInstance(String[] args) - ";
            v.log(1,func+"start");
            
-           String  ho = "localhost";  int  po = 22;  int debug=0;  File kFile=null;
-           String u=System.getProperty("user.name");  String p=""; StringBuilder comm = new StringBuilder();
+           String  ho = "localhost";  int  po = 22;  
+           //int debug=0;  
+           File kFile=null;
+           String u=System.getProperty("user.name");  String p=""; 
+           StringBuilder comm = new StringBuilder();
            String conf=System.getProperty("user.dir")+_FS+".ssh";
            String scom="ssh";
            Properties prop=null;
@@ -667,9 +671,11 @@ public class SSHshell  extends RunnableT {
                     ssh.keyFile=kFile;
                     
                     String[] sp = comm.toString().split(" ");
-                    for(int i=0; i<sp.length; i++) {
-                        if ( ! sp[i].isEmpty() ) {
-                           if ( sp[i].matches("scp") || sp[i].matches("sftp") ) { scom=sp[i]; }
+                    for (String sp1 : sp) {
+                        if (!sp1.isEmpty()) {
+                            if (sp1.matches("scp") || sp1.matches("sftp")) {
+                                scom = sp1;
+                            }
                         }
                     }
                     printf(func,3,"scom:"+scom);
@@ -690,7 +696,7 @@ public class SSHshell  extends RunnableT {
     }
     
     
-    private class ScpChannel extends RunnableT {
+    /*private class ScpChannel extends RunnableT {
 
         private final InputStream in;
         private final OutputStream out;
@@ -708,6 +714,6 @@ public class SSHshell  extends RunnableT {
             setClosed();
         }
         
-    }
+    }*/
     
 }

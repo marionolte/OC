@@ -10,6 +10,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 
@@ -18,7 +19,8 @@ import java.util.ArrayList;
  * @author SuMario
  */
 public class Checker extends Version {
-
+    private final String cl="Checker::";
+    
     /**
      * @param args the command line arguments
      */
@@ -82,7 +84,7 @@ public class Checker extends Version {
     
     
     private String[] addTimer(String stime) {
-        log(1,"addTimer(String stime) - set |@|"+stime+"|@|");
+        log(1,cl+"addTimer(String stime) - set |@|"+stime+"|@|");
         String[] sp=stime.split(" ");
         String[] date = new String[3];
         String[] time = new String[3];
@@ -102,7 +104,7 @@ public class Checker extends Version {
                                     (time.length >2 )?time[2]:null ,
                                   };
         
-        log(2,"addTimer(String stime): date:"+ret[0]+"-"+ret[1]+"-"+ret[2]+"  time:"+ret[3]+":"+ret[4]+":"+ret[5]+":");
+        log(2,cl+"addTimer(String stime): date:"+ret[0]+"-"+ret[1]+"-"+ret[2]+"  time:"+ret[3]+":"+ret[4]+":"+ret[5]+":");
         
         return ret;
     }
@@ -110,8 +112,8 @@ public class Checker extends Version {
     private String[] timebegin=new String[6];
     private String[] timeend=new String[6];
     private File patterFile;
-    private ArrayList<File> ar=new ArrayList<>();
-    private static int debug=0; 
+    private final ArrayList<File> ar=new ArrayList<>();
+    //private static int debug=0; 
     private int exit=0;
     public int getResult() { return exit; }
 
@@ -127,7 +129,7 @@ public class Checker extends Version {
     
     private StringBuilder readFile(File n) {
         StringBuilder sw = new StringBuilder();
-        log(2, "readout now :"+n.toString());
+        log(2, cl+"readout now :"+n.toString());
         BufferedReader br=null;
         try {
             br = new BufferedReader( new FileReader( n )  );
@@ -137,15 +139,15 @@ public class Checker extends Version {
                 sw.append(str); 
                 b=true;  
             }
-        }catch(Exception ex) {
-            log(2,"FILE:"+n.toString()+" readout with Exception"+ex.toString());
+        }catch(NullPointerException|IOException ex) {
+            log(2,cl+"FILE:"+n.toString()+" readout with Exception"+ex.toString());
         } finally {
-            try  { br.close(); } catch(Exception e) {}
+            try  { br.close(); } catch(NullPointerException|IOException e) {}
         }
         return sw;
     }
 
-    private ArrayList plist=new ArrayList();
+    //private ArrayList<String> plist=new ArrayList<>();
     private PatternTest last=null;
     private PatternTest first=null;
     
@@ -166,7 +168,7 @@ public class Checker extends Version {
                     sw.append(new String(buf));
                 }
             } catch(Exception e) {
-                log(1,"pattern read from jar with Exception"+e.toString());
+                log(1,cl+"pattern read from jar with Exception"+e.toString());
             }
             sp=sw.toString().split("\n");
         }else {
@@ -175,7 +177,7 @@ public class Checker extends Version {
         if ( sp != null && sp.length > 0 ) {
           for ( int i=0; i<sp.length-1; i++) {
               if ( sp[i] != null && ! sp[i].isEmpty() ) {
-                log(2,"add pattern:"+sp[i]);
+                log(2,cl+"add pattern:"+sp[i]);
                 pa.add(sp[i]); 
               }  
           }
@@ -185,26 +187,26 @@ public class Checker extends Version {
             
             log(3,pa.size()+" pattern received");
             for ( int i=0; i<pa.size(); i++ ) {
-                log(3, "add:"+i);
+                log(3, cl+"add:"+i);
                 String m=(String) pa.get(i);
-                log(2,"start PatternTest "+i+" for :"+m+":");
+                log(2,cl+"start PatternTest "+i+" for :"+m+":");
                 PatternTest an = new PatternTest(m,debug);
                             if (last != null ) { last.setPatternTest(an); }
                             last=an;
                             if ( first == null ) { first=an;}
                 (new Thread(an, m)).start();
-                log(2, "start completed for pattern:"+m+":");
+                log(2, cl+"start completed for pattern:"+m+":");
             }
 
             ckt = new CheckTimer(timebegin,timeend,debug);
             for ( int i=0; i< ar.size(); i++ ) {
                 File f = ar.get(i) ;
                 ckt.reset();
-                log(2,"MAIN("+i+"): setTest on "+first.getName()+" for file:"+f.toString()+"  size:"+f.length() );
+                log(2,cl+"MAIN("+i+"): setTest on "+first.getName()+" for file:"+f.toString()+"  size:"+f.length() );
                 if ( f.length() < 32*1024 ) {
                     first.setTest( readFile ( f ),f ,ckt);
                 } else {
-                    log(2,"MAIN("+i+"): handle large size file "+f.toString() ); 
+                    log(2,cl+"MAIN("+i+"): handle large size file "+f.toString() ); 
                     InputStream ios=null;
                     try {
                         byte[] buf = new byte[32*1024];
@@ -216,7 +218,7 @@ public class Checker extends Version {
                             final String m = new String(buf);
                             sw.append(m); b=true;
                             if ( (d%100) == 0 ) {
-                                log(3,"provide now |"+sw.toString()+"|");
+                                log(3,cl+"provide now |"+sw.toString()+"|");
                                 first.setTest(sw,f,ckt);
                                 sw = new StringBuilder();
                                 sw.append(m);  // overlapped
@@ -224,10 +226,10 @@ public class Checker extends Version {
                             }    
                             d++;
                         }
-                        log(2,"MAIN("+i+"): verify not provided update if true="+b);
+                        log(2,cl+"MAIN("+i+"): verify not provided update if true="+b);
                         if (b) { first.setTest(sw,f,ckt);}
                     } catch (Exception e) {
-                        log(2,"MAIN("+i+"): handle file "+f.toString()+" runs in exception:"+e.toString() ); 
+                        log(2,cl+"MAIN("+i+"): handle file "+f.toString()+" runs in exception:"+e.toString() ); 
                     }finally {  
                       try { ios.close(); } catch(Exception e) {}
                     }   
@@ -238,11 +240,5 @@ public class Checker extends Version {
             log(0,"no pattern too check");
         }    
     }
-    
-    @Override
-    public void log(final int level, final String msg) {
-       super.log(level, "Checker::"+msg);
-    }
-    
     
 }

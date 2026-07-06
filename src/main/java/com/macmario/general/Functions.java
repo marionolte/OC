@@ -343,11 +343,17 @@ public class Functions {
     
     public boolean isAscii(String s) {
         if ( isNullOrEmpty(s) ) { return false; }
-        for ( int i=0; i<s.length();i++ ) {
-            char c = s.charAt(i);
-            if ( c > 127 || c < 32 ) { return false;}
-        }
-        return true;
+        return isAscii(s.getBytes());
+    }
+    public boolean isAscii(byte[] by) {
+        if ( by.length > 0 ) {
+            for ( int i=0; i<by.length;i++ ) {
+                char c = (char) by[i];
+                if ( c > 127 || c < 32 ) { return false;}
+            }
+            return true;
+        } 
+        return false;
     }
     
     public final static String _FS = (isUnix()||isCygwin())?"/":"\\\\";

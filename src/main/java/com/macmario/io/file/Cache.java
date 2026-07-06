@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import com.macmario.net.exception.CloseException;
+import java.security.NoSuchAlgorithmException;
 
 
 /**
@@ -19,8 +20,8 @@ import com.macmario.net.exception.CloseException;
  * @author SuMario
  */
 public class Cache extends Version {
-    private ReadDir basedir;
-    private static boolean cacheReady=false;
+    private final ReadDir basedir;
+    private static final boolean cacheReady=false;
     MessageDigest md = null;
     private static Cache mc=null;
     private HashMap<String,HashMap<String,CacheEntry>> map=new HashMap<>();
@@ -53,12 +54,12 @@ public class Cache extends Version {
         final String meth="getFileCache(String ca)";
         final String loc=basedir.getFQDNDirName()+File.separator+ca+File.separator;
         ReadFile f = new ReadFile ( loc+"plist.info" );
-        ArrayList ar=f.getMap( f.readOut() );
+        ArrayList<String[]> ar = f.getMap( f.readOut() );
         HashMap<String,CacheEntry> lmap= map.get(ca);
         boolean updateNeeded=false;
         if ( ar != null ) {
                 for(int i=0; i<ar.size(); i++) {
-                    String[] sp=(String[])ar.get(i);
+                    String[] sp=ar.get(i);
                     sp[0]=loc+sp[0];
                     printf(meth,3,"File:"+sp[0]+":  value:"+sp[1]+":    "+System.currentTimeMillis() );
                     try { 
@@ -77,14 +78,14 @@ public class Cache extends Version {
         if ( updateNeeded ) { updateInfoFile(f,lmap); }
     }
     
-    private void updateInfoFile(ReadFile f, HashMap lmap) {
+    private void updateInfoFile(ReadFile f, HashMap<String,CacheEntry> lmap) {
         StringBuilder ab = new StringBuilder();
                       ab.append("#FILE=loaded,lasttaken,maxcached\n");
             printf("updateInfoFile(ReadFile f, HashMap lmap)",2,"cache info file "+f.getFileName()+" updated ");  
-            Iterator itter = lmap.keySet().iterator();
+            Iterator<String> itter = lmap.keySet().iterator();
             while ( itter.hasNext() ) {
-                Object o = itter.next();
-                printf("updateInfoFile(ReadFile f, HashMap lmap)",2,"cache info entry:"+o.toString() );
+                String o = itter.next();
+                printf("updateInfoFile(ReadFile f, HashMap lmap)",2,"cache info entry:"+o );
             }
             f.create();
             f.save(ab);
@@ -98,14 +99,14 @@ public class Cache extends Version {
         try {
             md = MessageDigest.getInstance("MD5");
             String[] sp=basedir.getDirectories();
-            for(int i=0; i< sp.length; i++) {
-                if (  ! ( sp[i].matches(".") || sp[i].matches("..")) ) { 
-                    printf(meth,2,"add now :"+sp[i]+":");
+            for (String sp1 : sp) {
+                if (!(sp1.matches(".") || sp1.matches(".."))) {
+                    printf(meth, 2, "add now :" + sp1 + ":");
                     map.put(sp[1], new HashMap<>() );
-                    getFileCache(sp[i]); 
+                    getFileCache(sp1); 
                 }
             }
-        } catch (Exception ex) {
+        } catch (NoSuchAlgorithmException ex) {
             throw new CloseException(ex.toString());
         }
     }
@@ -172,9 +173,9 @@ public class Cache extends Version {
     private final String entryLock="EntryLock";
     private final String updateLock="UpdateLock";
     
-    private HashMap getMap(String b) {
+    private HashMap<String, CacheEntry> getMap(String b) {
         synchronized(mapLocked) {
-            HashMap<String, CacheEntry> a=(HashMap) map.get(b);
+            HashMap<String, CacheEntry> a= map.get(b);
             if ( a == null ) { a=new HashMap<>(); updateMap(b, a);}
             return a;
         }
@@ -206,16 +207,14 @@ public class Cache extends Version {
             synchronized(mapLocked) {
                 synchronized(updateLock) {
                     HashMap<String,HashMap<String,CacheEntry>> nmap = new HashMap<>();
-                    Iterator<String> itter = (Iterator<String>) map.keySet().iterator();
+                    Iterator<String> itter =  map.keySet().iterator();
                     count=0;
                     while( itter.hasNext() ) {
                         String m = itter.next();
                         if ( isNotNullOrEmpty(m) ) {
-                            HashMap lmap = (HashMap) map.get(m);
-                            HashMap<String,CacheEntry> imap = new HashMap<>();
-                            Iterator et = lmap.entrySet().iterator();
-                            while ( et.hasNext() ) {
-                                String n = (String) et.next();
+                            HashMap<String, CacheEntry> lmap = map.get(m);
+                            HashMap<String, CacheEntry> imap = new HashMap<>();
+                            for (String n : lmap.keySet()) {
                                 CacheEntry ce = (CacheEntry) lmap.get(n);
                                 if ( isNotNullOrEmpty(ce) && ! ce.isExpired() ) {
                                     imap.put(n, ce); 
@@ -235,7 +234,7 @@ public class Cache extends Version {
         }
     }
     
-    public boolean isEmpty() { synchronized(updateLock) { return  (count >0)?true:false; } }
+    public boolean isEmpty() { synchronized(updateLock) { return  (count >0); } }
     public long    getLastClean() { synchronized(updateLock) { return lastClean; } }
     
     

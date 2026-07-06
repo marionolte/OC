@@ -70,7 +70,7 @@ public abstract class RunnableT extends Version implements Runnable {
     
     final public void thsleep(long l) {
         synchronized(lock) {
-            try { th.sleep(l); }  catch (Exception e) { }
+            try { th.sleep(l); }  catch (InterruptedException e) { }
         }
     }
     
@@ -81,14 +81,15 @@ public abstract class RunnableT extends Version implements Runnable {
     
     final public void thwakeup() {
         synchronized(lock) {
-            try { th.interrupt(); th.notify(); }  catch (Exception e) { }
+            th.interrupt();
+            th.notify();
         }
     }
     final public void thwait() {
         synchronized(th) {
                       try { 
                          th.wait();
-                      }  catch (Exception e) {
+                      }  catch (InterruptedException e) {
                          // wake up
                       }
                       

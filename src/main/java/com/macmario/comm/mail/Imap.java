@@ -26,6 +26,8 @@ import java.io.ObjectOutputStream;
 import javax.activation.CommandMap;
 import javax.activation.MailcapCommandMap;
 import com.macmario.net.tcp.Host;
+import java.io.IOException;
+import javax.mail.NoSuchProviderException;
 
 
 /**
@@ -48,7 +50,7 @@ public class Imap extends Version {
         this.host=new ServiceHost("imap", ho.getHost());
     }
     public Imap(String u, String p) {
-        this(new User(u,p) {},new Host("localhost"){ int port=993; int timeout=30000; });
+        this(new User(u,p) {},new Host("localhost",993,30000));
     } 
     public Imap(String u, String p, Host host) {
         this(new User(u,p) {},host);
@@ -60,7 +62,7 @@ public class Imap extends Version {
         setCLoutter:
         while( scanRun ) { 
             if ( d > System.currentTimeMillis() ) sleep(500); 
-            else break setCLoutter;
+            else break;
         }
         close();
     }
@@ -76,7 +78,7 @@ public class Imap extends Version {
         ReadFile fa= new ReadFile(storefile);
         if ( fa.isReadableFile() ) {
              println(2, func+"like to load objects from "+storefile);
-             Iterator itter =  fa.loadObjects();
+             var itter =  fa.loadObjects();
              println(1, func+"has objects "+itter.hasNext() );
              while(itter.hasNext()) { 
                  LMessage lmsg = (LMessage) itter.next();
@@ -141,7 +143,7 @@ public class Imap extends Version {
         try {  
             store = session.getStore("imap");
             println(2,func+" store init:"+store);
-        } catch(Exception e) {
+        } catch(NoSuchProviderException e) {
             println(1,func+" init imap store - getting exception "+e.getMessage());
             if( debug >0 ) {e.printStackTrace();}
         }
@@ -205,7 +207,7 @@ public class Imap extends Version {
         if ( folder != null && folder.isOpen() ) {
             try { folder.close(true); } catch(java.lang.IllegalStateException is) { } finally { folder=null; }
         }
-        try { store.close(); } catch(Exception e) {} finally{ store=null; }
+        try { store.close(); } catch(MessagingException e) {} finally{ store=null; }
     }
     
     synchronized public ArrayList<LMessage> getMailHeads() throws MessagingException{ 
@@ -214,28 +216,23 @@ public class Imap extends Version {
     } 
     
     final static public String sepa="|_@_|";
-    volatile private ArrayList<LMessage> mailar = new ArrayList<LMessage>(); 
+    volatile private ArrayList<LMessage> mailar = new ArrayList<>(); 
     private int newMail=-1; 
     private int allMail=-1;
     public int getUnreadMails(){ 
-        try { newMail=folder.getUnreadMessageCount(); } catch (Exception e) { }
-        finally{
-               return newMail;  
-        } 
+        try { newMail=folder.getUnreadMessageCount(); } catch (MessagingException e) { }
+        return newMail;  
+         
     }
     public int getMailCount() { 
-        try { allMail=folder.getMessageCount(); } catch (Exception e) { }
-        finally{
-                return allMail; 
-        }
+        try { allMail=folder.getMessageCount(); } catch (MessagingException e) { }
+        return allMail; 
     }
     
     public int getNewMailCunt() { 
         int i=-1;
-        try { i=folder.getNewMessageCount(); } catch (Exception e) { }
-        finally{
+        try { i=folder.getNewMessageCount(); } catch (MessagingException e) { }
             return i; 
-        }
     }
     
     /* from the mail api
@@ -248,7 +245,7 @@ public class Imap extends Version {
     private final static int USER_BIT           = 0x80000000;
     */
     
-    volatile private HashMap<String, LMessage> mmap=new HashMap<String, LMessage>();
+    volatile private HashMap<String, LMessage> mmap=new HashMap<>();
     public  LMessage getMessage(String id) { return mmap.get(id); }
     private LMessage updateMsg(Message msg) {
         if ( msg == null ) { return null; }
@@ -292,7 +289,7 @@ public class Imap extends Version {
                 Message[] messages = folder.getMessages();
                 allMail = messages.length;
                 println(2, func+" receive "+messages.length+" messages");
-                ArrayList<LMessage> ar = new ArrayList<LMessage>(); 
+                ArrayList<LMessage> ar = new ArrayList<>(); 
                 for ( int i= messages.length-1;  i>0 ; i--) { // folder.getMessageCount(); i>0; i-- ) {
                            LMessage msg = updateMsg(messages[i]);
                            if ( msg != null ) {
@@ -321,7 +318,7 @@ public class Imap extends Version {
                     for (int cnt = 0; cnt < ar.size(); cnt++) {
                          oos.writeObject(ar.get(cnt));
                     } 
-                } catch(Exception e) {}    
+                } catch(IOException e) {}    
            }     
         }
         scanRun=false;

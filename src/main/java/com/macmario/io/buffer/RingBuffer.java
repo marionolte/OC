@@ -31,7 +31,10 @@ public class RingBuffer<Item> extends Version implements Iterable<Item> {
     
 
     // contructor for the RingBuffer - array where not generated on default
-    public RingBuffer(int capacity) { this.capa=capacity; clear(); } //this.elements = ( Item[] ) new Object[capacity];  }
+    public RingBuffer(int capacity) { 
+        this.capa=capacity; 
+        clear(); 
+    } //this.elements = ( Item[] ) new Object[capacity];  }
 
     public RingBuffer() { this(16384); }
     

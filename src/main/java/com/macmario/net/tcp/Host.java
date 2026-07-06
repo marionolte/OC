@@ -14,9 +14,22 @@ import java.util.Random;
  */
 public class Host extends TcpHost{
     String host = null; 
+    private int port;
+    private int timeout;
     
-    public Host(){}
+    public Host(){
+           this.port=-1;
+           this.timeout=10000;
+    }
     public Host(String ho) { this(); host = ho; }
+    public Host(String ho,int port,int timeout) {
+           this();
+           this.port=port;
+           this.timeout=timeout;
+    }
+    
+    public int getPort() { return this.port; }
+    public int getTimeout() { return this.timeout; }
     
    /* public static String getHostname() { 
        try { return execReadToString("hostname"); } catch(java.io.IOException io){ return "localhost"; }
@@ -45,9 +58,9 @@ public class Host extends TcpHost{
           }       
           //System.out.println("out:"+out+":");
           return out;
-      }catch(java.io.IOException ie) {}  
-       catch(java.lang.StringIndexOutOfBoundsException sb){}
-       catch(java.lang.NullPointerException np){}
+      }catch(java.io.IOException 
+              | StringIndexOutOfBoundsException 
+              | NullPointerException ie) {}
       return (out!=null)?out:getRandMac();
     }
     
@@ -59,10 +72,11 @@ public class Host extends TcpHost{
         return randMac;
     }
     static public String getNewRandomMac(String base){
-        String mac = (base!=null)?base:"";
-        if ( ! mac.isEmpty() && ! base.contains(":") ) {
-            int len=base.length();
-            mac=base.substring(0, 2);
+              base =(base!=null)?base:"";
+        String mac = base;
+        if ( isNotNullOrEmpty(mac) && ! mac.contains(":") ) {
+            int len=mac.length();
+            mac=mac.substring(0, 2);
             //System.out.println("mac:"+mac+": ->"+len);
             for ( int i=2; i<len; i++){
                 if ( (i+1) < len ) {
@@ -82,7 +96,7 @@ public class Host extends TcpHost{
     }
     
     public String getHost(){
-        return (host==null)? super.getHostname():host;
+        return (host==null)? TcpHost.getHostname():host;
     }
     public String setHost(String ho){
         host=ho;
