@@ -8,29 +8,27 @@ package com.macmario.comm.mail;
 import com.macmario.general.Version;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.activation.DataSource;
 import javax.mail.Address;
 import javax.mail.BodyPart;
 import javax.mail.Flags;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Multipart;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMultipart;
-import javax.mail.internet.MimePartDataSource;
 
 /**
  *
  * @author SuMario
  */
 public class LMessage extends Version implements Serializable{
+
+    private static final long serialVersionUID = 202607101225L;
+    
     final String mid;
     final Message msg;
     private String subject="";

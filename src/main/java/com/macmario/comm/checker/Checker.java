@@ -68,7 +68,7 @@ public class Checker extends Version {
             if ( args[i].matches("-d") ) { debug++; }
             else if ( args[i].matches("-f") ) { patterFile = new File(args[++i]); }
             else if ( args[i].matches("-i") ) { pattern.append(args[++i]).append("\n"); }
-            else if ( args[i].matches("-b") ) { timebegin=addTimer(args[++i]); }
+            else if ( args[i].matches("-b") ) { this.timebegin=addTimer(args[++i]); }
             else if ( args[i].matches("-e") ) { timeend=addTimer(args[++i]); }
             else if ( args[i].matches("-h") ||  args[i].matches("--help") ) { usage(); System.exit(-1); }
             else {
@@ -84,7 +84,7 @@ public class Checker extends Version {
     
     
     private String[] addTimer(String stime) {
-        log(1,cl+"addTimer(String stime) - set |@|"+stime+"|@|");
+        log(1,this.cl+"addTimer(String stime) - set |@|"+stime+"|@|");
         String[] sp=stime.split(" ");
         String[] date = new String[3];
         String[] time = new String[3];
@@ -188,7 +188,7 @@ public class Checker extends Version {
             log(3,pa.size()+" pattern received");
             for ( int i=0; i<pa.size(); i++ ) {
                 log(3, cl+"add:"+i);
-                String m=(String) pa.get(i);
+                String m=pa.get(i);
                 log(2,cl+"start PatternTest "+i+" for :"+m+":");
                 PatternTest an = new PatternTest(m,debug);
                             if (last != null ) { last.setPatternTest(an); }

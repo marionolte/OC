@@ -81,8 +81,8 @@ public abstract class RunnableT extends Version implements Runnable {
     
     final public void thwakeup() {
         synchronized(lock) {
-            th.interrupt();
-            th.notify();
+            try { th.interrupt();
+                  th.notify(); } catch (NullPointerException|IllegalMonitorStateException ie) {}
         }
     }
     final public void thwait() {

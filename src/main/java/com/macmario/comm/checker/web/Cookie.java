@@ -26,7 +26,6 @@ public class Cookie {
      
      
      Cookie(String cook) {
-         this.debug=Cookie.debug;
          // DCCCtxCookie_myhost.example.com:7777=value; httponly; secure; path=/oam/server/auth_cred_submit; domain=.example.com
          String[] sp = cook.split(";");
          String[] fp = sp[0].split("="); 

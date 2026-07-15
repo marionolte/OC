@@ -361,7 +361,7 @@ public class Functions {
     
     synchronized public String readStringFromRessource(String ressource) {
         StringBuilder sw = new StringBuilder();
-        if ( isNullOrEmpty(ressource) ){
+        if ( isNotNullOrEmpty(ressource) ){
             try {
                 java.io.InputStream in = this.getClass().getResourceAsStream(ressource);
                 byte[] b = new byte[16*1024];
@@ -370,7 +370,7 @@ public class Functions {
                     for ( int i=0; i<n; i++ ) { sw.append( (char) b[i]); }
                 }
                 in.close();
-            } catch(java.io.IOException io){
+            } catch(java.io.IOException|NoSuchMethodError io){
                 log(1, "couldn't load ressource "+ressource);
             }
         }

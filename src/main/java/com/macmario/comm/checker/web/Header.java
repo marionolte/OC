@@ -261,7 +261,8 @@ public class Header implements Response, Request, Runnable {
         } catch(Exception e) {
             log(2, func+"error "+e.getMessage()+"  for url =>"+url+"<=");
             errmsg.append("EROROR: url "+url+" generates error "+e.getMessage());
-        } finally { return b;}
+        }
+        return b;
     }
     
     public boolean isResponseAuthentication() { return (   this.authkey!=null)?true:false; }

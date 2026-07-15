@@ -26,10 +26,20 @@ public class SecDBFile extends Version {
     }
     
     
+    public boolean save() {
+        keepass.save(db.filer, sec.readOut().toString() );
+        updated=false;
+        return true;
+    }
+    
+    public boolean save(String newPass) {
+        if ( isUpdated() ) { save(); }
+        keepass.save(db.filer, newPass);
+        return sec.replace(newPass);
+    }
+    
     public boolean close() {
-         if ( isUpdated() ) {
-             keepass.save(db.filer, sec.readOut().toString() );
-         }
+         if ( isUpdated() ) { save(); }
          return true;
     }
     

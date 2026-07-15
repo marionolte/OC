@@ -71,7 +71,7 @@ public class WebChecker extends Version{
     
     private ArrayList<Header> readFile(File n) {
         HttpXmlFile xml = new HttpXmlFile(n); 
-        xml.debug=debug;
+        HttpXmlFile.debug=debug;
         ArrayList<Header> mar;
         if ( xml.isXML() ) { 
             log(2, "File "+n+" are a xml file");
