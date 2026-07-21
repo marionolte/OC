@@ -125,7 +125,9 @@ public class ReadFile extends Version {
 
           if( sb.length() > 0) { sb.setLength(sb.length()-1); }   // remove last \n
 
-        } catch (IOException e){ }
+        } catch (IOException e){ 
+            log(1,"readOut error - "+e.getMessage());
+        }
 
         return sb;
     }
@@ -887,7 +889,11 @@ public class ReadFile extends Version {
             sleep(100);
         }
         System.out.println("tail completed");*/
-        for ( String s: f.getZipIndex() ) { System.out.println(s);}
+        if (f.isAsciiFile() ) {
+            System.out.println(f.readOut());
+        } else {
+            for ( String s: f.getZipIndex() ) { System.out.println(s);}
+        }
         System.exit(0);
     }
     
